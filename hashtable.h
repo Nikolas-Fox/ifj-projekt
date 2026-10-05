@@ -22,7 +22,7 @@ typedef struct  {
 
 //Table structure
 typedef struct {
-    HashTItem *table;
+    HashTItem *tableItems;
     size_t size;
     size_t count_occupied;
 } HashTable;
