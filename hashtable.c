@@ -40,7 +40,6 @@ size_t hashFunction(const char *key, size_t tableSize) {
  * @return Pointer to the initialized HashTable, or NULL if memory allocation fails
  */
  
- 
 HashTable* htInit(size_t size) {
     HashTable *hTable = malloc(sizeof(HashTable));
     if (hTable == NULL) {
@@ -57,8 +56,39 @@ HashTable* htInit(size_t size) {
     }
 
     return hTable;
+
+}
+
+
+
+/**
+ * Searches for an item with the sgiven key in the hash table.
+ * 
+ * Uses linear searching to resolve collisions. Traverses the table starting
+ * from the calculated hash index until the key is found
+ * @param table Pointer to the hash table
+ * @param key Key string to search for
+ * @return Pointer to the found HashTItem, or NULL if not found or on invalid input
+ */
+
+HashTItem* htSearch(HashTable *table, const char *key) {
+    //check for NULL pointers
+    if(table == NULL || key == NULL) {
+        return NULL; 
+    }
+
+    size_t position  = hashFunction(key, table->size);
+    size_t count = 0;
     
+    while (table->tableItems[position].state != EMPTY && count < table->size) {
+        if (table->tableItems[position].state == OCCUPIED) {
+            if (strcmp(table->tableItems[position].key, key) == 0) {
+                return &table->tableItems[position]; // Key found
+            }
+        }
+        position = (position + 1) % table->size;
+        count++;
+    }
 
-
-
+    return NULL;
 }
