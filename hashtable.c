@@ -30,3 +30,35 @@ size_t hashFunction(const char *key, size_t tableSize) {
 }
 
 
+/**
+ * Initializes a new hash table with the given capacity.
+ * 
+ * Allocates memory for both the table structure and its item array.
+ * Uses calloc to automatically zero-initialize all items (setting states to EMPTY).
+ * 
+ * @param size The capacity of the hash table
+ * @return Pointer to the initialized HashTable, or NULL if memory allocation fails
+ */
+ 
+ 
+HashTable* htInit(size_t size) {
+    HashTable *hTable = malloc(sizeof(HashTable));
+    if (hTable == NULL) {
+        return NULL;
+    }
+    hTable->size = size;
+    hTable->count_occupied = 0;
+
+    hTable->tableItems = calloc(size, sizeof(HashTItem));
+    if (hTable->tableItems == NULL) {
+        free(hTable);
+        hTable = NULL;
+        return NULL;
+    }
+
+    return hTable;
+    
+
+
+
+}
