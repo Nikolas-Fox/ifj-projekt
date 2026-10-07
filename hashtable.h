@@ -30,11 +30,11 @@ typedef struct {
 
 HashTable* htInit(size_t size);
 
-bool htInsert (HashTable *table, const har *key, void *data);
+HashTItem* htInsert (HashTable *table, const char *key, void *data);
 
 HashTItem* htSearch(HashTable *table, const char *key);
 
-bool htDelete(HashTable *table, const har *key);
+bool htDelete(HashTable *table, const char *key);
 
 void htFree(HashTable *table);
 

@@ -5,9 +5,8 @@
 #include <stdbool.h>
 
 /**
- * Hash function for strings based on the DJB2 algorithm created by Dan Bernstein.
+ * @brief Hash function for strings based on the DJB2 algorithm created by Dan Bernstein.
  * Source / Reference: http://www.cse.yorku.ca/~oz/hash.html
- * 
  * @param key The string to be hashed
  * @param tableSize Capacity of the hash table
  * @return Hash value mapped into the table size range
@@ -31,11 +30,9 @@ size_t hashFunction(const char *key, size_t tableSize) {
 
 
 /**
- * Initializes a new hash table with the given capacity.
- * 
+ * @brief Initializes a new hash table with the given capacity.
  * Allocates memory for both the table structure and its item array.
  * Uses calloc to automatically zero-initialize all items (setting states to EMPTY).
- * 
  * @param size The capacity of the hash table
  * @return Pointer to the initialized HashTable, or NULL if memory allocation fails
  */
@@ -62,8 +59,7 @@ HashTable* htInit(size_t size) {
 
 
 /**
- * Searches for an item with the sgiven key in the hash table.
- * 
+ * @brief Searches for an item with the sgiven key in the hash table.
  * Uses linear searching to resolve collisions. Traverses the table starting
  * from the calculated hash index until the key is found
  * @param table Pointer to the hash table
@@ -89,6 +85,58 @@ HashTItem* htSearch(HashTable *table, const char *key) {
         position = (position + 1) % table->size;
         count++;
     }
+    return NULL;
+}
+
+/**
+ * @brief Inserts a new element into the hash table or updates an existing one.
+ * @param table Pointer to the hash table.
+ * @param key String representing the key.
+ * @param data Pointer to the data associated with the key.
+ * @return HashTableItem* Pointer to the inserted/updated item on success, NULL on error or if the table is full.
+ */
+
+HashTItem*htInsert (HashTable *table, const char *key, void *data) {
+    //check for NULL pointers
+    if(table == NULL|| key == NULL) {
+        return NULL; 
+    }
+    //the initial index from hash function
+    size_t position = hashFunction(key, table->size);
+    size_t count = 0;
+
+    //Search through the table for an empty slot, or update an existing key
+
+    while (count < table->size ){
+
+        //Case 1: Found an empty slot
+        if (table->tableItems[position].state == EMPTY) {
+            table->tableItems[position].key = key;
+            table->tableItems[position].data = data;
+            table->tableItems[position].state = OCCUPIED;
+            return &table->tableItems[position];
+        }
+        //Case 2: Found a deleted slot -> reuse it for new item
+        if (table->tableItems[position].state == DELETED ) {
+            table->tableItems[position].key = key;
+            table->tableItems[position].data = data;
+            table->tableItems[position].state = OCCUPIED;
+            return &table->tableItems[position];
+        }
+
+        //Case 3: Found an occupied slot -> chceck if the key matches, update it
+        if (table->tableItems[position].state == OCCUPIED) {
+            if (strcmp(table->tableItems[position].key, key) == 0) {
+                table->tableItems[position].data = data;
+                return &table->tableItems[position];
+            }
+            
+        }
+        //move to the next slot (using module if it is the last one)
+        position = (position + 1 )% table->size;
+        count++;
+    }
+    //Table is full, cannot insert new item
 
     return NULL;
 }
