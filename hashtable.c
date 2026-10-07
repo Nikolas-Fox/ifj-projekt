@@ -140,3 +140,18 @@ HashTItem*htInsert (HashTable *table, const char *key, void *data) {
 
     return NULL;
 }
+
+
+bool htDelete(HashTable *table, const char *key) {
+
+    HashTItem *ItemForDelete = htSearch(table, key);
+
+    if (ItemForDelete == NULL) {
+        return false;
+    }
+
+    ItemForDelete->key = NULL;
+    ItemForDelete->data = NULL;
+    ItemForDelete->state = DELETED;
+    return true;
+}
