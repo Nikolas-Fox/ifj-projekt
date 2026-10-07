@@ -114,6 +114,7 @@ HashTItem*htInsert (HashTable *table, const char *key, void *data) {
             table->tableItems[position].key = key;
             table->tableItems[position].data = data;
             table->tableItems[position].state = OCCUPIED;
+            table->count_occupied += 1;
             return &table->tableItems[position];
         }
         //Case 2: Found a deleted slot -> reuse it for new item
@@ -121,6 +122,7 @@ HashTItem*htInsert (HashTable *table, const char *key, void *data) {
             table->tableItems[position].key = key;
             table->tableItems[position].data = data;
             table->tableItems[position].state = OCCUPIED;
+            table->count_occupied += 1;
             return &table->tableItems[position];
         }
 
@@ -142,6 +144,15 @@ HashTItem*htInsert (HashTable *table, const char *key, void *data) {
 }
 
 
+/**
+ * @brief Deletes an item from the hash table 
+ * Searches for the item using htSearch. If found, clears its pointers
+ * and sets its state to DELETED 
+ * @param table Pointer to the hash table.
+ * @param key String key of the item to delete.
+ * @return bool true if the item was found and deleted, false otherwise.
+ */
+
 bool htDelete(HashTable *table, const char *key) {
 
     HashTItem *ItemForDelete = htSearch(table, key);
@@ -153,5 +164,25 @@ bool htDelete(HashTable *table, const char *key) {
     ItemForDelete->key = NULL;
     ItemForDelete->data = NULL;
     ItemForDelete->state = DELETED;
+    table->count_occupied -= 1;
     return true;
+}
+
+/**
+ * @brief Frees all memory allocated for the hash table.
+ * 
+ * Frees the dynamically allocated array of items and the table structure itself.
+ * Note: Individual item keys and data pointers are NOT freed here, as their
+ * memory ownership belongs to the Symtable.
+ * 
+ * @param table Pointer to the hash table to be freed.
+ */
+void htFree(HashTable *table){
+
+    if (table != NULL) {
+        free(table->tableItems);
+        table->tableItems = NULL;
+        free(table);
+        table = NULL;
+    }
 }
