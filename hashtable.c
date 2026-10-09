@@ -104,26 +104,32 @@ HashTItem*htInsert (HashTable *table, const char *key, void *data) {
     //the initial index from hash function
     size_t position = hashFunction(key, table->size);
     size_t count = 0;
+    int deletedPosition = -1;
 
     //Search through the table for an empty slot, or update an existing key
 
     while (count < table->size ){
-
         //Case 1: Found an empty slot
         if (table->tableItems[position].state == EMPTY) {
+            if(deletedPosition != -1) {
+                table->tableItems[deletedPosition].key = key;
+                table->tableItems[deletedPosition].data = data;
+                table->tableItems[deletedPosition].state = OCCUPIED;
+                table->count_occupied += 1;
+                return &table->tableItems[deletedPosition];
+            }
             table->tableItems[position].key = key;
             table->tableItems[position].data = data;
             table->tableItems[position].state = OCCUPIED;
             table->count_occupied += 1;
             return &table->tableItems[position];
         }
+
         //Case 2: Found a deleted slot -> reuse it for new item
         if (table->tableItems[position].state == DELETED ) {
-            table->tableItems[position].key = key;
-            table->tableItems[position].data = data;
-            table->tableItems[position].state = OCCUPIED;
-            table->count_occupied += 1;
-            return &table->tableItems[position];
+            if (deletedPosition == -1) {
+                deletedPosition = (int)position;
+            }
         }
 
         //Case 3: Found an occupied slot -> chceck if the key matches, update it
@@ -134,6 +140,7 @@ HashTItem*htInsert (HashTable *table, const char *key, void *data) {
             }
             
         }
+
         //move to the next slot (using module if it is the last one)
         position = (position + 1 )% table->size;
         count++;

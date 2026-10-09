@@ -15,7 +15,7 @@ typedef enum {
 
 //structure of one item in table
 typedef struct  {
-    char *key;  //name of the variable/function
+    const char *key;  //name of the variable/function
     void *data; //void because of the universal hashtable
     HashTItemState state;
 } HashTItem;
