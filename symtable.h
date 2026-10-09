@@ -5,6 +5,8 @@
 #include <stddef.h>
 #include "hashtable.h"
 
+#define INITIAL_CAPACITY 16
+
 typedef enum {
     TYPE_INT,
     TYPE_STRING,
@@ -40,5 +42,29 @@ typedef struct {
         FunctionData funcData;
     } value;    
 } SymbolData;
+
+typedef struct {
+    HashTable **htArray; //array of pointers to Hashtables
+    size_t top;   //actual hashtable
+    size_t capacity; 
+}Symtable;
+
+
+Symtable* symtableInit(void);
+
+bool symtablePushScope(Symtable *stable);
+void symtablePopScope(Symtable *stable);
+
+void symtableFree(Symtable *stable);
+
+
+SymbolData *symtableInsertVar(Symtable *st, char *name, DataType dType, bool isDefined);
+SymbolData *symtableInsertVal(Symtable *st, char *name, DataType dType, bool isDefined);
+SymbolData *symtableInsertFunction(Symtable *st, char *name, DataType returnType, bool isDefined);
+
+bool symtableAddParam(SymbolData *funcSymbol, char *paramName, DataType paramType);
+
+SymbolData *symtableSearch(Symtable *st, char *name); 
+SymbolData *symtableSearchCurrentScope(Symtable *st, char *name); 
 
 #endif
