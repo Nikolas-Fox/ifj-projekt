@@ -38,6 +38,10 @@ size_t hashFunction(const char *key, size_t tableSize) {
  */
  
 HashTable* htInit(size_t size) {
+    //i cannot init a table with size 0
+    if (size == 0) {
+        return NULL;
+    }
     HashTable *hTable = malloc(sizeof(HashTable));
     if (hTable == NULL) {
         return NULL;
@@ -96,7 +100,7 @@ HashTItem* htSearch(HashTable *table, const char *key) {
  * @return HashTableItem* Pointer to the inserted/updated item on success, NULL on error or if the table is full.
  */
 
-HashTItem*htInsert (HashTable *table, const char *key, void *data) {
+HashTItem* htInsert (HashTable *table, const char *key, void *data) {
     //check for NULL pointers
     if(table == NULL|| key == NULL) {
         return NULL; 
@@ -144,6 +148,14 @@ HashTItem*htInsert (HashTable *table, const char *key, void *data) {
         //move to the next slot (using module if it is the last one)
         position = (position + 1 )% table->size;
         count++;
+    }
+    //Table has no empty slot, but we still have the first deleted position 
+    if (deletedPosition != -1) {
+        table->tableItems[deletedPosition].key = key;
+        table->tableItems[deletedPosition].data = data;
+        table->tableItems[deletedPosition].state = OCCUPIED;
+        table->count_occupied += 1;
+        return &table->tableItems[deletedPosition];
     }
     //Table is full, cannot insert new item
 
