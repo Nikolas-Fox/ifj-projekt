@@ -28,6 +28,9 @@ typedef struct {
 } HashTable;
 
 
+//return void, and it is pointer to function
+typedef void (*CallBackData)(void *data);
+
 
 /**
  * @brief Initializes a new hash table with the given capacity.
@@ -91,6 +94,14 @@ void htFree(HashTable *table);
  * @return Hash value mapped into the table size range
  */
 size_t hashFunction(const char *key, size_t tableSize);
+
+
+/**
+ * @brief callback function to go through every occupied state and call on them given function
+ * @param table pointer to table to go through
+ * @param callback given function
+ */
+void forEachData(HashTable *table, CallBackData callback);
 
 
 #endif

@@ -205,3 +205,13 @@ void htFree(HashTable *table){
         table = NULL;
     }
 }
+
+void forEachData(HashTable *table, CallBackData callback) {
+    size_t size = table->size;
+    //to do: if table == NULL or callback == NULL
+    for (size_t i = 0; i < size; i++ ) {
+        if (table->tableItems[i].state == OCCUPIED) {
+            callback(table->tableItems[i].data);
+        }
+    }
+}

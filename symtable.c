@@ -73,3 +73,37 @@ bool symtablePushScope(Symtable *sTable) {
     return true;
 
 }
+
+static void freeParams(FunctionParam *params) {
+    while (params != NULL) {
+        FunctionParam *next = params->next; 
+        free(params->paramName);
+        free(params);
+        params = next;
+    }
+}
+
+static void freeData(void *data) {
+    //to do control if data == NULL
+    SymbolData *sData = (SymbolData *) data;
+    free(sData->symbolName);
+    if(sData->sType == FUNCTION) {
+        freeParams(sData->value.funcData.params);
+    }
+
+    free(sData);
+}
+
+
+//todo:control if table already isnt null
+
+void symtablePopScope(Symtable *sTable) {
+    if(sTable->top != 0){
+        forEachData(sTable->htArray[sTable->top], freeData);
+        htFree(sTable->htArray[sTable->top]);
+        sTable->htArray[sTable->top] = NULL;
+        
+        sTable->top--;
+        }
+}
+    
