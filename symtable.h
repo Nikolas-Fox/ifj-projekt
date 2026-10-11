@@ -52,19 +52,19 @@ typedef struct {
 
 Symtable* symtableInit(void);
 
-bool symtablePushScope(Symtable *stable);
-void symtablePopScope(Symtable *stable);
+bool symtablePushScope(Symtable *sTable);
+void symtablePopScope(Symtable *sTable);
 
-void symtableFree(Symtable *stable);
+void symtableFree(Symtable *sTable);
 
 
-SymbolData *symtableInsertVar(Symtable *st, char *name, DataType dType, bool isDefined);
-SymbolData *symtableInsertVal(Symtable *st, char *name, DataType dType, bool isDefined);
-SymbolData *symtableInsertFunction(Symtable *st, char *name, DataType returnType, bool isDefined);
+SymbolData *symtableInsertVar(Symtable *sTable, char *name, DataType dType, bool isDefined);
+SymbolData *symtableInsertVal(Symtable *sTable, char *name, DataType dType, bool isDefined);
+SymbolData *symtableInsertFunction(Symtable *sTable, char *name, DataType returnType, bool isDefined);
 
 bool symtableAddParam(SymbolData *funcSymbol, char *paramName, DataType paramType);
 
-SymbolData *symtableSearch(Symtable *st, char *name); 
-SymbolData *symtableSearchCurrentScope(Symtable *st, char *name); 
+SymbolData *symtableSearch(Symtable *sTable, char *name); 
+SymbolData *symtableSearchCurrentScope(Symtable *sTable, char *name); 
 
 #endif
