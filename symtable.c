@@ -117,3 +117,44 @@ void symtableFree(Symtable *sTable) {
     free(sTable->htArray);
     free(sTable);
 }
+
+/* AI-generated (Claude). Prompt: "Function for copiing the name, malloc + memcpy" */
+static char *copyString(const char *src) {
+    if (src == NULL) {
+        return NULL;
+    }
+    size_t len = strlen(src) + 1; // vrátane '\0'
+    char *copy = malloc(len);
+    if (copy == NULL) {
+        return NULL;
+    }
+    memcpy(copy, src, len);
+    return copy;
+}
+
+SymbolData *symtableInsertVar(Symtable *sTable, char *name, DataType dType, bool isDefined) {
+    //to do control if symtable is not NULL
+    
+    if (htSearch(sTable->htArray[sTable->top], name)!= NULL) {
+        //redefination in the same scope
+        fprintf(stderr, "Error 4");
+        exit(4);
+    }
+    SymbolData *newData = malloc(sizeof(SymbolData));
+    //todo control if malloc is not NULL
+    newData->sType = VAR;
+    newData->symbolName = copyString(name);
+    if (newData->symbolName == NULL) {
+        //todo return error
+        return NULL;
+    }
+    newData->dtype = dType;
+    newData->isDefined = isDefined;
+    newData->value.funcData.paramCount = 0;
+    newData->value.funcData.params = NULL;
+
+    htInsert(sTable->htArray[sTable->top], newData->symbolName, newData);
+
+    return newData;
+
+}
