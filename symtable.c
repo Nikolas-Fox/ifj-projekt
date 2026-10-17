@@ -106,4 +106,14 @@ void symtablePopScope(Symtable *sTable) {
         sTable->top--;
         }
 }
-    
+
+void symtableFree(Symtable *sTable) {
+    //todo control if symtable is not already NULL
+    while(sTable->top != 0) {
+        symtablePopScope(sTable);
+    }
+    forEachData(sTable->htArray[sTable->top], freeData);
+    htFree(sTable->htArray[sTable->top]);
+    free(sTable->htArray);
+    free(sTable);
+}
