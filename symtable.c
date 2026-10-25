@@ -6,6 +6,12 @@
 #include <stdbool.h>
 
 
+struct {
+    HashTable **htArray; //array of pointers to Hashtables
+    size_t top;   //actual hashtable
+    size_t capacity; 
+}Symtable;
+
 /**
  * @brief Initializes the symbol table (Frame Stack) and allocates the global scope.
  * 
@@ -132,29 +138,62 @@ static char *copyString(const char *src) {
     return copy;
 }
 
-SymbolData *symtableInsertVar(Symtable *sTable, char *name, DataType dType, bool isDefined) {
-    //to do control if symtable is not NULL
-    
-    if (htSearch(sTable->htArray[sTable->top], name)!= NULL) {
-        //redefination in the same scope
-        fprintf(stderr, "Error 4");
-        exit(4);
-    }
-    SymbolData *newData = malloc(sizeof(SymbolData));
-    //todo control if malloc is not NULL
-    newData->sType = VAR;
-    newData->symbolName = copyString(name);
-    if (newData->symbolName == NULL) {
-        //todo return error
+
+static SymbolData *insertSymbol(Symtable *sTable, char *name, SymbolType sType,
+                                DataType dType, bool isDefined) {
+    if (sTable == NULL || name == NULL) {
         return NULL;
     }
+
+    HashTable *current = sTable->htArray[sTable->top];
+
+    // Redefinition in the same scope (shadowing in outer scopes is allowed)
+    if (htSearch(current, name) != NULL) {
+        fprintf(stderr, "Error 4: redefinition of '%s'\n", name);
+        exit(4);
+    }
+
+    SymbolData *newData = malloc(sizeof(SymbolData));
+    if (newData == NULL) {
+        fprintf(stderr, "Error 99: memory allocation failed\n");
+        exit(99);
+    }
+
+    newData->symbolName = copyString(name);
+    if (newData->symbolName == NULL) {
+        free(newData);
+        fprintf(stderr, "Error 99: memory allocation failed\n");
+        exit(99);
+    }
+
+    newData->sType = sType;
     newData->dtype = dType;
     newData->isDefined = isDefined;
     newData->value.funcData.paramCount = 0;
     newData->value.funcData.params = NULL;
 
-    htInsert(sTable->htArray[sTable->top], newData->symbolName, newData);
+    // The key is the copy owned by the symbol, not the token's string
+    if (htInsert(current, newData->symbolName, newData) == NULL) {
+        free(newData->symbolName);
+        free(newData);
+        fprintf(stderr, "Error 99: symbol table is full\n");
+        exit(99);
+    }
 
     return newData;
+}
 
+SymbolData *symtableInsertVar(Symtable *sTable, char *name, DataType dType,
+                              bool isDefined) {
+    return insertSymbol(sTable, name, VAR, dType, isDefined);
+}
+
+SymbolData *symtableInsertVal(Symtable *sTable, char *name, DataType dType,
+                              bool isDefined) {
+    return insertSymbol(sTable, name, VAL, dType, isDefined);
+}
+
+SymbolData *symtableInsertFunction(Symtable *sTable, char *name,
+                                   DataType returnType, bool isDefined) {
+    return insertSymbol(sTable, name, FUNCTION, returnType, isDefined);
 }

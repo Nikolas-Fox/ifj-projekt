@@ -43,12 +43,7 @@ typedef struct {
     } value;    
 } SymbolData;
 
-typedef struct {
-    HashTable **htArray; //array of pointers to Hashtables
-    size_t top;   //actual hashtable
-    size_t capacity; 
-}Symtable;
-
+typedef struct Symtable Symtable;
 
 Symtable* symtableInit(void);
 
