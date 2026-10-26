@@ -238,3 +238,15 @@ bool symtableAddParam(SymbolData *funcSymbol, char *paramName,
     funcSymbol->value.funcData.paramCount++;
     return true;
 }
+
+SymbolData *symtableSearchCurrentScope(Symtable *sTable, char *name) {
+    if (sTable == NULL || name == NULL) {
+        return NULL;
+    }
+
+    HashTItem *item = htSearch(sTable->htArray[sTable->top], name);
+    if (item == NULL) {
+        return NULL;
+    }
+    return (SymbolData *)item->data;
+}
