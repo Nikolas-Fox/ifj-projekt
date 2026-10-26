@@ -6,11 +6,11 @@
 #include <stdbool.h>
 
 
-struct {
+struct Symtable{
     HashTable **htArray; //array of pointers to Hashtables
     size_t top;   //actual hashtable
     size_t capacity; 
-}Symtable;
+};
 
 /**
  * @brief Initializes the symbol table (Frame Stack) and allocates the global scope.
@@ -196,4 +196,45 @@ SymbolData *symtableInsertVal(Symtable *sTable, char *name, DataType dType,
 SymbolData *symtableInsertFunction(Symtable *sTable, char *name,
                                    DataType returnType, bool isDefined) {
     return insertSymbol(sTable, name, FUNCTION, returnType, isDefined);
+}
+
+
+
+bool symtableAddParam(SymbolData *funcSymbol, char *paramName,
+                      DataType paramType) {
+    if (funcSymbol == NULL || paramName == NULL ||
+        funcSymbol->sType != FUNCTION) {
+        return false;
+    }
+
+    // Go through the list to search if there is not the same param already
+
+    FunctionParam **top = &funcSymbol->value.funcData.params;
+    while (*top != NULL) {
+        if (strcmp((*top)->paramName, paramName) == 0) {
+            fprintf(stderr, "Error 4: duplicate parameter '%s'\n", paramName);
+            exit(4);
+        }
+        top = &(*top)->next;
+    }
+
+    FunctionParam *param = malloc(sizeof(FunctionParam));
+    if (param == NULL) {
+        fprintf(stderr, "Error 99: memory allocation failed\n");
+        exit(99);
+    }
+
+    param->paramName = copyString(paramName);
+    if (param->paramName == NULL) {
+        free(param);
+        fprintf(stderr, "Error 99: memory allocation failed\n");
+        exit(99);
+    }
+
+    param->dType = paramType;
+    param->next = NULL;
+
+    *top = param;
+    funcSymbol->value.funcData.paramCount++;
+    return true;
 }
