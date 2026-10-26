@@ -250,3 +250,19 @@ SymbolData *symtableSearchCurrentScope(Symtable *sTable, char *name) {
     }
     return (SymbolData *)item->data;
 }
+
+SymbolData *symtableSearch(Symtable *sTable, char *name) {
+    if (sTable == NULL || name == NULL) {
+        return NULL;
+    }
+
+    // From the scope on the top till the first match
+    // 
+    for (size_t i = sTable->top + 1; i > 0; i--) {
+        HashTItem *item = htSearch(sTable->htArray[i - 1], name);
+        if (item != NULL) {
+            return (SymbolData *)item->data;
+        }
+    }
+    return NULL;
+}
