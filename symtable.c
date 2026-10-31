@@ -12,6 +12,28 @@ struct Symtable{
     size_t capacity; 
 };
 
+//AI: (claude) - help with the structure for Built in Functions for global scope
+typedef struct {
+    const char *name;
+    DataType ret;
+    int paramCount;
+    DataType params[3];
+    const char *paramNames[3];
+} BuiltinDef;
+
+
+static const BuiltinDef BUILTINS[] = {
+   {"print",     TYPE_UNIT,   1, {TYPE_ANY},                          {"value"}},
+    {"readLine",  TYPE_STRING, 0, {0},                                 {0}},
+    {"readInt",   TYPE_INT,    0, {0},                                 {0}},
+    {"readDouble",TYPE_DOUBLE, 0, {0},                                 {0}},
+    {"toStr",     TYPE_STRING, 1, {TYPE_ANY},                          {"value"}},
+    {"toInt",     TYPE_INT,    1, {TYPE_DOUBLE},                       {"value"}},
+    {"strLength", TYPE_INT,    1, {TYPE_STRING},                       {"value"}},
+    {"subStr",    TYPE_STRING, 3, {TYPE_STRING, TYPE_INT, TYPE_INT},   {"value", "start", "end"}},
+    {"ord",       TYPE_INT,    2, {TYPE_STRING, TYPE_INT},             {"value", "index"}},
+    {"chr",       TYPE_STRING, 1, {TYPE_INT},                          {"code"}},
+};
 
 Symtable* symtableInit(void) {
     // Allocate memory for the main Symtable
@@ -35,6 +57,14 @@ Symtable* symtableInit(void) {
         free(symTable->htArray);
         free(symTable);
         return NULL;
+    }
+    //insert builtin functions 
+    for (size_t i = 0; i < sizeof BUILTINS / sizeof BUILTINS[0]; i++) {    //i < size of whole builtins / one line
+        const BuiltinDef *b = &BUILTINS[i];
+        SymbolData *f = symtableInsertFunction(symTable, (char *)b->name, b->ret, true);
+         for (int j = 0; j < b->paramCount; j++) {
+            symtableAddParam(f, (char *)b->paramNames[j], b->params[j]);
+        }
     }
     return symTable;
 }

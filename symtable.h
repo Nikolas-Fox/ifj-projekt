@@ -13,6 +13,7 @@ typedef enum {
     TYPE_BOOL,
     TYPE_DOUBLE,
     TYPE_UNIT,
+    TYPE_ANY,
 }DataType;
 
 typedef enum {
