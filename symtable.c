@@ -12,11 +12,7 @@ struct Symtable{
     size_t capacity; 
 };
 
-/**
- * @brief Initializes the symbol table (Frame Stack) and allocates the global scope.
- * 
- * @return Pointer to created Symtable, or NULL if allocation failure.
- */
+
 Symtable* symtableInit(void) {
     // Allocate memory for the main Symtable
     Symtable *symTable = malloc(sizeof(Symtable));
@@ -43,14 +39,7 @@ Symtable* symtableInit(void) {
     return symTable;
 }
 
-/**
- * @brief Pushes a new scope (block) onto the symbol table stack.
- * Automatically expands the  array capacity using realloc if necessary.
- * 
- * @param sTable Pointer to the Symtable structure.
- * @return true on success
- * @return false on memory allocation failure
- */
+
 bool symtablePushScope(Symtable *sTable) {
     if (sTable == NULL) {
         return false;
@@ -90,7 +79,9 @@ static void freeParams(FunctionParam *params) {
 }
 
 static void freeData(void *data) {
-    //to do control if data == NULL
+     if (data == NULL) {
+        return;
+    }
     SymbolData *sData = (SymbolData *) data;
     free(sData->symbolName);
     if(sData->sType == FUNCTION) {
@@ -101,9 +92,12 @@ static void freeData(void *data) {
 }
 
 
-//todo:control if table already isnt null
+
 
 void symtablePopScope(Symtable *sTable) {
+    if (sTable == NULL || sTable->top == 0) {
+        return;
+    }
     if(sTable->top != 0){
         forEachData(sTable->htArray[sTable->top], freeData);
         htFree(sTable->htArray[sTable->top]);
@@ -114,7 +108,9 @@ void symtablePopScope(Symtable *sTable) {
 }
 
 void symtableFree(Symtable *sTable) {
-    //todo control if symtable is not already NULL
+    if (sTable == NULL) {
+        return;
+    }
     while(sTable->top != 0) {
         symtablePopScope(sTable);
     }

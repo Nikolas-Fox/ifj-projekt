@@ -4,13 +4,9 @@
 #include <string.h>
 #include <stdbool.h>
 
-/**
- * @brief Hash function for strings based on the DJB2 algorithm created by Dan Bernstein.
- * Source / Reference: http://www.cse.yorku.ca/~oz/hash.html
- * @param key The string to be hashed
- * @param tableSize Capacity of the hash table
- * @return Hash value mapped into the table size range
- */
+
+//Hash function for strings based on the DJB2 algorithm created by Dan Bernstein.
+//Source / Reference: http://www.cse.yorku.ca/~oz/hash.html
 
 size_t hashFunction(const char *key, size_t tableSize) {
     if (key == NULL || tableSize == 0) {
@@ -22,6 +18,7 @@ size_t hashFunction(const char *key, size_t tableSize) {
     const unsigned char *str = (const unsigned char *)key;
 
     while (*str != '\0') {
+        //multiplies a number by 33(bit shift by 5)
         hash = ((hash << 5) + hash) + *str;
         str++;
     }
@@ -29,13 +26,7 @@ size_t hashFunction(const char *key, size_t tableSize) {
 }
 
 
-/**
- * @brief Initializes a new hash table with the given capacity.
- * Allocates memory for both the table structure and its item array.
- * Uses calloc to automatically zero-initialize all items (setting states to EMPTY).
- * @param size The capacity of the hash table
- * @return Pointer to the initialized HashTable, or NULL if memory allocation fails
- */
+
  
 HashTable* htInit(size_t size) {
     //i cannot init a table with size 0
@@ -49,6 +40,7 @@ HashTable* htInit(size_t size) {
     hTable->size = size;
     hTable->count_occupied = 0;
 
+    //alloc the table, with values 0
     hTable->tableItems = calloc(size, sizeof(HashTItem));
     if (hTable->tableItems == NULL) {
         free(hTable);
@@ -62,14 +54,6 @@ HashTable* htInit(size_t size) {
 
 
 
-/**
- * @brief Searches for an item with the sgiven key in the hash table.
- * Uses linear searching to resolve collisions. Traverses the table starting
- * from the calculated hash index until the key is found
- * @param table Pointer to the hash table
- * @param key Key string to search for
- * @return Pointer to the found HashTItem, or NULL if not found or on invalid input
- */
 
 HashTItem* htSearch(HashTable *table, const char *key) {
     //check for NULL pointers
@@ -80,6 +64,7 @@ HashTItem* htSearch(HashTable *table, const char *key) {
     size_t position  = hashFunction(key, table->size);
     size_t count = 0;
     
+    //while state is not empty i search, when i find occupied state, i look if its the same, or the next one inst, till there is emty slot
     while (table->tableItems[position].state != EMPTY && count < table->size) {
         if (table->tableItems[position].state == OCCUPIED) {
             if (strcmp(table->tableItems[position].key, key) == 0) {
@@ -92,13 +77,6 @@ HashTItem* htSearch(HashTable *table, const char *key) {
     return NULL;
 }
 
-/**
- * @brief Inserts a new element into the hash table or updates an existing one.
- * @param table Pointer to the hash table.
- * @param key String representing the key.
- * @param data Pointer to the data associated with the key.
- * @return HashTableItem* Pointer to the inserted/updated item on success, NULL on error or if the table is full.
- */
 
 HashTItem* htInsert (HashTable *table, const char *key, void *data) {
     //check for NULL pointers
@@ -163,14 +141,6 @@ HashTItem* htInsert (HashTable *table, const char *key, void *data) {
 }
 
 
-/**
- * @brief Deletes an item from the hash table 
- * Searches for the item using htSearch. If found, clears its pointers
- * and sets its state to DELETED 
- * @param table Pointer to the hash table.
- * @param key String key of the item to delete.
- * @return bool true if the item was found and deleted, false otherwise.
- */
 
 bool htDelete(HashTable *table, const char *key) {
 
@@ -187,15 +157,7 @@ bool htDelete(HashTable *table, const char *key) {
     return true;
 }
 
-/**
- * @brief Frees all memory allocated for the hash table.
- * 
- * Frees the dynamically allocated array of items and the table structure itself.
- * Note: Individual item keys and data pointers are NOT freed here, as their
- * memory ownership belongs to the Symtable.
- * 
- * @param table Pointer to the hash table to be freed.
- */
+
 void htFree(HashTable *table){
 
     if (table != NULL) {
@@ -207,8 +169,10 @@ void htFree(HashTable *table){
 }
 
 void forEachData(HashTable *table, CallBackData callback) {
+    if (table == NULL || callback == NULL) {
+        return;
+    }
     size_t size = table->size;
-    //to do: if table == NULL or callback == NULL
     for (size_t i = 0; i < size; i++ ) {
         if (table->tableItems[i].state == OCCUPIED) {
             callback(table->tableItems[i].data);
