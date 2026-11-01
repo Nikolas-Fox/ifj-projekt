@@ -541,4 +541,67 @@ void parseParamEnd()
         printError("Unexpected token");
     }
 }
+
+void parseLop()
+{
+    //49: ⟨lop⟩ → (⟨param_list⟩)⟨lop⟩
+    if (token.type == TOK_LPAR)
+    {
+        checkToken(TOK_LPAR);
+        parseParamList();
+        checkToken(TOK_RPAR);
+        parseLop();
+    }
+    //50: ⟨lop⟩ → epsilon
+    //Predict(50) = {:, =}
+    else if (token.type == TOK_COLON || token.type == TOK_EQ)
+    {
+        return;
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
+void parseArgList()
+{
+    //51: ⟨arg_list⟩ → ⟨expression⟩⟨arg_end⟩
+    if (token.type == id || token.type == int || token.type == double || token.type == string || token.type == ! ||
+        token.type == TOK_LPAR || token.type == true || token.type == false)
+    {
+        //precedence analysis
+        parseArgEnd();
+    }
+    //52: ⟨arg_list⟩ → epsilon
+    //Predict(52) = {)}
+    else if (token.type == TOK_RPAR)
+    {
+        return;
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
+void parseArgEnd()
+{
+    //53: ⟨arg_end⟩ →,⟨arg_list⟩
+    if (token.type == TOK_COMMA)
+    {
+        checkToken(TOK_COMMA);
+        parseArgList();
+    }
+    //54: ⟨arg_end⟩ → epsilon
+    //Predict(54) = {)}
+    else if (token.type == TOK_RPAR)
+    {
+        return;
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
 /*** End of file parser.c ***/
