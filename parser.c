@@ -70,6 +70,22 @@ void checkToken(TokenType expected)
 }
 
 //TODO: integrate with lexer
+void parseProg()
+{
+    //⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
+    token = getToken();
+    checkToken(import);
+    parseOptNL();
+    checkToken(ifj26);
+    parseOptNL();
+    checkToken(TOK_DOT); //.
+    parseOptNL();
+    checkToken(*);
+    checkToken(TOK_EOL); //NL
+    parseDefinition();
+    checkToken(TOK_EOF); //EOF
+}
+
 void parseDefinition()
 {
     //⟨definition⟩ → @main⟨opt_NL⟩def id() : Unit = ⟨def_body⟩⟨definition⟩
