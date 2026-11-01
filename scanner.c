@@ -44,6 +44,18 @@ Token getToken(void) {
                     line++;
                     return t;   //LF is EOL
                 }
+
+                //one character tokens
+                switch (character) {
+                    case '(': return makeToken(TOK_LPAR, NULL);
+                    case ')': return makeToken(TOK_RPAR, NULL);
+                    case ',': return makeToken(TOK_COMMA, NULL);
+                    case ';': return makeToken(TOK_SEMICOL, NULL);
+                    case ':': return makeToken(TOK_COLON, NULL);
+                    case '*': return makeToken(TOK_MUL, NULL);
+                    case '-': return makeToken(TOK_MINUS, NULL);
+                    case '@': return makeToken(TOK_AT, NULL);
+                }
                 
                 fprintf(stderr, "Lexikalni chyba");
                 exit(1);
