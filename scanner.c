@@ -25,6 +25,23 @@ static void buf_reset(void) {
     buf[0] = '\0';
 }
 
+static void buf_add(int c) {
+    if (buf_len + 1 >= BUF_MAX) {
+        fprintf(stderr, "Prilis dlouhy lexem na radku %d\n", line);
+        exit(99);
+    }
+    buf[buf_len++] = (char)c;
+    buf[buf_len] = '\0';
+}
+ 
+//Copy of the buffer for the token (the token owns its text)
+static char *buf_copy(void) {
+    char *copy = malloc(buf_len + 1);
+    if (!copy) exit(99);  // interní chyba překladače
+    memcpy(copy, buf, buf_len + 1);
+    return copy;
+}
+
 typedef struct {
     const char *name;
     Keyword kw;
