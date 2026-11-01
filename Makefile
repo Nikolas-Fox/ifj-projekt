@@ -1,23 +1,25 @@
-CC = gcc
-CFLAGS = -std=c11 -Wall -Wextra -pedantic
+CC     = gcc
+CFLAGS = -std=c11 -Wall -Wextra -g
+ 
+SRCS    = hashtable.c symtable.c
+HEADERS = hashtable.h symtable.h
+OBJS    = $(SRCS:.c=.o)
+ 
+.PHONY: all build check build-check clean
+ 
 
-TARGET = test_hashtable
-
-
-SRCS = main.c hashtable.c
-OBJS = $(SRCS:.c=.o)
-
-all: $(TARGET)
-
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
-
-%.o: %.c
+all: build
+ 
+build: $(OBJS)
+ 
+%.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
-
+ 
+check:
+	clang-format --style=file --dry-run -Werror $(SRCS) $(HEADERS)
+ 
+build-check: check build
+ 
 clean:
-	rm -f $(OBJS) $(TARGET)
-
-.PHONY: all clean
-
-
+	rm -f $(OBJS)
+ 
