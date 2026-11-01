@@ -1,18 +1,18 @@
-#include "hashtable.h"
 #include "symtable.h"
+#include "hashtable.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
-
-struct Symtable{
-    HashTable **htArray; //array of pointers to Hashtables
-    size_t top;   //actual hashtable
-    size_t capacity; 
+struct Symtable {
+    HashTable **htArray; // array of pointers to Hashtables
+    size_t top;          // actual hashtable
+    size_t capacity;
 };
 
-//AI: (claude) - help with the structure for Built in Functions for global scope
+// AI: (claude) - help with the structure for Built in Functions for global
+// scope
 typedef struct {
     const char *name;
     DataType ret;
@@ -21,21 +21,24 @@ typedef struct {
     const char *paramNames[3];
 } BuiltinDef;
 
-
 static const BuiltinDef BUILTINS[] = {
-   {"print",     TYPE_UNIT,   1, {TYPE_ANY},                          {"value"}},
-    {"readLine",  TYPE_STRING, 0, {0},                                 {0}},
-    {"readInt",   TYPE_INT,    0, {0},                                 {0}},
-    {"readDouble",TYPE_DOUBLE, 0, {0},                                 {0}},
-    {"toStr",     TYPE_STRING, 1, {TYPE_ANY},                          {"value"}},
-    {"toInt",     TYPE_INT,    1, {TYPE_DOUBLE},                       {"value"}},
-    {"strLength", TYPE_INT,    1, {TYPE_STRING},                       {"value"}},
-    {"subStr",    TYPE_STRING, 3, {TYPE_STRING, TYPE_INT, TYPE_INT},   {"value", "start", "end"}},
-    {"ord",       TYPE_INT,    2, {TYPE_STRING, TYPE_INT},             {"value", "index"}},
-    {"chr",       TYPE_STRING, 1, {TYPE_INT},                          {"code"}},
+    {"print", TYPE_UNIT, 1, {TYPE_ANY}, {"value"}},
+    {"readLine", TYPE_STRING, 0, {0}, {0}},
+    {"readInt", TYPE_INT, 0, {0}, {0}},
+    {"readDouble", TYPE_DOUBLE, 0, {0}, {0}},
+    {"toStr", TYPE_STRING, 1, {TYPE_ANY}, {"value"}},
+    {"toInt", TYPE_INT, 1, {TYPE_DOUBLE}, {"value"}},
+    {"strLength", TYPE_INT, 1, {TYPE_STRING}, {"value"}},
+    {"subStr",
+     TYPE_STRING,
+     3,
+     {TYPE_STRING, TYPE_INT, TYPE_INT},
+     {"value", "start", "end"}},
+    {"ord", TYPE_INT, 2, {TYPE_STRING, TYPE_INT}, {"value", "index"}},
+    {"chr", TYPE_STRING, 1, {TYPE_INT}, {"code"}},
 };
 
-Symtable* symtableInit(void) {
+Symtable *symtableInit(void) {
     // Allocate memory for the main Symtable
     Symtable *symTable = malloc(sizeof(Symtable));
     if (symTable == NULL) {
@@ -43,7 +46,7 @@ Symtable* symtableInit(void) {
     }
 
     // Allocate memory for the array of hash table pointers
-    symTable->htArray = malloc(INITIAL_CAPACITY*sizeof(HashTable*));
+    symTable->htArray = malloc(INITIAL_CAPACITY * sizeof(HashTable *));
     if (symTable->htArray == NULL) {
         free(symTable);
         return NULL;
@@ -51,24 +54,25 @@ Symtable* symtableInit(void) {
     symTable->top = 0;
     symTable->capacity = INITIAL_CAPACITY;
 
-    //inicialize first global hashtable
+    // inicialize first global hashtable
     symTable->htArray[0] = htInit(HASH_T_SIZE);
     if (symTable->htArray[0] == NULL) {
         free(symTable->htArray);
         free(symTable);
         return NULL;
     }
-    //insert builtin functions 
-    for (size_t i = 0; i < sizeof BUILTINS / sizeof BUILTINS[0]; i++) {    //i < size of whole builtins / one line
+    // insert builtin functions
+    for (size_t i = 0; i < sizeof BUILTINS / sizeof BUILTINS[0];
+         i++) { // i < size of whole builtins / one line
         const BuiltinDef *b = &BUILTINS[i];
-        SymbolData *f = symtableInsertFunction(symTable, (char *)b->name, b->ret, true);
-         for (int j = 0; j < b->paramCount; j++) {
+        SymbolData *f =
+            symtableInsertFunction(symTable, (char *)b->name, b->ret, true);
+        for (int j = 0; j < b->paramCount; j++) {
             symtableAddParam(f, (char *)b->paramNames[j], b->params[j]);
         }
     }
     return symTable;
 }
-
 
 bool symtablePushScope(Symtable *sTable) {
     if (sTable == NULL) {
@@ -77,10 +81,11 @@ bool symtablePushScope(Symtable *sTable) {
     // Check if we need to expand the capacity of the pointer array
     if ((sTable->top + 1) >= sTable->capacity) {
         size_t newCapacity = sTable->capacity * 2;
-        HashTable **new = realloc(sTable->htArray, newCapacity *(sizeof(HashTable *)));
+        HashTable **new =
+            realloc(sTable->htArray, newCapacity * (sizeof(HashTable *)));
         if (new == NULL) {
             // If realloc failed, keep the old array safe
-            return false; 
+            return false;
         }
         sTable->htArray = new;
         sTable->capacity = newCapacity;
@@ -96,12 +101,11 @@ bool symtablePushScope(Symtable *sTable) {
     }
 
     return true;
-
 }
 
 static void freeParams(FunctionParam *params) {
     while (params != NULL) {
-        FunctionParam *next = params->next; 
+        FunctionParam *next = params->next;
         free(params->paramName);
         free(params);
         params = next;
@@ -109,39 +113,36 @@ static void freeParams(FunctionParam *params) {
 }
 
 static void freeData(void *data) {
-     if (data == NULL) {
+    if (data == NULL) {
         return;
     }
-    SymbolData *sData = (SymbolData *) data;
+    SymbolData *sData = (SymbolData *)data;
     free(sData->symbolName);
-    if(sData->sType == FUNCTION) {
+    if (sData->sType == FUNCTION) {
         freeParams(sData->value.funcData.params);
     }
 
     free(sData);
 }
 
-
-
-
 void symtablePopScope(Symtable *sTable) {
     if (sTable == NULL || sTable->top == 0) {
         return;
     }
-    if(sTable->top != 0){
+    if (sTable->top != 0) {
         forEachData(sTable->htArray[sTable->top], freeData);
         htFree(sTable->htArray[sTable->top]);
         sTable->htArray[sTable->top] = NULL;
-        
+
         sTable->top--;
-        }
+    }
 }
 
 void symtableFree(Symtable *sTable) {
     if (sTable == NULL) {
         return;
     }
-    while(sTable->top != 0) {
+    while (sTable->top != 0) {
         symtablePopScope(sTable);
     }
     forEachData(sTable->htArray[sTable->top], freeData);
@@ -150,7 +151,8 @@ void symtableFree(Symtable *sTable) {
     free(sTable);
 }
 
-/* AI-generated (Claude). Prompt: "Function for copiing the name, malloc + memcpy" */
+/* AI-generated (Claude). Prompt: "Function for copiing the name, malloc +
+ * memcpy" */
 static char *copyString(const char *src) {
     if (src == NULL) {
         return NULL;
@@ -163,7 +165,6 @@ static char *copyString(const char *src) {
     memcpy(copy, src, len);
     return copy;
 }
-
 
 static SymbolData *insertSymbol(Symtable *sTable, char *name, SymbolType sType,
                                 DataType dType, bool isDefined) {
@@ -224,8 +225,6 @@ SymbolData *symtableInsertFunction(Symtable *sTable, char *name,
     return insertSymbol(sTable, name, FUNCTION, returnType, isDefined);
 }
 
-
-
 bool symtableAddParam(SymbolData *funcSymbol, char *paramName,
                       DataType paramType) {
     if (funcSymbol == NULL || paramName == NULL ||
@@ -283,7 +282,7 @@ SymbolData *symtableSearch(Symtable *sTable, char *name) {
     }
 
     // From the scope on the top till the first match
-    // 
+    //
     for (size_t i = sTable->top + 1; i > 0; i--) {
         HashTItem *item = htSearch(sTable->htArray[i - 1], name);
         if (item != NULL) {

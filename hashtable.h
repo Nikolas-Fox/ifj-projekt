@@ -3,54 +3,55 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-//implicit size of table 
+// implicit size of table
 #define HASH_T_SIZE 4093
 
-//3 states for linear search
+// 3 states for linear search
 typedef enum {
     EMPTY,
     OCCUPIED,
     DELETED,
 } HashTItemState;
 
-//structure of one item in table
-typedef struct  {
-    const char *key;  //name of the variable/function
-    void *data; //void because of the universal hashtable
+// structure of one item in table
+typedef struct {
+    const char *key; // name of the variable/function
+    void *data;      // void because of the universal hashtable
     HashTItemState state;
 } HashTItem;
 
-//Table structure
+// Table structure
 typedef struct {
     HashTItem *tableItems;
     size_t size;
     size_t count_occupied;
 } HashTable;
 
-
-//return void, and it is pointer to function
+// return void, and it is pointer to function
 typedef void (*CallBackData)(void *data);
-
 
 /**
  * @brief Initializes a new hash table with the given capacity.
  * Allocates memory for both the table structure and its item array.
- * Uses calloc to automatically zero-initialize all items (setting states to EMPTY).
+ * Uses calloc to automatically zero-initialize all items (setting states to
+ * EMPTY).
  * @param size The capacity of the hash table
- * @return Pointer to the initialized HashTable, or NULL if memory allocation fails
+ * @return Pointer to the initialized HashTable, or NULL if memory allocation
+ * fails
  */
 
-HashTable* htInit(size_t size);
+HashTable *htInit(size_t size);
 
 /**
  * @brief Inserts a new element into the hash table or updates an existing one.
  * @param table Pointer to the hash table.
  * @param key String representing the key.
  * @param data Pointer to the data associated with the key.
- * @return HashTableItem* Pointer to the inserted/updated item on success, NULL on error or if the table is full.
+ * @return HashTableItem* Pointer to the inserted/updated item on success, NULL
+ * on error or if the table is full.
  */
 
-HashTItem* htInsert (HashTable *table, const char *key, void *data);
+HashTItem *htInsert(HashTable *table, const char *key, void *data);
 
 /**
  * @brief Searches for an item with the sgiven key in the hash table.
@@ -58,15 +59,15 @@ HashTItem* htInsert (HashTable *table, const char *key, void *data);
  * from the calculated hash index until the key is found
  * @param table Pointer to the hash table
  * @param key Key string to search for
- * @return Pointer to the found HashTItem, or NULL if not found or on invalid input
+ * @return Pointer to the found HashTItem, or NULL if not found or on invalid
+ * input
  */
-HashTItem* htSearch(HashTable *table, const char *key);
-
+HashTItem *htSearch(HashTable *table, const char *key);
 
 /**
- * @brief Deletes an item from the hash table 
+ * @brief Deletes an item from the hash table
  * Searches for the item using htSearch. If found, clears its pointers
- * and sets its state to DELETED 
+ * and sets its state to DELETED
  * @param table Pointer to the hash table.
  * @param key String key of the item to delete.
  * @return bool true if the item was found and deleted, false otherwise.
@@ -76,32 +77,31 @@ bool htDelete(HashTable *table, const char *key);
 
 /**
  * @brief Frees all memory allocated for the hash table.
- * 
- * Frees the dynamically allocated array of items and the table structure itself.
- * Note: Individual item keys and data pointers are NOT freed here, as their
- * memory ownership belongs to the Symtable.
- * 
+ *
+ * Frees the dynamically allocated array of items and the table structure
+ * itself. Note: Individual item keys and data pointers are NOT freed here, as
+ * their memory ownership belongs to the Symtable.
+ *
  * @param table Pointer to the hash table to be freed.
  */
 
 void htFree(HashTable *table);
 
 /**
- * @brief Hash function for strings based on the DJB2 algorithm created by Dan Bernstein.
- * Source / Reference: http://www.cse.yorku.ca/~oz/hash.html
+ * @brief Hash function for strings based on the DJB2 algorithm created by Dan
+ * Bernstein. Source / Reference: http://www.cse.yorku.ca/~oz/hash.html
  * @param key The string to be hashed
  * @param tableSize Capacity of the hash table
  * @return Hash value mapped into the table size range
  */
 size_t hashFunction(const char *key, size_t tableSize);
 
-
 /**
- * @brief callback function to go through every occupied state and call on them given function
+ * @brief callback function to go through every occupied state and call on them
+ * given function
  * @param table pointer to table to go through
  * @param callback given function
  */
 void forEachData(HashTable *table, CallBackData callback);
-
 
 #endif
