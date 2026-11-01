@@ -23,3 +23,32 @@ static Token makeToken(TokenType type, char *str) {
     return tok;
 }
 
+Token getToken(void) {
+    States state = ST_START;
+
+    while(1) {
+        int character = getchar();
+
+        switch (state) {
+            case ST_START:
+
+                if(character == EOF) {
+                    return makeToken(TOK_EOF, NULL);
+                }  
+
+                //TO DO: indentation at the beginning of a line
+                if (character == ' ' || character == '\t' || character == '\r') break;
+
+                if (character == '\n') {
+                    Token t = makeToken(TOK_EOL, NULL);
+                    line++;
+                    return t;   //LF is EOL
+                }
+                
+                fprintf(stderr, "Lexikalni chyba");
+                exit(1);
+
+                break;
+        }
+    }
+}
