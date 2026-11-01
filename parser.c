@@ -427,4 +427,57 @@ void parseElse()
     }
 }
 
+void parseRetType()
+{
+    //36: ⟨ret_type⟩ →: ⟨type⟩
+    if (token.type == TOK_COLON)
+    {
+        checkToken(TOK_COLON);
+        parseType();
+    }
+    //37: ⟨ret_type⟩ → epsilon
+    //Predict(37) = {=}
+    else if (token.type == TOK_EQ)
+    {
+        return;
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
+void parseType()
+{
+    //38: ⟨type⟩ → Int
+    if (token.type == Int)
+    {
+        checkToken(Int);
+    }
+    //39: ⟨type⟩ → Double
+    else if (token.type == Double)
+    {
+        checkToken(Double);
+    }
+    //40: ⟨type⟩ → String
+    else if (token.type == String)
+    {
+        checkToken(String);
+    }
+    //41: ⟨type⟩ → Unit
+    else if (token.type == Unit)
+    {
+        checkToken(Unit);
+    }
+    //42: ⟨type⟩ → Boolean
+    else if (token.type == Boolean)
+    {
+        checkToken(Boolean);
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
 /*** End of file parser.c ***/
