@@ -385,4 +385,46 @@ void parseStat()
     }
 }
 
+void parseElseChoice()
+{
+    //32: ⟨else_choice⟩ → else ⟨else⟩
+    if (token.type == else)
+    {
+        checkToken(else);
+        parseElse();
+    }
+    //33: ⟨else_choice⟩ → epsilon
+    //Predict(33) = {NL,;}
+    else if (token.type == TOK_EOL || token.type == TOK_SEMICOL)
+    {
+        return;
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
+void parseElse()
+{
+    //34: ⟨else⟩ → ⟨block⟩
+    if (token.type == TOK_EOL)
+    {
+        parseBlock();
+    }
+    //35: ⟨else⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
+    else if (token.type == if)
+    {
+        checkToken(if);
+        //precedence analysis
+        checkToken(then);
+        parseBlock();
+        parseElseChoice();
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
 /*** End of file parser.c ***/
