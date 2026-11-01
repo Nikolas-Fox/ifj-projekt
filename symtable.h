@@ -114,6 +114,16 @@ SymbolData *symtableInsertVal(Symtable *sTable, char *name, DataType dType, bool
  */
 SymbolData *symtableInsertFunction(Symtable *sTable, char *name, DataType returnType, bool isDefined);
 
+
+
+/**
+ * @brief Insert parameters of the function
+ * 
+ * @param funcSymbol Pointer to the function
+ * @param paramName name of the parameter
+ * @param paramType Type of the param
+ * @return true/false
+ */
 bool symtableAddParam(SymbolData *funcSymbol, char *paramName, DataType paramType);
 
 
