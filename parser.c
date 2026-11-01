@@ -138,4 +138,27 @@ void parseDefinition()
     }
 }
 
+void parseDefBody()
+{
+    //⟨def_body⟩ → ⟨block⟩
+    //Predict(6) = {NL}
+    if (token.type == TOK_EOL)
+    {
+        parseBlock();
+    }
+    //⟨def_body⟩ → ⟨stat⟩⟨oneline⟩NL
+    else if (token.type == id || token.type == int || token.type == double || token.type == string || token.type == ! ||
+        token.type == TOK_LPAR || token.type == true || token.type == false || token.type == val || token.type == var ||
+        token.type == if || token.type == while || token.type == return)
+    {
+        parseStat();
+        parseOneline();
+        checkToken(TOK_EOL);
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
 /*** End of file parser.c ***/
