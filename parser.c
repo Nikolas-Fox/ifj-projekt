@@ -126,7 +126,7 @@ void parseDefinition()
         parseDefBlock();
         parseDefinition();
     }
-    //⟨definition⟩ → ε
+    //⟨definition⟩ → epsilon
     //Predict(5) = {EOF}
     else if (token.type == TOK_EOF)
     {
@@ -154,6 +154,41 @@ void parseDefBody()
         parseStat();
         parseOneline();
         checkToken(TOK_EOL);
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
+void parseDefBlock()
+{
+    //⟨def_block⟩ → NL INDENT ⟨extension_def⟩NL DEDENT
+    checkToken(TOK_EOL);
+    checkToken(TOK_INDENT);
+    parseExtensionDef();
+    checkToken(TOK_EOL);
+    checkToken(TOK_DEDENT);
+}
+
+void parseExtensionDef()
+{
+    //⟨extension_def⟩ → def id ⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨extension_def⟩
+    if (token.type == def)
+    {
+        checkToken(def);
+        checkToken(id);
+        parseLop();
+        parseRetType();
+        checkToken(TOK_EQ);
+        parseDefBody();
+        parseExtensionDef();
+    }
+    //⟨extension_def⟩ → epsilon
+    //Predict(10) = {NL}
+    else if (token.type == TOK_EOL)
+    {
+        return;
     }
     else
     {
