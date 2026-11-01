@@ -57,6 +57,18 @@ static const KeywordPair keywords[] = {
     {"String", KW_STRING}, {"Unit", KW_UNIT},
 };
 
+// Vrátí řádek tabulky pro dané slovo, nebo NULL, pokud to není klíčové slovo
+static const KeywordPair *findKeyword(const char *word) {
+    size_t count = sizeof keywords / sizeof keywords[0];
+ 
+    for (size_t index = 0; index < count; index++) {
+        if (strcmp(word, keywords[index].name) == 0) {
+            return &keywords[index];
+        }
+    }
+    return NULL;
+}
+
 static Token makeToken(TokenType type, char *str) {
     Token tok = {0};
     tok.type = type;
@@ -128,6 +140,24 @@ Token getToken(void) {
                     lex_error("samotne podtrzitko neni identifikator");
                 }
                 break;
+
+                case ST_IDENTIF:
+                    if (isalnum(character) || character == '_') {
+                        buf_add(character);
+                    } 
+                    else {
+                        ungetc(character, stdin);  // znak už nepatří k identifikátoru
+                        TokenType type = ident_type(buf);
+                        
+                        const KeywordPair *pair = findKeyword(buf);
+                        if (pair != NULL) {
+                            Token token = makeToken(TOK_KEYWORD, NULL);
+                            token.kw = pair->kw;
+                            return token;
+                        }
+                        return makeToken(TOK_IDENT, buf_copy());
+                    }
+                    break;
         }
     }
 }
