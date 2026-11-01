@@ -226,4 +226,47 @@ void parseBlock()
     checkToken(TOK_DEDENT);
 }
 
+void parseOneline()
+{
+    //14: ⟨oneline⟩ → ;⟨oneline_end⟩
+    if (token.type == TOK_SEMICOL)
+    {
+        checkToken(TOK_SEMICOL);
+        parseOnelineEnd();
+    }
+    //15: ⟨oneline⟩ → epsilon
+    //Predict(15) = {NL}
+    else if (token.type == TOK_EOL)
+    {
+        return;
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
+void parseOnelineEnd()
+{
+    //16: ⟨oneline_end⟩ → epsilon
+    //Predict(16) = {NL}
+    if (token.type == TOK_EOL)
+    {
+        return;
+
+    }
+    //17: ⟨oneline_end⟩ → ⟨stat⟩⟨oneline⟩
+    else if (token.type == id || token.type == int || token.type == double || token.type == string || token.type == ! ||
+        token.type == TOK_LPAR || token.type == true || token.type == false || token.type == val || token.type == var ||
+        token.type == if || token.type == while || token.type == return)
+    {
+        parseStat();
+        parseOneline();
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
 /*** End of file parser.c ***/
