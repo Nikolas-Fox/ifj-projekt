@@ -1,3 +1,23 @@
+/******************************************************************************
+ * Project:      Implementace překladače imperativního jazyka IFJ26
+ * Package:      Symbol table
+ * File:         symtable.c
+ * Date:         1. 11. 2026
+ * Last change:  1. 11. 2026
+ * Authors:      xpovala00
+ *
+ * Description:  Implementation of the symbol table as a stack of hash tables,
+ *               one per scope.
+ *****************************************************************************/
+/**
+* @file symtable.c
+*
+* @brief Implementation of the symbol table
+* @author xpovala00
+*/
+
+
+
 #include "symtable.h"
 #include "hashtable.h"
 #include <stdbool.h>

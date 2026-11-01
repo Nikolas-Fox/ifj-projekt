@@ -1,3 +1,21 @@
+/******************************************************************************
+ * Project:      Implementace překladače imperativního jazyka IFJ26
+ * Package:      Symbol table
+ * File:         symtable.h
+ * Date:         1. 11. 2026
+ * Last change:  1. 11. 2026
+ * Authors:      xpovala00 
+ *
+ * Description:  Header file of the symbol table (stack of scopes): symbol
+ *               data types and the public interface.
+ *****************************************************************************/
+/**
+* @file symtable.h
+*
+* @brief Header file of the symbol table
+* @author xpovala00
+*/
+
 #ifndef SYMTABLE_H
 #define SYMTABLE_H
 

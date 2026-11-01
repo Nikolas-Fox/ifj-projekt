@@ -1,3 +1,23 @@
+/******************************************************************************
+ * Project:      Implementace překladače imperativního jazyka IFJ26
+ * Package:      Symbol table
+ * File:         hashtable.c
+ * Date:         1. 11. 2026
+ * Last change:  1. 11. 2026
+ * Authors:      xpovala00
+ *
+ * Description:  Implementation of the hash table with open
+ *               addressing and linear probing, including the DJB2 hash
+ *               function.
+ *****************************************************************************/
+/**
+* @file hashtable.c
+*
+* @brief Implementation of the hash table 
+* @author xpovala00
+*/
+
+
 #include "hashtable.h"
 #include <stdbool.h>
 #include <stdio.h>
