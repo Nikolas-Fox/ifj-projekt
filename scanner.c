@@ -15,6 +15,16 @@ typedef enum {
 
 static int line = 1;
 
+//Buffer for the lexeme text (fixed size for now, dynamic later)
+#define BUF_MAX 256
+static char buf[BUF_MAX];
+static int buf_len = 0;
+
+static void buf_reset(void) {
+    buf_len = 0;
+    buf[0] = '\0';
+}
+
 typedef struct {
     const char *name;
     Keyword kw;
