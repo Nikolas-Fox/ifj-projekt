@@ -330,4 +330,59 @@ void parseStListNL()
     }
 }
 
+void parseStat()
+{
+    //26: ⟨stat⟩ → ⟨expression⟩
+    if (token.type == id || token.type == int || token.type == double || token.type == string || token.type == ! ||
+        token.type == TOK_LPAR || token.type == true || token.type == false)
+    {
+        //precedence analysis
+    }
+    //27: ⟨stat⟩ → val id⟨ret_type⟩ = ⟨expression⟩
+    else if (token.type == val)
+    {
+        checkToken(val);
+        checkToken(id);
+        parseRetType();
+        checkToken(TOK_EQ);
+        //precedence analysis
+    }
+    //28: ⟨stat⟩ → var id⟨ret_type⟩ = ⟨expression⟩
+    else if (token.type == var)
+    {
+        checkToken(var);
+        checkToken(id);
+        parseRetType();
+        checkToken(TOK_EQ);
+        //precedence analysis
+    }
+    //29: ⟨stat⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
+    else if (token.type == if)
+    {
+        checkToken(if);
+        //precedence analysis
+        checkToken(then);
+        parseBlock();
+        parseElseChoice();
+    }
+    //30: ⟨stat⟩ → return⟨return⟩
+    else if (token.type == return)
+    {
+        checkToken(return);
+        parseReturn();
+    }
+    //31: ⟨stat⟩ → while ⟨expression⟩ do ⟨block⟩
+    else if (token.type == while)
+    {
+        checkToken(while);
+        //precedence analysis
+        checkToken(do);
+        parseBlock();
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
 /*** End of file parser.c ***/
