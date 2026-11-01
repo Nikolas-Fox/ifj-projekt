@@ -1,6 +1,6 @@
 //scanner
 //author: Eliška Opršalová, xoprsae00
-//last change: 26. 10. 2026
+//last change: 1. 11. 2026
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +14,19 @@ typedef enum {
 }States;
 
 static int line = 1;
+
+typedef struct {
+    const char *name;
+    Keyword kw;
+} KeywordPair;
+
+static const KeywordPair keywords[] = {
+    {"def", KW_DEF},     {"val", KW_VAL},       {"var", KW_VAR},
+    {"if", KW_IF},       {"else", KW_ELSE},     {"then", KW_THEN},
+    {"while", KW_WHILE}, {"do", KW_DO},         {"return", KW_RETURN},
+    {"import", KW_IMPORT}, {"Int", KW_INT},     {"Double", KW_DOUBLE},
+    {"String", KW_STRING}, {"Unit", KW_UNIT},
+};
 
 static Token makeToken(TokenType type, char *str) {
     Token tok = {0};
