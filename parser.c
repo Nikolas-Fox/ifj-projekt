@@ -269,4 +269,65 @@ void parseOnelineEnd()
     }
 }
 
+void parseStList()
+{
+    //18: ⟨st_list⟩ →;⟨st_list_semi⟩
+    if (token.type == TOK_SEMICOL)
+    {
+        checkToken(TOK_SEMICOL);
+        parseStListSemi();
+    }
+    //19: ⟨st_list⟩ → NL⟨st_list_NL⟩
+    //20: ⟨st_list⟩ → epsilon
+    //Predict(20) = {NL}
+    else if (token.type = TOK_EOL)
+    {
+        //TODO: lookahead
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
+void parseStListSemi()
+{
+    //21: ⟨st_list_semi⟩ → ⟨stat⟩⟨st_list⟩
+    if (token.type == id || token.type == int || token.type == double || token.type == string || token.type == ! ||
+        token.type == TOK_LPAR || token.type == true || token.type == false || token.type == val || token.type == var ||
+        token.type == if || token.type == while || token.type == return)
+    {
+        parseStat();
+        parseStList();
+    }
+    //22: ⟨st_list_semi⟩ → NL⟨st_list_NL⟩
+    //23: ⟨st_list_semi⟩ → ε
+    //Predict(23) = {NL}
+    else if (token.type = TOK_EOL)
+    {
+        //TODO: lookahead
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
+void parseStListNL()
+{
+    //24: ⟨st_list_NL⟩ → ⟨stat⟩⟨st_list⟩
+    if (token.type == id || token.type == int || token.type == double || token.type == string || token.type == ! ||
+        token.type == TOK_LPAR || token.type == true || token.type == false || token.type == val || token.type == var ||
+        token.type == if || token.type == while || token.type == return)
+    {
+        parseStat();
+        parseStList();
+    }
+    //25: ⟨st_list_NL⟩ → epsilon
+    else if (token.type == TOK_EOL)
+    {
+        return;
+    }
+}
+
 /*** End of file parser.c ***/
