@@ -14,3 +14,12 @@ typedef enum {
 }States;
 
 static int line = 1;
+
+static Token makeToken(TokenType type, char *str) {
+    Token tok = {0};
+    tok.type = type;
+    tok.str = str;
+    tok.line = line;
+    return tok;
+}
+
