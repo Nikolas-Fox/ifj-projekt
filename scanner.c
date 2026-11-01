@@ -118,6 +118,16 @@ Token getToken(void) {
                 exit(1);
 
                 break;
+
+                case ST_UNDERSCORE:
+                if (isalnum(character) || character == '_') {
+                    buf_add(character);
+                    state = ST_IDENTIF;
+                } 
+                else {
+                    lex_error("samotne podtrzitko neni identifikator");
+                }
+                break;
         }
     }
 }
