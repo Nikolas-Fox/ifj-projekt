@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
 #include "scanner.h"
 
 //auromat states
@@ -83,6 +85,21 @@ Token getToken(void) {
                     Token t = makeToken(TOK_EOL, NULL);
                     line++;
                     return t;   //LF is EOL
+                }
+
+                //identifier starting with a letter
+                if (isalpha(character)) {
+                    buf_reset();
+                    buf_add(character);
+                    state = ST_IDENTIF;
+                    break;
+                }
+                //identifier starting with a underscore
+                if (character == '_') {
+                    buf_reset();
+                    buf_add(character);
+                    state = ST_UNDERSCORE;
+                    break;
                 }
 
                 //one character tokens
