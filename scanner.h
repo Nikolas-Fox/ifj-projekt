@@ -29,10 +29,11 @@ typedef enum {
     KW_VAR, KW_WHILE
 }Keyword;
 
-//TO DO: vyřešit provedení struktury
+//TO DO: vyřešit provedení struktury, předává "5"
 typedef struct {
     TokenType type;
     char *str; //identifikátor/řetězec
+    Keyword kw;
     int line;
 }Token;
 
