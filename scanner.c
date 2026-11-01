@@ -6,3 +6,11 @@
 #include <stdlib.h>
 #include "scanner.h"
 
+//auromat states
+typedef enum {
+    ST_START,
+    ST_UNDERSCORE,
+    ST_IDENTIF
+}States;
+
+static int line = 1;
