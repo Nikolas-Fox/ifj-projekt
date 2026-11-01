@@ -196,4 +196,34 @@ void parseExtensionDef()
     }
 }
 
+void parseOptNL()
+{
+    //⟨opt_NL⟩ → NL
+    if (token.type == TOK_EOL)
+    {
+        checkToken(TOK_EOL);
+    }
+    //⟨opt_NL⟩ → epsilon
+    //Predict(12) = {ifj26, ., *, def}
+    else if (token.type == ifj26 || token.type == TOK_DOT || token.type == * || token.type == def)
+    {
+        return;
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
+void parseBlock()
+{
+    //⟨block⟩ → NL INDENT ⟨stat⟩⟨st_list⟩NL DEDENT
+    checkToken(TOK_EOL);
+    checkToken(TOK_INDENT);
+    parseStat();
+    parseStList();
+    checkToken(TOK_EOL);
+    checkToken(TOK_DEDENT);
+}
+
 /*** End of file parser.c ***/
