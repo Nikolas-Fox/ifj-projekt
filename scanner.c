@@ -131,33 +131,33 @@ Token getToken(void) {
 
                 break;
 
-                case ST_UNDERSCORE:
+            case ST_UNDERSCORE:
+            if (isalnum(character) || character == '_') {
+                buf_add(character);
+                state = ST_IDENTIF;
+            } 
+            else {
+                fprintf(stderr, "Lexikalni chyba, samosttatne podtržítko není identifikátor");
+                exit(1);
+            }
+            break;
+
+            case ST_IDENTIF:
                 if (isalnum(character) || character == '_') {
                     buf_add(character);
-                    state = ST_IDENTIF;
                 } 
                 else {
-                    lex_error("samotne podtrzitko neni identifikator");
+                    ungetc(character, stdin);  // znak už nepatří k identifikátoru
+                        
+                    const KeywordPair *pair = findKeyword(buf);
+                    if (pair != NULL) {
+                        Token token = makeToken(TOK_KEYWORD, NULL);
+                        token.kw = pair->kw;
+                        return token;
+                    }
+                    return makeToken(TOK_IDENT, buf_copy());
                 }
                 break;
-
-                case ST_IDENTIF:
-                    if (isalnum(character) || character == '_') {
-                        buf_add(character);
-                    } 
-                    else {
-                        ungetc(character, stdin);  // znak už nepatří k identifikátoru
-                        TokenType type = ident_type(buf);
-                        
-                        const KeywordPair *pair = findKeyword(buf);
-                        if (pair != NULL) {
-                            Token token = makeToken(TOK_KEYWORD, NULL);
-                            token.kw = pair->kw;
-                            return token;
-                        }
-                        return makeToken(TOK_IDENT, buf_copy());
-                    }
-                    break;
         }
     }
 }
