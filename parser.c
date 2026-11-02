@@ -35,19 +35,16 @@ typedef enum {
     TOK_DOT, TOK_AT,
 
     //tokens for extentions
-    TOK_AND, TOK_OR, TOK_NOT, TOK_PLUSPLUS
-}TokenType;
+    TOK_AND, TOK_OR, TOK_NOT, TOK_PLUSPLUS,
 
-typedef enum {
-    KW_DEF, KW_DO, KW_DOUBLE, KW_ELSE, KW_IF, KW_IMPORT,
-    KW_INT, KW_RETURN, KW_STRING, KW_THEN, KW_UNIT, KW_VAL,
-    KW_VAR, KW_WHILE
-}Keyword;
+    TOK_KW_DEF, TOK_KW_DO, TOK_KW_DOUBLE, TOK_KW_ELSE, TOK_KW_IF, TOK_KW_IMPORT,
+    TOK_KW_INT, TOK_KW_RETURN, TOK_KW_STRING, TOK_KW_THEN, TOK_KW_UNIT, TOK_KW_VAL,
+    TOK_KW_VAR, TOK_KW_WHILE, TOK_KW_EXTENSION, TOK_KW_BOOLEAN
+}TokenType;
 
 typedef struct {
     TokenType type;
     char *str; //identifikátor/řetězec
-    Keyword kw;
     int line;
 }Token;
 
@@ -77,17 +74,18 @@ void checkToken(TokenType expected)
 }
 
 //TODO: integrate with lexer
+//TODO: true, false, ifj26, @main
 void parseProg()
 {
     //⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
     token = getToken();
-    checkToken(import);
+    checkToken(TOK_KW_IMPORT);
     parseOptNL();
-    checkToken(ifj26);
+    checkToken(ifj26); //TODO ifj26
     parseOptNL();
     checkToken(TOK_DOT); //.
     parseOptNL();
-    checkToken(*);
+    checkToken(TOK_MUL);
     checkToken(TOK_EOL); //NL
     parseDefinition();
     checkToken(TOK_EOF); //EOF
@@ -100,21 +98,21 @@ void parseDefinition()
     {
         checkToken(@main);
         parseOptNL();
-        checkToken(def);
-        checkToken(id);
+        checkToken(TOK_KW_DEF);
+        checkToken(TOK_IDENT);
         checkToken(TOK_LPAR); //(
         checkToken(TOK_RPAR); //)
         checkToken(TOK_COLON); //:
-        checkToken(Unit);
+        checkToken(TOK_KW_UNIT);
         checkToken(TOK_EQ); //=
         parseDefBody();
         parseDefinition();
     }
     //⟨definition⟩ → def id⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨definition⟩
-    else if (token.type == def)
+    else if (token.type == TOK_KW_DEF)
     {
-        checkToken(def);
-        checkToken(id);
+        checkToken(TOK_KW_DEF);
+        checkToken(TOK_IDENT);
         parseLop();
         parseRetType();
         checkToken(TOK_EQ); //=
@@ -122,11 +120,11 @@ void parseDefinition()
         parseDefinition();
     }
     //⟨definition⟩ → extension(id : ⟨type⟩)⟨def_block⟩⟨definition⟩
-    else if (token.type == extension)
+    else if (token.type == TOK_KW_EXTENSION) //extension
     {
-        checkToken(extension);
+        checkToken(TOK_KW_EXTENSION);
         checkToken(TOK_LPAR); //(
-        checkToken(id);
+        checkToken(TOK_IDENT);
         checkToken(TOK_COLON); //:
         parseType();
         checkToken(TOK_RPAR); //)
@@ -154,9 +152,10 @@ void parseDefBody()
         parseBlock();
     }
     //⟨def_body⟩ → ⟨stat⟩⟨oneline⟩NL
-    else if (token.type == id || token.type == int || token.type == double || token.type == string || token.type == ! ||
-        token.type == TOK_LPAR || token.type == true || token.type == false || token.type == val || token.type == var ||
-        token.type == if || token.type == while || token.type == return)
+    else if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
+        token.type == TOK_KW_STRING || token.type == TOK_NEQ || token.type == TOK_LPAR || /*token.type == true ||*/
+        /*token.type == false ||*/ token.type == TOK_KW_VAL || token.type == TOK_KW_VAR ||
+        token.type == TOK_KW_IF || token.type == TOK_KW_WHILE || token.type == TOK_KW_RETURN) //TODO true, false
     {
         parseStat();
         parseOneline();
@@ -181,10 +180,10 @@ void parseDefBlock()
 void parseExtensionDef()
 {
     //⟨extension_def⟩ → def id ⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨extension_def⟩
-    if (token.type == def)
+    if (token.type == TOK_KW_DEF)
     {
-        checkToken(def);
-        checkToken(id);
+        checkToken(TOK_KW_DEF);
+        checkToken(TOK_IDENT);
         parseLop();
         parseRetType();
         checkToken(TOK_EQ);
@@ -212,7 +211,7 @@ void parseOptNL()
     }
     //⟨opt_NL⟩ → epsilon
     //Predict(12) = {ifj26, ., *, def}
-    else if (token.type == ifj26 || token.type == TOK_DOT || token.type == * || token.type == def)
+    else if (token.type == ifj26 || token.type == TOK_DOT || token.type == TOK_MUL || token.type = TOK_KW_DEF)
     {
         return;
     }
@@ -263,9 +262,10 @@ void parseOnelineEnd()
 
     }
     //17: ⟨oneline_end⟩ → ⟨stat⟩⟨oneline⟩
-    else if (token.type == id || token.type == int || token.type == double || token.type == string || token.type == ! ||
-        token.type == TOK_LPAR || token.type == true || token.type == false || token.type == val || token.type == var ||
-        token.type == if || token.type == while || token.type == return)
+    else if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
+        token.type == TOK_KW_STRING || token.type == TOK_NEQ || token.type == TOK_LPAR || /*token.type == true ||*/
+        /*token.type == false ||*/ token.type == TOK_KW_VAL || token.type == TOK_KW_VAR ||
+        token.type == TOK_KW_IF || token.type == TOK_KW_WHILE || token.type == TOK_KW_RETURN) //TODO true, false
     {
         parseStat();
         parseOneline();
@@ -300,9 +300,10 @@ void parseStList()
 void parseStListSemi()
 {
     //21: ⟨st_list_semi⟩ → ⟨stat⟩⟨st_list⟩
-    if (token.type == id || token.type == int || token.type == double || token.type == string || token.type == ! ||
-        token.type == TOK_LPAR || token.type == true || token.type == false || token.type == val || token.type == var ||
-        token.type == if || token.type == while || token.type == return)
+    if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
+        token.type == TOK_KW_STRING || token.type == TOK_NEQ || token.type == TOK_LPAR || /*token.type == true ||*/
+        /*token.type == false ||*/ token.type == TOK_KW_VAL || token.type == TOK_KW_VAR ||
+        token.type == TOK_KW_IF || token.type == TOK_KW_WHILE || token.type == TOK_KW_RETURN) //TODO true, false
     {
         parseStat();
         parseStList();
@@ -310,7 +311,7 @@ void parseStListSemi()
     //22: ⟨st_list_semi⟩ → NL⟨st_list_NL⟩
     //23: ⟨st_list_semi⟩ → ε
     //Predict(23) = {NL}
-    else if (token.type = TOK_EOL)
+    else if (token.type == TOK_EOL)
     {
         //TODO: lookahead
     }
@@ -323,9 +324,10 @@ void parseStListSemi()
 void parseStListNL()
 {
     //24: ⟨st_list_NL⟩ → ⟨stat⟩⟨st_list⟩
-    if (token.type == id || token.type == int || token.type == double || token.type == string || token.type == ! ||
-        token.type == TOK_LPAR || token.type == true || token.type == false || token.type == val || token.type == var ||
-        token.type == if || token.type == while || token.type == return)
+    if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
+        token.type == TOK_KW_STRING || token.type == TOK_NEQ || token.type == TOK_LPAR || /*token.type == true ||*/
+        /*token.type == false ||*/ token.type == TOK_KW_VAL || token.type == TOK_KW_VAR ||
+        token.type == TOK_KW_IF || token.type == TOK_KW_WHILE || token.type == TOK_KW_RETURN) //TODO true, false
     {
         parseStat();
         parseStList();
@@ -340,50 +342,51 @@ void parseStListNL()
 void parseStat()
 {
     //26: ⟨stat⟩ → ⟨expression⟩
-    if (token.type == id || token.type == int || token.type == double || token.type == string || token.type == ! ||
-        token.type == TOK_LPAR || token.type == true || token.type == false)
+    if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
+        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR ||
+        token.type == true || token.type == false)
     {
         //precedence analysis
     }
     //27: ⟨stat⟩ → val id⟨ret_type⟩ = ⟨expression⟩
-    else if (token.type == val)
+    else if (token.type == TOK_KW_VAL)
     {
-        checkToken(val);
-        checkToken(id);
+        checkToken(TOK_KW_VAL);
+        checkToken(TOK_IDENT);
         parseRetType();
         checkToken(TOK_EQ);
         //precedence analysis
     }
     //28: ⟨stat⟩ → var id⟨ret_type⟩ = ⟨expression⟩
-    else if (token.type == var)
+    else if (token.type == TOK_KW_VAR)
     {
-        checkToken(var);
-        checkToken(id);
+        checkToken(TOK_KW_VAR);
+        checkToken(TOK_IDENT);
         parseRetType();
         checkToken(TOK_EQ);
         //precedence analysis
     }
     //29: ⟨stat⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
-    else if (token.type == if)
+    else if (token.type == TOK_KW_IF)
     {
-        checkToken(if);
+        checkToken(TOK_KW_IF);
         //precedence analysis
-        checkToken(then);
+        checkToken(TOK_KW_THEN);
         parseBlock();
         parseElseChoice();
     }
     //30: ⟨stat⟩ → return⟨return⟩
-    else if (token.type == return)
+    else if (token.type == TOK_KW_RETURN)
     {
-        checkToken(return);
+        checkToken(TOK_KW_RETURN);
         parseReturn();
     }
     //31: ⟨stat⟩ → while ⟨expression⟩ do ⟨block⟩
-    else if (token.type == while)
+    else if (token.type == TOK_KW_WHILE)
     {
-        checkToken(while);
+        checkToken(TOK_KW_WHILE);
         //precedence analysis
-        checkToken(do);
+        checkToken(TOK_KW_DO);
         parseBlock();
     }
     else
@@ -395,9 +398,9 @@ void parseStat()
 void parseElseChoice()
 {
     //32: ⟨else_choice⟩ → else ⟨else⟩
-    if (token.type == else)
+    if (token.type == TOK_KW_ELSE)
     {
-        checkToken(else);
+        checkToken(TOK_KW_ELSE);
         parseElse();
     }
     //33: ⟨else_choice⟩ → epsilon
@@ -420,11 +423,11 @@ void parseElse()
         parseBlock();
     }
     //35: ⟨else⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
-    else if (token.type == if)
+    else if (token.type == TOK_KW_IF)
     {
-        checkToken(if);
+        checkToken(TOK_KW_IF);
         //precedence analysis
-        checkToken(then);
+        checkToken(TOK_KW_THEN);
         parseBlock();
         parseElseChoice();
     }
@@ -457,29 +460,29 @@ void parseRetType()
 void parseType()
 {
     //38: ⟨type⟩ → Int
-    if (token.type == Int)
+    if (token.type == TOK_KW_INT)
     {
-        checkToken(Int);
+        checkToken(TOK_KW_INT);
     }
     //39: ⟨type⟩ → Double
-    else if (token.type == Double)
+    else if (token.type == TOK_KW_DOUBLE)
     {
-        checkToken(Double);
+        checkToken(TOK_KW_DOUBLE);
     }
     //40: ⟨type⟩ → String
-    else if (token.type == String)
+    else if (token.type == TOK_KW_STRING)
     {
-        checkToken(String);
+        checkToken(TOK_KW_STRING);
     }
     //41: ⟨type⟩ → Unit
-    else if (token.type == Unit)
+    else if (token.type == TOK_KW_UNIT)
     {
-        checkToken(Unit);
+        checkToken(TOK_KW_UNIT);
     }
     //42: ⟨type⟩ → Boolean
-    else if (token.type == Boolean)
+    else if (token.type == TOK_KW_BOOLEAN)
     {
-        checkToken(Boolean);
+        checkToken(TOK_KW_BOOLEAN);
     }
     else
     {
@@ -490,8 +493,9 @@ void parseType()
 void parseReturn()
 {
     //43: ⟨return⟩ → ⟨expression⟩
-    if (token.type == id || token.type == int || token.type == double || token.type == string || token.type == ! ||
-        token.type == TOK_LPAR || token.type == true || token.type == false)
+    if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
+        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR ||
+        token.type == true || token.type == false)
     {
         //precedence analysis
     }
@@ -510,9 +514,9 @@ void parseReturn()
 void parseParamList()
 {
     //45: ⟨param_list⟩ → id : ⟨type⟩⟨param_end⟩
-    if (token.type == id)
+    if (token.type == TOK_IDENT)
     {
-        checkToken(id);
+        checkToken(TOK_IDENT);
         checkToken(TOK_COLON);
         parseType();
         parseParamEnd();
@@ -574,8 +578,9 @@ void parseLop()
 void parseArgList()
 {
     //51: ⟨arg_list⟩ → ⟨expression⟩⟨arg_end⟩
-    if (token.type == id || token.type == int || token.type == double || token.type == string || token.type == ! ||
-        token.type == TOK_LPAR || token.type == true || token.type == false)
+    if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
+        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR ||
+        token.type == true || token.type == false)
     {
         //precedence analysis
         parseArgEnd();
