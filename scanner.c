@@ -118,7 +118,11 @@ Token getToken(void) {
                     break;
                 }
 
-                
+                //operators that may have a second character
+                if (character == '<') { state = ST_LESS; break; }
+                if (character == '>') { state = ST_GRATER; break; }
+                if (character == '=') { state = ST_EQ; break; }
+                if (character == '!') { state = ST_NEQ; break; }
 
                 //one character tokens
                 switch (character) {
