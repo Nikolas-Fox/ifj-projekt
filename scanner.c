@@ -12,9 +12,9 @@
 typedef enum {
     ST_START,
     ST_UNDERSCORE,
-    ST_IDENTIF,
+    ST_ID,
     ST_LESS,
-    ST_GRATER,
+    ST_GREATER,
     ST_EQ,
     ST_NEQ
 }States;
@@ -107,7 +107,7 @@ Token getToken(void) {
                 if (isalpha(character)) {
                     buf_reset();
                     buf_add(character);
-                    state = ST_IDENTIF;
+                    state = ST_ID;
                     break;
                 }
                 //identifier starting with a underscore
@@ -120,7 +120,7 @@ Token getToken(void) {
 
                 //operators that may have a second character
                 if (character == '<') { state = ST_LESS; break; }
-                if (character == '>') { state = ST_GRATER; break; }
+                if (character == '>') { state = ST_GREATER; break; }
                 if (character == '=') { state = ST_EQ; break; }
                 if (character == '!') { state = ST_NEQ; break; }
 
@@ -144,7 +144,7 @@ Token getToken(void) {
             case ST_UNDERSCORE:
             if (isalnum(character) || character == '_') {
                 buf_add(character);
-                state = ST_IDENTIF;
+                state = ST_ID;
             } 
             else {
                 fprintf(stderr, "Lexikalni chyba, samosttatne podtržítko není identifikátor");
@@ -152,7 +152,7 @@ Token getToken(void) {
             }
             break;
 
-            case ST_IDENTIF:
+            case ST_ID:
                 if (isalnum(character) || character == '_') {
                     buf_add(character);
                 } 
@@ -165,7 +165,7 @@ Token getToken(void) {
                         token.kw = pair->kw;
                         return token;
                     }
-                    return makeToken(TOK_IDENT, buf_copy());
+                    return makeToken(TOK_ID, buf_copy());
                 }
                 break;
         }
