@@ -38,9 +38,16 @@ typedef enum {
     TOK_AND, TOK_OR, TOK_NOT, TOK_PLUSPLUS
 }TokenType;
 
+typedef enum {
+    KW_DEF, KW_DO, KW_DOUBLE, KW_ELSE, KW_IF, KW_IMPORT,
+    KW_INT, KW_RETURN, KW_STRING, KW_THEN, KW_UNIT, KW_VAL,
+    KW_VAR, KW_WHILE
+}Keyword;
+
 typedef struct {
     TokenType type;
     char *str; //identifikátor/řetězec
+    Keyword kw;
     int line;
 }Token;
 
