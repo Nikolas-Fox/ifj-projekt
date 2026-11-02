@@ -12,7 +12,11 @@
 typedef enum {
     ST_START,
     ST_UNDERSCORE,
-    ST_IDENTIF
+    ST_IDENTIF,
+    ST_LESS,
+    ST_GRATER,
+    ST_EQ,
+    ST_NEQ
 }States;
 
 static int line = 1;
@@ -113,6 +117,8 @@ Token getToken(void) {
                     state = ST_UNDERSCORE;
                     break;
                 }
+
+                
 
                 //one character tokens
                 switch (character) {
