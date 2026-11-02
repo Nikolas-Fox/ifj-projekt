@@ -3,16 +3,16 @@
 * Package:		parser
 * File:			parser.c
 * Date:			1.11.2026
-* Last change:	1.11.2026
+* Last change:	2.11.2026
 * Authors: 		xholael00
 *
-* Description: 
+* Description: Implementation of parser - recursive descent and precedence analysis.
 *
 *******************************************************************************/
 /**
 * @file parser.c
 *
-* @brief 
+* @brief Implementation of parser
 * @author xholael00
 */
 #include <stdio.h>

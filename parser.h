@@ -6,13 +6,14 @@
 * Last change:	2.11.2026
 * Authors: 		xholael00
 *
-* Description: 
+* Description: Header file containing parser logic - recursive descent and
+*              precedence analysis logic.
 *
 *******************************************************************************/
 /**
 * @file parser.h
 *
-* @brief 
+* @brief Parser header file
 * @author xholael00
 */
 
