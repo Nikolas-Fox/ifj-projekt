@@ -116,11 +116,11 @@ void parseProg(ParsedToken *p)
 {
     //⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
     checkToken(p, TOK_KW_IMPORT);
-    parseOptNL();
+    parseOptNL(p);
     checkStrToken(p, TOK_IDENT, "ifj26");
-    parseOptNL();
+    parseOptNL(p);
     checkToken(p, TOK_DOT);
-    parseOptNL();
+    parseOptNL(p);
     checkToken(p, TOK_MUL);
     checkToken(p, TOK_EOL);
     parseDefinition(p);
@@ -133,7 +133,7 @@ void parseDefinition(ParsedToken *p)
     if (p->currentToken.type == TOK_AT_MAIN)
     {
         checkToken(p, TOK_AT_MAIN);
-        parseOptNL();
+        parseOptNL(p);
         checkToken(p, TOK_KW_DEF);
         checkToken(p, TOK_IDENT);
         checkToken(p, TOK_LPAR);
@@ -141,7 +141,7 @@ void parseDefinition(ParsedToken *p)
         checkToken(p, TOK_COLON);
         checkToken(p, TOK_KW_UNIT);
         checkToken(p, TOK_EQ);
-        parseDefBody();
+        parseDefBody(p);
         parseDefinition(p);
     }
     //⟨definition⟩ → def id⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨definition⟩
@@ -149,10 +149,10 @@ void parseDefinition(ParsedToken *p)
     {
         checkToken(p, TOK_KW_DEF);
         checkToken(p, TOK_IDENT);
-        parseLop();
-        parseRetType();
+        parseLop(p);
+        parseRetType(p);
         checkToken(p, TOK_EQ);
-        parseDefBody();
+        parseDefBody(p);
         parseDefinition(p);
     }
     //⟨definition⟩ → extension(id : ⟨type⟩)⟨def_block⟩⟨definition⟩
@@ -162,9 +162,9 @@ void parseDefinition(ParsedToken *p)
         checkToken(p, TOK_LPAR);
         checkToken(p, TOK_IDENT);
         checkToken(p, TOK_COLON);
-        parseType();
+        parseType(p);
         checkToken(p, TOK_RPAR);
-        parseDefBlock();
+        parseDefBlock(p);
         parseDefinition(p);
     }
     //⟨definition⟩ → epsilon
