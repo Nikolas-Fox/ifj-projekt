@@ -520,13 +520,13 @@ void parseType(ParsedToken *p)
 void parseReturn(ParsedToken *p)
 {
     //43: ⟨return⟩ → ⟨expression⟩
-    if (startsExpression(token.type))
+    if (startsExpression(p->currentToken.type))
     {
         //precedence analysis
     }
     //44: ⟨return⟩ → epsilon
     //Predict(44) = {NL, ;}
-    else if (token.type == TOK_EOL || token.type == TOK_SEMICOL)
+    else if (p->currentToken.type == TOK_EOL || p->currentToken.type == TOK_SEMICOL)
     {
         return;
     }
@@ -539,16 +539,16 @@ void parseReturn(ParsedToken *p)
 void parseParamList(ParsedToken *p)
 {
     //45: ⟨param_list⟩ → id : ⟨type⟩⟨param_end⟩
-    if (token.type == TOK_IDENT)
+    if (p->currentToken.type == TOK_IDENT)
     {
-        checkToken(TOK_IDENT);
-        checkToken(TOK_COLON);
-        parseType();
-        parseParamEnd();
+        checkToken(p, TOK_IDENT);
+        checkToken(p, TOK_COLON);
+        parseType(p);
+        parseParamEnd(p);
     }
     //46: ⟨param_list⟩ → epsilon
     //Predict(46) = {)}
-    else if (token.type == TOK_RPAR)
+    else if (p->currentToken.type == TOK_RPAR)
     {
         return;
     }
@@ -561,14 +561,14 @@ void parseParamList(ParsedToken *p)
 void parseParamEnd(ParsedToken *p)
 {
     //47: ⟨param_end⟩ →,⟨param_list⟩
-    if (token.type == TOK_COMMA)
+    if (p->currentToken.type == TOK_COMMA)
     {
-        checkToken(TOK_COMMA);
-        parseParamList();
+        checkToken(p, TOK_COMMA);
+        parseParamList(p);
     }
     //48: ⟨param_end⟩ → epsilon
     //Predict(48) = {)}
-    else if (token.type == TOK_RPAR)
+    else if (p->currentToken.type == TOK_RPAR)
     {
         return;
     }
@@ -581,16 +581,16 @@ void parseParamEnd(ParsedToken *p)
 void parseLop(ParsedToken *p)
 {
     //49: ⟨lop⟩ → (⟨param_list⟩)⟨lop⟩
-    if (token.type == TOK_LPAR)
+    if (p->currentToken.type == TOK_LPAR)
     {
-        checkToken(TOK_LPAR);
-        parseParamList();
-        checkToken(TOK_RPAR);
-        parseLop();
+        checkToken(p, TOK_LPAR);
+        parseParamList(p);
+        checkToken(p, TOK_RPAR);
+        parseLop(p);
     }
     //50: ⟨lop⟩ → epsilon
     //Predict(50) = {:, =}
-    else if (token.type == TOK_COLON || token.type == TOK_EQ)
+    else if (p->currentToken.type == TOK_COLON || p->currentToken.type == TOK_EQ)
     {
         return;
     }
@@ -603,14 +603,14 @@ void parseLop(ParsedToken *p)
 void parseArgList(ParsedToken *p)
 {
     //51: ⟨arg_list⟩ → ⟨expression⟩⟨arg_end⟩
-    if (startsExpression(token.type))
+    if (startsExpression(p->currentToken.type))
     {
         //precedence analysis
-        parseArgEnd();
+        parseArgEnd(p);
     }
     //52: ⟨arg_list⟩ → epsilon
     //Predict(52) = {)}
-    else if (token.type == TOK_RPAR)
+    else if (p->currentToken.type == TOK_RPAR)
     {
         return;
     }
@@ -623,14 +623,14 @@ void parseArgList(ParsedToken *p)
 void parseArgEnd(ParsedToken *p)
 {
     //53: ⟨arg_end⟩ →,⟨arg_list⟩
-    if (token.type == TOK_COMMA)
+    if (p->currentToken.type == TOK_COMMA)
     {
-        checkToken(TOK_COMMA);
-        parseArgList();
+        checkToken(p, TOK_COMMA);
+        parseArgList(p);
     }
     //54: ⟨arg_end⟩ → epsilon
     //Predict(54) = {)}
-    else if (token.type == TOK_RPAR)
+    else if (p->currentToken.type == TOK_RPAR)
     {
         return;
     }
