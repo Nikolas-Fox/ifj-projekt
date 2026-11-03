@@ -50,27 +50,27 @@ static char *buf_copy(void) {
 
 typedef struct {
     const char *name;
-    Keyword kw;
+    TokenType kw;
 } KeywordPair;
 
 static const KeywordPair keywords[] = {
-    {"def", KW_DEF},     {"val", KW_VAL},       {"var", KW_VAR},
-    {"if", KW_IF},       {"else", KW_ELSE},     {"then", KW_THEN},
-    {"while", KW_WHILE}, {"do", KW_DO},         {"return", KW_RETURN},
-    {"import", KW_IMPORT}, {"Int", KW_INT},     {"Double", KW_DOUBLE},
-    {"String", KW_STRING}, {"Unit", KW_UNIT},
+    {"def", TOK_KW_DEF},     {"val", TOK_KW_VAL},       {"var", TOK_KW_VAR},
+    {"if", TOK_KW_IF},       {"else", TOK_KW_ELSE},     {"then", TOK_KW_THEN},
+    {"while", TOK_KW_WHILE}, {"do", TOK_KW_DO},         {"return", TOK_KW_RETURN},
+    {"import", TOK_KW_IMPORT}, {"Int", TOK_KW_INT},     {"Double", TOK_KW_DOUBLE},
+    {"String", TOK_KW_STRING}, {"Unit", TOK_KW_UNIT},
 };
 
 // Vrátí řádek tabulky pro dané slovo, nebo NULL, pokud to není klíčové slovo
-static const KeywordPair *findKeyword(const char *word) {
+static TokenType findKeyword(const char *word) {
     size_t count = sizeof keywords / sizeof keywords[0];
- 
+
     for (size_t index = 0; index < count; index++) {
         if (strcmp(word, keywords[index].name) == 0) {
-            return &keywords[index];
+            return keywords[index].kw;
         }
     }
-    return NULL;
+    return TOK_ID;
 }
 
 static Token makeToken(TokenType type, char *str) {
@@ -155,17 +155,14 @@ Token getToken(void) {
             case ST_ID:
                 if (isalnum(character) || character == '_') {
                     buf_add(character);
-                } 
-                else {
+                } else {
                     ungetc(character, stdin);  // znak už nepatří k identifikátoru
-                        
-                    const KeywordPair *pair = findKeyword(buf);
-                    if (pair != NULL) {
-                        Token token = makeToken(TOK_KEYWORD, NULL);
-                        token.kw = pair->kw;
-                        return token;
+
+                    TokenType type = findKeyword(buf);
+                    if (type == TOK_ID) {
+                        return makeToken(TOK_ID, buf_copy());
                     }
-                    return makeToken(TOK_ID, buf_copy());
+                    return makeToken(type, NULL);
                 }
                 break;
         }

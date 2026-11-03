@@ -20,20 +20,18 @@ typedef enum {
     TOK_DOT, TOK_AT,
 
     //tokens for extentions
-    TOK_AND, TOK_OR, TOK_NOT, TOK_PLUSPLUS
-}TokenType;
+    TOK_AND, TOK_OR, TOK_NOT, TOK_PLUSPLUS,
 
-typedef enum {
-    KW_DEF, KW_DO, KW_DOUBLE, KW_ELSE, KW_IF, KW_IMPORT,
-    KW_INT, KW_RETURN, KW_STRING, KW_THEN, KW_UNIT, KW_VAL,
-    KW_VAR, KW_WHILE
-}Keyword;
+    //tokens for keywords
+    TOK_KW_DEF, TOK_KW_DO, TOK_KW_DOUBLE, TOK_KW_ELSE, TOK_KW_IF, TOK_KW_IMPORT,
+    TOK_KW_INT, TOK_KW_RETURN, TOK_KW_STRING, TOK_KW_THEN, TOK_KW_UNIT, TOK_KW_VAL,
+    TOK_KW_VAR, TOK_KW_WHILE
+}TokenType;
 
 //TO DO: vyřešit provedení struktury, předává "5"
 typedef struct {
     TokenType type;
     char *str; //identifikátor/řetězec
-    Keyword kw;
     int line;
 }Token;
 
