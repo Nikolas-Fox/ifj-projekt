@@ -235,7 +235,7 @@ void parseExtensionDef(ParsedToken *p)
     }
 }
 
-void parseOptNL()
+void parseOptNL(ParsedToken *p)
 {
     //⟨opt_NL⟩ → NL
     if (token.type == TOK_EOL)
@@ -255,7 +255,7 @@ void parseOptNL()
     }
 }
 
-void parseBlock()
+void parseBlock(ParsedToken *p)
 {
     //⟨block⟩ → NL INDENT ⟨stat⟩⟨st_list⟩NL DEDENT
     checkToken(TOK_EOL);
@@ -266,7 +266,7 @@ void parseBlock()
     checkToken(TOK_DEDENT);
 }
 
-void parseOneline()
+void parseOneline(ParsedToken *p)
 {
     //14: ⟨oneline⟩ → ;⟨oneline_end⟩
     if (token.type == TOK_SEMICOL)
@@ -286,7 +286,7 @@ void parseOneline()
     }
 }
 
-void parseOnelineEnd()
+void parseOnelineEnd(ParsedToken *p)
 {
     //16: ⟨oneline_end⟩ → epsilon
     //Predict(16) = {NL}
@@ -307,7 +307,7 @@ void parseOnelineEnd()
     }
 }
 
-void parseStList()
+void parseStList(ParsedToken *p)
 {
     //18: ⟨st_list⟩ →;⟨st_list_semi⟩
     if (token.type == TOK_SEMICOL)
@@ -328,7 +328,7 @@ void parseStList()
     }
 }
 
-void parseStListSemi()
+void parseStListSemi(ParsedToken *p)
 {
     //21: ⟨st_list_semi⟩ → ⟨stat⟩⟨st_list⟩
     if (startsStat(token.type))
@@ -349,7 +349,7 @@ void parseStListSemi()
     }
 }
 
-void parseStListNL()
+void parseStListNL(ParsedToken *p)
 {
     //24: ⟨st_list_NL⟩ → ⟨stat⟩⟨st_list⟩
     if (startsStat(token.type))
@@ -368,7 +368,7 @@ void parseStListNL()
     }
 }
 
-void parseStat()
+void parseStat(ParsedToken *p)
 {
     //26: ⟨stat⟩ → ⟨expression⟩
     if (startsExpression(token.type))
@@ -422,7 +422,7 @@ void parseStat()
     }
 }
 
-void parseElseChoice()
+void parseElseChoice(ParsedToken *p)
 {
     //32: ⟨else_choice⟩ → else ⟨else⟩
     if (token.type == TOK_KW_ELSE)
@@ -442,7 +442,7 @@ void parseElseChoice()
     }
 }
 
-void parseElse()
+void parseElse(ParsedToken *p)
 {
     //34: ⟨else⟩ → ⟨block⟩
     if (token.type == TOK_EOL)
@@ -464,7 +464,7 @@ void parseElse()
     }
 }
 
-void parseRetType()
+void parseRetType(ParsedToken *p)
 {
     //36: ⟨ret_type⟩ →: ⟨type⟩
     if (token.type == TOK_COLON)
@@ -484,7 +484,7 @@ void parseRetType()
     }
 }
 
-void parseType()
+void parseType(ParsedToken *p)
 {
     //38: ⟨type⟩ → Int
     if (token.type == TOK_KW_INT)
@@ -517,7 +517,7 @@ void parseType()
     }
 }
 
-void parseReturn()
+void parseReturn(ParsedToken *p)
 {
     //43: ⟨return⟩ → ⟨expression⟩
     if (startsExpression(token.type))
@@ -536,7 +536,7 @@ void parseReturn()
     }
 }
 
-void parseParamList()
+void parseParamList(ParsedToken *p)
 {
     //45: ⟨param_list⟩ → id : ⟨type⟩⟨param_end⟩
     if (token.type == TOK_IDENT)
@@ -558,7 +558,7 @@ void parseParamList()
     }
 }
 
-void parseParamEnd()
+void parseParamEnd(ParsedToken *p)
 {
     //47: ⟨param_end⟩ →,⟨param_list⟩
     if (token.type == TOK_COMMA)
@@ -578,7 +578,7 @@ void parseParamEnd()
     }
 }
 
-void parseLop()
+void parseLop(ParsedToken *p)
 {
     //49: ⟨lop⟩ → (⟨param_list⟩)⟨lop⟩
     if (token.type == TOK_LPAR)
@@ -600,7 +600,7 @@ void parseLop()
     }
 }
 
-void parseArgList()
+void parseArgList(ParsedToken *p)
 {
     //51: ⟨arg_list⟩ → ⟨expression⟩⟨arg_end⟩
     if (startsExpression(token.type))
@@ -620,7 +620,7 @@ void parseArgList()
     }
 }
 
-void parseArgEnd()
+void parseArgEnd(ParsedToken *p)
 {
     //53: ⟨arg_end⟩ →,⟨arg_list⟩
     if (token.type == TOK_COMMA)
