@@ -153,7 +153,7 @@ void parseDefBody()
     }
     //⟨def_body⟩ → ⟨stat⟩⟨oneline⟩NL
     else if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
-        token.type == TOK_KW_STRING || token.type == TOK_NEQ || token.type == TOK_LPAR || /*token.type == true ||*/
+        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR || /*token.type == true ||*/
         /*token.type == false ||*/ token.type == TOK_KW_VAL || token.type == TOK_KW_VAR ||
         token.type == TOK_KW_IF || token.type == TOK_KW_WHILE || token.type == TOK_KW_RETURN) //TODO true, false
     {
@@ -263,7 +263,7 @@ void parseOnelineEnd()
     }
     //17: ⟨oneline_end⟩ → ⟨stat⟩⟨oneline⟩
     else if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
-        token.type == TOK_KW_STRING || token.type == TOK_NEQ || token.type == TOK_LPAR || /*token.type == true ||*/
+        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR || /*token.type == true ||*/
         /*token.type == false ||*/ token.type == TOK_KW_VAL || token.type == TOK_KW_VAR ||
         token.type == TOK_KW_IF || token.type == TOK_KW_WHILE || token.type == TOK_KW_RETURN) //TODO true, false
     {
@@ -301,7 +301,7 @@ void parseStListSemi()
 {
     //21: ⟨st_list_semi⟩ → ⟨stat⟩⟨st_list⟩
     if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
-        token.type == TOK_KW_STRING || token.type == TOK_NEQ || token.type == TOK_LPAR || /*token.type == true ||*/
+        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR || /*token.type == true ||*/
         /*token.type == false ||*/ token.type == TOK_KW_VAL || token.type == TOK_KW_VAR ||
         token.type == TOK_KW_IF || token.type == TOK_KW_WHILE || token.type == TOK_KW_RETURN) //TODO true, false
     {
@@ -325,7 +325,7 @@ void parseStListNL()
 {
     //24: ⟨st_list_NL⟩ → ⟨stat⟩⟨st_list⟩
     if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
-        token.type == TOK_KW_STRING || token.type == TOK_NEQ || token.type == TOK_LPAR || /*token.type == true ||*/
+        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR || /*token.type == true ||*/
         /*token.type == false ||*/ token.type == TOK_KW_VAL || token.type == TOK_KW_VAR ||
         token.type == TOK_KW_IF || token.type == TOK_KW_WHILE || token.type == TOK_KW_RETURN) //TODO true, false
     {
