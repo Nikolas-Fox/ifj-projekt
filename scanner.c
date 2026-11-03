@@ -15,7 +15,7 @@ typedef enum {
     ST_ID,
     ST_LESS,
     ST_GREATER,
-    ST_EQ,
+    ST_ASSIGN,
     ST_NEQ
 }States;
 
@@ -61,7 +61,7 @@ static const KeywordPair keywords[] = {
     {"String", TOK_KW_STRING}, {"Unit", TOK_KW_UNIT},
 };
 
-// Vrátí řádek tabulky pro dané slovo, nebo NULL, pokud to není klíčové slovo
+// Vrátí typ klíčového slova, nebo TOK_ID, pokud to není klíčové slovo
 static TokenType findKeyword(const char *word) {
     size_t count = sizeof keywords / sizeof keywords[0];
 
@@ -121,7 +121,7 @@ Token getToken(void) {
                 //operators that may have a second character
                 if (character == '<') { state = ST_LESS; break; }
                 if (character == '>') { state = ST_GREATER; break; }
-                if (character == '=') { state = ST_EQ; break; }
+                if (character == '=') { state = ST_ASSIGN; break; }
                 if (character == '!') { state = ST_NEQ; break; }
 
                 //one character tokens
@@ -134,6 +134,7 @@ Token getToken(void) {
                     case '*': return makeToken(TOK_MUL, NULL);
                     case '-': return makeToken(TOK_MINUS, NULL);
                     case '@': return makeToken(TOK_AT, NULL);
+                    case '+': return makeToken(TOK_PLUS, NULL);
                 }
                 
                 fprintf(stderr, "Lexikalni chyba");
@@ -165,6 +166,33 @@ Token getToken(void) {
                     return makeToken(type, NULL);
                 }
                 break;
+            
+            case ST_LESS:
+                if (character == '=') {
+                    return makeToken(TOK_LESS_EQ, NULL);
+                }
+                ungetc(character, stdin);
+                return makeToken(TOK_LESS, NULL);
+
+            case ST_GREATER:
+                if (character == '=') {
+                    return makeToken(TOK_GREATER_EQ, NULL);
+                }
+                ungetc(character, stdin);
+                return makeToken(TOK_GREATER, NULL);
+
+            case ST_ASSIGN:
+                if (character == '=') {
+                    return makeToken(TOK_EQ, NULL);
+                }
+                ungetc(character, stdin);
+                return makeToken(TOK_ASSIGN, NULL);
+
+            case ST_NEQ:
+                if (character == '=') {
+                    return makeToken(TOK_NEQ, NULL);
+                }
+                lexError("samotny vykricnik (negace je az v rozsireni)");    
         }
     }
 }
