@@ -49,6 +49,12 @@ typedef struct {
     int line;
 }Token;
 
+typedef struct {
+    Token currentToken;
+    Token aheadToken;
+    bool lookAhead;
+} ParsedToken;
+
 /**
  * @brief Prints error message and exits with code 2 (syntax analysis error).
  * @param message Error message to print.
@@ -59,13 +65,13 @@ void printError(char *message);
  * @brief Gets token from lexer.
  * @return Token
  */
-Token getToken();
+void getToken();
 
 /**
  * @brief Checks if token has the expected type and calls getToken() for the next one / calls printError if it doesn't.
  * @param expected Expected token type
  */
-void checkToken(TokenType expected);
+void checkToken(ParsedToken *p, TokenType expected);
 
 /**
  * @brief Parses <prog>, implements LL grammar rule 1.
