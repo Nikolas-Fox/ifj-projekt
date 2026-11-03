@@ -238,14 +238,14 @@ void parseExtensionDef(ParsedToken *p)
 void parseOptNL(ParsedToken *p)
 {
     //⟨opt_NL⟩ → NL
-    if (token.type == TOK_EOL)
+    if (p->currentToken.type == TOK_EOL)
     {
-        checkToken(TOK_EOL);
+        checkToken(p, TOK_EOL);
     }
     //⟨opt_NL⟩ → epsilon
     //Predict(12) = {ifj26, ., *, def}
-    else if ((token.type == TOK_IDENT && (strcmp(token.str, "ifj26") == 0)) || token.type == TOK_DOT ||
-            token.type == TOK_MUL || token.type == TOK_KW_DEF)
+    else if ((p->currentToken.type == TOK_IDENT && (strcmp(p->currentToken.str, "ifj26") == 0)) || p->currentToken.type == TOK_DOT ||
+            p->currentToken.type == TOK_MUL || p->currentToken.type == TOK_KW_DEF)
     {
         return;
     }
@@ -258,25 +258,25 @@ void parseOptNL(ParsedToken *p)
 void parseBlock(ParsedToken *p)
 {
     //⟨block⟩ → NL INDENT ⟨stat⟩⟨st_list⟩NL DEDENT
-    checkToken(TOK_EOL);
-    checkToken(TOK_INDENT);
-    parseStat();
-    parseStList();
-    checkToken(TOK_EOL);
-    checkToken(TOK_DEDENT);
+    checkToken(p, TOK_EOL);
+    checkToken(p, TOK_INDENT);
+    parseStat(p);
+    parseStList(p);
+    checkToken(p, TOK_EOL);
+    checkToken(p, TOK_DEDENT);
 }
 
 void parseOneline(ParsedToken *p)
 {
     //14: ⟨oneline⟩ → ;⟨oneline_end⟩
-    if (token.type == TOK_SEMICOL)
+    if (p->currentToken.type == TOK_SEMICOL)
     {
-        checkToken(TOK_SEMICOL);
-        parseOnelineEnd();
+        checkToken(p, TOK_SEMICOL);
+        parseOnelineEnd(p);
     }
     //15: ⟨oneline⟩ → epsilon
     //Predict(15) = {NL}
-    else if (token.type == TOK_EOL)
+    else if (p->currentToken.type == TOK_EOL)
     {
         return;
     }
@@ -290,16 +290,16 @@ void parseOnelineEnd(ParsedToken *p)
 {
     //16: ⟨oneline_end⟩ → epsilon
     //Predict(16) = {NL}
-    if (token.type == TOK_EOL)
+    if (p->currentToken.type == TOK_EOL)
     {
         return;
 
     }
     //17: ⟨oneline_end⟩ → ⟨stat⟩⟨oneline⟩
-    else if (startsStat(token.type))
+    else if (startsStat(p->currentToken.type))
     {
-        parseStat();
-        parseOneline();
+        parseStat(p);
+        parseOneline(p);
     }
     else
     {
@@ -310,15 +310,15 @@ void parseOnelineEnd(ParsedToken *p)
 void parseStList(ParsedToken *p)
 {
     //18: ⟨st_list⟩ →;⟨st_list_semi⟩
-    if (token.type == TOK_SEMICOL)
+    if (p->currentToken.type == TOK_SEMICOL)
     {
-        checkToken(TOK_SEMICOL);
-        parseStListSemi();
+        checkToken(p, TOK_SEMICOL);
+        parseStListSemi(p);
     }
     //19: ⟨st_list⟩ → NL⟨st_list_NL⟩
     //20: ⟨st_list⟩ → epsilon
     //Predict(20) = {NL}
-    else if (token.type == TOK_EOL)
+    else if (p->currentToken.type == TOK_EOL)
     {
         //TODO: lookahead
     }
@@ -331,15 +331,15 @@ void parseStList(ParsedToken *p)
 void parseStListSemi(ParsedToken *p)
 {
     //21: ⟨st_list_semi⟩ → ⟨stat⟩⟨st_list⟩
-    if (startsStat(token.type))
+    if (startsStat(p->currentToken.type))
     {
-        parseStat();
-        parseStList();
+        parseStat(p);
+        parseStList(p);
     }
     //22: ⟨st_list_semi⟩ → NL⟨st_list_NL⟩
     //23: ⟨st_list_semi⟩ → ε
     //Predict(23) = {NL}
-    else if (token.type == TOK_EOL)
+    else if (p->currentToken.type == TOK_EOL)
     {
         //TODO: lookahead
     }
@@ -352,13 +352,13 @@ void parseStListSemi(ParsedToken *p)
 void parseStListNL(ParsedToken *p)
 {
     //24: ⟨st_list_NL⟩ → ⟨stat⟩⟨st_list⟩
-    if (startsStat(token.type))
+    if (startsStat(p->currentToken.type))
     {
-        parseStat();
-        parseStList();
+        parseStat(p);
+        parseStList(p);
     }
     //25: ⟨st_list_NL⟩ → epsilon
-    else if (token.type == TOK_EOL)
+    else if (p->currentToken.type == TOK_EOL)
     {
         return;
     }
