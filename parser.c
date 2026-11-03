@@ -337,6 +337,10 @@ void parseStListNL()
     {
         return;
     }
+    else
+    {
+        printError("Unexpected token");
+    }
 }
 
 void parseStat()
