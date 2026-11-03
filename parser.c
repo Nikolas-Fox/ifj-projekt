@@ -371,50 +371,50 @@ void parseStListNL(ParsedToken *p)
 void parseStat(ParsedToken *p)
 {
     //26: ⟨stat⟩ → ⟨expression⟩
-    if (startsExpression(token.type))
+    if (startsExpression(p->currentToken.type))
     {
         //precedence analysis
     }
     //27: ⟨stat⟩ → val id⟨ret_type⟩ = ⟨expression⟩
-    else if (token.type == TOK_KW_VAL)
+    else if (p->currentToken.type == TOK_KW_VAL)
     {
-        checkToken(TOK_KW_VAL);
-        checkToken(TOK_IDENT);
-        parseRetType();
-        checkToken(TOK_EQ);
+        checkToken(p, TOK_KW_VAL);
+        checkToken(p, TOK_IDENT);
+        parseRetType(p);
+        checkToken(p, TOK_EQ);
         //precedence analysis
     }
     //28: ⟨stat⟩ → var id⟨ret_type⟩ = ⟨expression⟩
-    else if (token.type == TOK_KW_VAR)
+    else if (p->currentToken.type == TOK_KW_VAR)
     {
-        checkToken(TOK_KW_VAR);
-        checkToken(TOK_IDENT);
-        parseRetType();
-        checkToken(TOK_EQ);
+        checkToken(p, TOK_KW_VAR);
+        checkToken(p, TOK_IDENT);
+        parseRetType(p);
+        checkToken(p, TOK_EQ);
         //precedence analysis
     }
     //29: ⟨stat⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
-    else if (token.type == TOK_KW_IF)
+    else if (p->currentToken.type == TOK_KW_IF)
     {
-        checkToken(TOK_KW_IF);
+        checkToken(p, TOK_KW_IF);
         //precedence analysis
-        checkToken(TOK_KW_THEN);
-        parseBlock();
-        parseElseChoice();
+        checkToken(p, TOK_KW_THEN);
+        parseBlock(p);
+        parseElseChoice(p);
     }
     //30: ⟨stat⟩ → return⟨return⟩
-    else if (token.type == TOK_KW_RETURN)
+    else if (p->currentToken.type == TOK_KW_RETURN)
     {
-        checkToken(TOK_KW_RETURN);
-        parseReturn();
+        checkToken(p, TOK_KW_RETURN);
+        parseReturn(p);
     }
     //31: ⟨stat⟩ → while ⟨expression⟩ do ⟨block⟩
-    else if (token.type == TOK_KW_WHILE)
+    else if (p->currentToken.type == TOK_KW_WHILE)
     {
-        checkToken(TOK_KW_WHILE);
+        checkToken(p, TOK_KW_WHILE);
         //precedence analysis
-        checkToken(TOK_KW_DO);
-        parseBlock();
+        checkToken(p, TOK_KW_DO);
+        parseBlock(p);
     }
     else
     {
@@ -425,14 +425,14 @@ void parseStat(ParsedToken *p)
 void parseElseChoice(ParsedToken *p)
 {
     //32: ⟨else_choice⟩ → else ⟨else⟩
-    if (token.type == TOK_KW_ELSE)
+    if (p->currentToken.type == TOK_KW_ELSE)
     {
-        checkToken(TOK_KW_ELSE);
-        parseElse();
+        checkToken(p, TOK_KW_ELSE);
+        parseElse(p);
     }
     //33: ⟨else_choice⟩ → epsilon
     //Predict(33) = {NL,;}
-    else if (token.type == TOK_EOL || token.type == TOK_SEMICOL)
+    else if (p->currentToken.type == TOK_EOL || p->currentToken.type == TOK_SEMICOL)
     {
         return;
     }
@@ -445,18 +445,18 @@ void parseElseChoice(ParsedToken *p)
 void parseElse(ParsedToken *p)
 {
     //34: ⟨else⟩ → ⟨block⟩
-    if (token.type == TOK_EOL)
+    if (p->currentToken.type == TOK_EOL)
     {
-        parseBlock();
+        parseBlock(p);
     }
     //35: ⟨else⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
-    else if (token.type == TOK_KW_IF)
+    else if (p->currentToken.type == TOK_KW_IF)
     {
-        checkToken(TOK_KW_IF);
+        checkToken(p, TOK_KW_IF);
         //precedence analysis
-        checkToken(TOK_KW_THEN);
-        parseBlock();
-        parseElseChoice();
+        checkToken(p, TOK_KW_THEN);
+        parseBlock(p);
+        parseElseChoice(p);
     }
     else
     {
@@ -467,14 +467,14 @@ void parseElse(ParsedToken *p)
 void parseRetType(ParsedToken *p)
 {
     //36: ⟨ret_type⟩ →: ⟨type⟩
-    if (token.type == TOK_COLON)
+    if (p->currentToken.type == TOK_COLON)
     {
-        checkToken(TOK_COLON);
-        parseType();
+        checkToken(p, TOK_COLON);
+        parseType(p);
     }
     //37: ⟨ret_type⟩ → epsilon
     //Predict(37) = {=}
-    else if (token.type == TOK_EQ)
+    else if (p->currentToken.type == TOK_EQ)
     {
         return;
     }
@@ -487,29 +487,29 @@ void parseRetType(ParsedToken *p)
 void parseType(ParsedToken *p)
 {
     //38: ⟨type⟩ → Int
-    if (token.type == TOK_KW_INT)
+    if (p->currentToken.type == TOK_KW_INT)
     {
-        checkToken(TOK_KW_INT);
+        checkToken(p, TOK_KW_INT);
     }
     //39: ⟨type⟩ → Double
-    else if (token.type == TOK_KW_DOUBLE)
+    else if (p->currentToken.type == TOK_KW_DOUBLE)
     {
-        checkToken(TOK_KW_DOUBLE);
+        checkToken(p, TOK_KW_DOUBLE);
     }
     //40: ⟨type⟩ → String
-    else if (token.type == TOK_KW_STRING)
+    else if (p->currentToken.type == TOK_KW_STRING)
     {
-        checkToken(TOK_KW_STRING);
+        checkToken(p, TOK_KW_STRING);
     }
     //41: ⟨type⟩ → Unit
-    else if (token.type == TOK_KW_UNIT)
+    else if (p->currentToken.type == TOK_KW_UNIT)
     {
-        checkToken(TOK_KW_UNIT);
+        checkToken(p, TOK_KW_UNIT);
     }
     //42: ⟨type⟩ → Boolean
-    else if (token.type == TOK_KW_BOOLEAN)
+    else if (p->currentToken.type == TOK_KW_BOOLEAN)
     {
-        checkToken(TOK_KW_BOOLEAN);
+        checkToken(p, TOK_KW_BOOLEAN);
     }
     else
     {
