@@ -211,7 +211,7 @@ void parseOptNL()
     }
     //⟨opt_NL⟩ → epsilon
     //Predict(12) = {ifj26, ., *, def}
-    else if (token.type == ifj26 || token.type == TOK_DOT || token.type == TOK_MUL || token.type = TOK_KW_DEF)
+    else if (token.type == ifj26 || token.type == TOK_DOT || token.type == TOK_MUL || token.type == TOK_KW_DEF)
     {
         return;
     }
@@ -287,7 +287,7 @@ void parseStList()
     //19: ⟨st_list⟩ → NL⟨st_list_NL⟩
     //20: ⟨st_list⟩ → epsilon
     //Predict(20) = {NL}
-    else if (token.type = TOK_EOL)
+    else if (token.type == TOK_EOL)
     {
         //TODO: lookahead
     }
