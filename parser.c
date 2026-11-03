@@ -21,7 +21,6 @@
 #include <stdbool.h>
 #include "parser.h"
 
-
 Token token;
 
 void printError(char *message)
@@ -94,7 +93,6 @@ bool startsExpression(TokenType type)
 }
 
 //TODO: integrate with lexer
-//TODO: true, false, ifj26, @main
 void parseProg()
 {
     //⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
@@ -103,12 +101,12 @@ void parseProg()
     parseOptNL();
     checkStrToken(TOK_IDENT, "ifj26");
     parseOptNL();
-    checkToken(TOK_DOT); //.
+    checkToken(TOK_DOT);
     parseOptNL();
     checkToken(TOK_MUL);
-    checkToken(TOK_EOL); //NL
+    checkToken(TOK_EOL);
     parseDefinition();
-    checkToken(TOK_EOF); //EOF
+    checkToken(TOK_EOF);
 }
 
 void parseDefinition()
@@ -120,11 +118,11 @@ void parseDefinition()
         parseOptNL();
         checkToken(TOK_KW_DEF);
         checkToken(TOK_IDENT);
-        checkToken(TOK_LPAR); //(
-        checkToken(TOK_RPAR); //)
-        checkToken(TOK_COLON); //:
+        checkToken(TOK_LPAR);
+        checkToken(TOK_RPAR);
+        checkToken(TOK_COLON);
         checkToken(TOK_KW_UNIT);
-        checkToken(TOK_EQ); //=
+        checkToken(TOK_EQ);
         parseDefBody();
         parseDefinition();
     }
@@ -135,7 +133,7 @@ void parseDefinition()
         checkToken(TOK_IDENT);
         parseLop();
         parseRetType();
-        checkToken(TOK_EQ); //=
+        checkToken(TOK_EQ);
         parseDefBody();
         parseDefinition();
     }
@@ -143,11 +141,11 @@ void parseDefinition()
     else if (token.type == TOK_KW_EXTENSION) //extension
     {
         checkToken(TOK_KW_EXTENSION);
-        checkToken(TOK_LPAR); //(
+        checkToken(TOK_LPAR);
         checkToken(TOK_IDENT);
-        checkToken(TOK_COLON); //:
+        checkToken(TOK_COLON);
         parseType();
-        checkToken(TOK_RPAR); //)
+        checkToken(TOK_RPAR);
         parseDefBlock();
         parseDefinition();
     }
