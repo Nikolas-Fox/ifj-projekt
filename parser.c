@@ -78,7 +78,7 @@ bool startsStat(TokenType type)
 {
     switch (type)
     {
-        case TOK_IDENT:
+        case TOK_ID:
         case TOK_INT:
         case TOK_DOUBLE:
         case TOK_STRING:
@@ -99,7 +99,7 @@ bool startsExpression(TokenType type)
 {
     switch (type)
     {
-        case TOK_IDENT:
+        case TOK_ID:
         case TOK_INT:
         case TOK_DOUBLE:
         case TOK_STRING:
@@ -117,12 +117,12 @@ void parseProg(ParsedToken *p)
     //⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
     checkToken(p, TOK_KW_IMPORT);
     parseOptNL(p);
-    checkStrToken(p, TOK_IDENT, "ifj26");
+    checkStrToken(p, TOK_ID, "ifj26");
     parseOptNL(p);
     checkToken(p, TOK_DOT);
     parseOptNL(p);
     checkToken(p, TOK_MUL);
-    checkToken(p, TOK_EOL);
+    checkToken(p, TOK_NL);
     parseDefinition(p);
     checkToken(p, TOK_EOF);
 }
@@ -135,7 +135,7 @@ void parseDefinition(ParsedToken *p)
         checkToken(p, TOK_AT_MAIN);
         parseOptNL(p);
         checkToken(p, TOK_KW_DEF);
-        checkToken(p, TOK_IDENT);
+        checkToken(p, TOK_ID);
         checkToken(p, TOK_LPAR);
         checkToken(p, TOK_RPAR);
         checkToken(p, TOK_COLON);
@@ -148,7 +148,7 @@ void parseDefinition(ParsedToken *p)
     else if (p->currentToken.type == TOK_KW_DEF)
     {
         checkToken(p, TOK_KW_DEF);
-        checkToken(p, TOK_IDENT);
+        checkToken(p, TOK_ID);
         parseLop(p);
         parseRetType(p);
         checkToken(p, TOK_EQ);
@@ -160,7 +160,7 @@ void parseDefinition(ParsedToken *p)
     {
         checkToken(p, TOK_KW_EXTENSION);
         checkToken(p, TOK_LPAR);
-        checkToken(p, TOK_IDENT);
+        checkToken(p, TOK_ID);
         checkToken(p, TOK_COLON);
         parseType(p);
         checkToken(p, TOK_RPAR);
@@ -183,7 +183,7 @@ void parseDefBody(ParsedToken *p)
 {
     //⟨def_body⟩ → ⟨block⟩
     //Predict(6) = {NL}
-    if (p->currentToken.type == TOK_EOL)
+    if (p->currentToken.type == TOK_NL)
     {
         parseBlock(p);
     }
@@ -192,7 +192,7 @@ void parseDefBody(ParsedToken *p)
     {
         parseStat(p);
         parseOneline(p);
-        checkToken(p, TOK_EOL);
+        checkToken(p, TOK_NL);
     }
     else
     {
@@ -203,10 +203,10 @@ void parseDefBody(ParsedToken *p)
 void parseDefBlock(ParsedToken *p)
 {
     //⟨def_block⟩ → NL INDENT ⟨extension_def⟩NL DEDENT
-    checkToken(p, TOK_EOL);
+    checkToken(p, TOK_NL);
     checkToken(p, TOK_INDENT);
     parseExtensionDef(p);
-    checkToken(p, TOK_EOL);
+    checkToken(p, TOK_NL);
     checkToken(p, TOK_DEDENT);
 }
 
@@ -216,7 +216,7 @@ void parseExtensionDef(ParsedToken *p)
     if (p->currentToken.type == TOK_KW_DEF)
     {
         checkToken(p, TOK_KW_DEF);
-        checkToken(p, TOK_IDENT);
+        checkToken(p, TOK_ID);
         parseLop(p);
         parseRetType(p);
         checkToken(p, TOK_EQ);
@@ -225,7 +225,7 @@ void parseExtensionDef(ParsedToken *p)
     }
     //⟨extension_def⟩ → epsilon
     //Predict(10) = {NL}
-    else if (p->currentToken.type == TOK_EOL)
+    else if (p->currentToken.type == TOK_NL)
     {
         return;
     }
@@ -238,13 +238,13 @@ void parseExtensionDef(ParsedToken *p)
 void parseOptNL(ParsedToken *p)
 {
     //⟨opt_NL⟩ → NL
-    if (p->currentToken.type == TOK_EOL)
+    if (p->currentToken.type == TOK_NL)
     {
-        checkToken(p, TOK_EOL);
+        checkToken(p, TOK_NL);
     }
     //⟨opt_NL⟩ → epsilon
     //Predict(12) = {ifj26, ., *, def}
-    else if ((p->currentToken.type == TOK_IDENT && (strcmp(p->currentToken.str, "ifj26") == 0)) || p->currentToken.type == TOK_DOT ||
+    else if ((p->currentToken.type == TOK_ID && (strcmp(p->currentToken.str, "ifj26") == 0)) || p->currentToken.type == TOK_DOT ||
             p->currentToken.type == TOK_MUL || p->currentToken.type == TOK_KW_DEF)
     {
         return;
@@ -258,11 +258,11 @@ void parseOptNL(ParsedToken *p)
 void parseBlock(ParsedToken *p)
 {
     //⟨block⟩ → NL INDENT ⟨stat⟩⟨st_list⟩NL DEDENT
-    checkToken(p, TOK_EOL);
+    checkToken(p, TOK_NL);
     checkToken(p, TOK_INDENT);
     parseStat(p);
     parseStList(p);
-    checkToken(p, TOK_EOL);
+    checkToken(p, TOK_NL);
     checkToken(p, TOK_DEDENT);
 }
 
@@ -276,7 +276,7 @@ void parseOneline(ParsedToken *p)
     }
     //15: ⟨oneline⟩ → epsilon
     //Predict(15) = {NL}
-    else if (p->currentToken.type == TOK_EOL)
+    else if (p->currentToken.type == TOK_NL)
     {
         return;
     }
@@ -290,7 +290,7 @@ void parseOnelineEnd(ParsedToken *p)
 {
     //16: ⟨oneline_end⟩ → epsilon
     //Predict(16) = {NL}
-    if (p->currentToken.type == TOK_EOL)
+    if (p->currentToken.type == TOK_NL)
     {
         return;
 
@@ -318,7 +318,7 @@ void parseStList(ParsedToken *p)
     //19: ⟨st_list⟩ → NL⟨st_list_NL⟩
     //20: ⟨st_list⟩ → epsilon
     //Predict(20) = {NL}
-    else if (p->currentToken.type == TOK_EOL)
+    else if (p->currentToken.type == TOK_NL)
     {
         //TODO: lookahead
     }
@@ -339,7 +339,7 @@ void parseStListSemi(ParsedToken *p)
     //22: ⟨st_list_semi⟩ → NL⟨st_list_NL⟩
     //23: ⟨st_list_semi⟩ → ε
     //Predict(23) = {NL}
-    else if (p->currentToken.type == TOK_EOL)
+    else if (p->currentToken.type == TOK_NL)
     {
         //TODO: lookahead
     }
@@ -358,7 +358,7 @@ void parseStListNL(ParsedToken *p)
         parseStList(p);
     }
     //25: ⟨st_list_NL⟩ → epsilon
-    else if (p->currentToken.type == TOK_EOL)
+    else if (p->currentToken.type == TOK_NL)
     {
         return;
     }
@@ -379,7 +379,7 @@ void parseStat(ParsedToken *p)
     else if (p->currentToken.type == TOK_KW_VAL)
     {
         checkToken(p, TOK_KW_VAL);
-        checkToken(p, TOK_IDENT);
+        checkToken(p, TOK_ID);
         parseRetType(p);
         checkToken(p, TOK_EQ);
         //precedence analysis
@@ -388,7 +388,7 @@ void parseStat(ParsedToken *p)
     else if (p->currentToken.type == TOK_KW_VAR)
     {
         checkToken(p, TOK_KW_VAR);
-        checkToken(p, TOK_IDENT);
+        checkToken(p, TOK_ID);
         parseRetType(p);
         checkToken(p, TOK_EQ);
         //precedence analysis
@@ -432,7 +432,7 @@ void parseElseChoice(ParsedToken *p)
     }
     //33: ⟨else_choice⟩ → epsilon
     //Predict(33) = {NL,;}
-    else if (p->currentToken.type == TOK_EOL || p->currentToken.type == TOK_SEMICOL)
+    else if (p->currentToken.type == TOK_NL || p->currentToken.type == TOK_SEMICOL)
     {
         return;
     }
@@ -445,7 +445,7 @@ void parseElseChoice(ParsedToken *p)
 void parseElse(ParsedToken *p)
 {
     //34: ⟨else⟩ → ⟨block⟩
-    if (p->currentToken.type == TOK_EOL)
+    if (p->currentToken.type == TOK_NL)
     {
         parseBlock(p);
     }
@@ -526,7 +526,7 @@ void parseReturn(ParsedToken *p)
     }
     //44: ⟨return⟩ → epsilon
     //Predict(44) = {NL, ;}
-    else if (p->currentToken.type == TOK_EOL || p->currentToken.type == TOK_SEMICOL)
+    else if (p->currentToken.type == TOK_NL || p->currentToken.type == TOK_SEMICOL)
     {
         return;
     }
@@ -539,9 +539,9 @@ void parseReturn(ParsedToken *p)
 void parseParamList(ParsedToken *p)
 {
     //45: ⟨param_list⟩ → id : ⟨type⟩⟨param_end⟩
-    if (p->currentToken.type == TOK_IDENT)
+    if (p->currentToken.type == TOK_ID)
     {
-        checkToken(p, TOK_IDENT);
+        checkToken(p, TOK_ID);
         checkToken(p, TOK_COLON);
         parseType(p);
         parseParamEnd(p);
