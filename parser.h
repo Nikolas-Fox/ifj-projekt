@@ -3,7 +3,7 @@
 * Package:		parser
 * File:			parser.h
 * Date:			1.11.2026
-* Last change:	2.11.2026
+* Last change:	3.11.2026
 * Authors: 		xholael00
 *
 * Description: Header file containing parser logic - recursive descent and

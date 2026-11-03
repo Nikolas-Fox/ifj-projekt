@@ -3,7 +3,7 @@
 * Package:		parser
 * File:			parser.c
 * Date:			1.11.2026
-* Last change:	2.11.2026
+* Last change:	3.11.2026
 * Authors: 		xholael00
 *
 * Description: Implementation of parser - recursive descent and precedence analysis.
@@ -112,6 +112,7 @@ bool startsExpression(TokenType type)
 }
 
 //TODO: integrate with lexer
+//TODO: lookahead
 void parseProg(ParsedToken *p)
 {
     //⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
@@ -156,7 +157,7 @@ void parseDefinition(ParsedToken *p)
         parseDefinition(p);
     }
     //⟨definition⟩ → extension(id : ⟨type⟩)⟨def_block⟩⟨definition⟩
-    else if (p->currentToken.type == TOK_KW_EXTENSION) //extension
+    else if (p->currentToken.type == TOK_KW_EXTENSION)
     {
         checkToken(p, TOK_KW_EXTENSION);
         checkToken(p, TOK_LPAR);
@@ -337,7 +338,7 @@ void parseStListSemi(ParsedToken *p)
         parseStList(p);
     }
     //22: ⟨st_list_semi⟩ → NL⟨st_list_NL⟩
-    //23: ⟨st_list_semi⟩ → ε
+    //23: ⟨st_list_semi⟩ → epsilon
     //Predict(23) = {NL}
     else if (p->currentToken.type == TOK_NL)
     {
