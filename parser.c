@@ -21,38 +21,57 @@
 #include <stdbool.h>
 #include "parser.h"
 
-Token token;
-
 void printError(char *message)
 {
     fprintf(stderr, "Syntactic analysis error: %s\n", message);
     exit(2);
 }
 
-Token getToken()
+void parseProgram()
+{
+    ParsedToken token;
+    token.lookAhead = false;
+    getToken(&token);
+    parseProg(&token);
+}
+
+Token lexerGetToken()
 {
 
 }
 
-void checkToken(TokenType expected)
+void getToken(ParsedToken *p)
 {
-    if (token.type != expected)
+    if (p->lookAhead)
+    {
+        p->currentToken = p->aheadToken;
+        p->lookAhead = false;
+    }
+    else
+    {
+        p->currentToken = lexerGetToken();
+    }
+}
+
+void checkToken(ParsedToken *p, TokenType expected)
+{
+    if (p->currentToken.type != expected)
     {
         printError("Unexpected token");
     }
     else
     {
-        token = getToken();
+        getToken(p);
     }
 }
 
-void checkStrToken(TokenType expected, char *name)
+void checkStrToken(ParsedToken *p, TokenType expected, char *name)
 {
-    if (token.type != expected || token.str == NULL || strcmp(token.str, name) != 0)
+    if (p->currentToken.type != expected || p->currentToken.str == NULL || strcmp(p->currentToken.str, name) != 0)
     {
         printError("Unexpected token");
     }
-    token = getToken();
+    getToken(p);
 }
 
 bool startsStat(TokenType type)
@@ -93,32 +112,31 @@ bool startsExpression(TokenType type)
 }
 
 //TODO: integrate with lexer
-void parseProg()
+void parseProg(ParsedToken *p)
 {
     //⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
-    token = getToken();
-    checkToken(TOK_KW_IMPORT);
+    checkToken(p, TOK_KW_IMPORT);
     parseOptNL();
-    checkStrToken(TOK_IDENT, "ifj26");
+    checkStrToken(p, TOK_IDENT, "ifj26");
     parseOptNL();
-    checkToken(TOK_DOT);
+    checkToken(p, TOK_DOT);
     parseOptNL();
-    checkToken(TOK_MUL);
-    checkToken(TOK_EOL);
-    parseDefinition();
-    checkToken(TOK_EOF);
+    checkToken(p, TOK_MUL);
+    checkToken(p, TOK_EOL);
+    parseDefinition(p);
+    checkToken(p, TOK_EOF);
 }
 
-void parseDefinition()
+void parseDefinition(ParsedToken *p)
 {
     //⟨definition⟩ → @main⟨opt_NL⟩def id() : Unit = ⟨def_body⟩⟨definition⟩
-    if (token.type == TOK_AT_MAIN)
+    if (p->currentToken.type == TOK_AT_MAIN)
     {
-        checkToken(TOK_AT_MAIN);
+        checkToken(p, TOK_AT_MAIN);
         parseOptNL();
-        checkToken(TOK_KW_DEF);
-        checkToken(TOK_IDENT);
-        checkToken(TOK_LPAR);
+        checkToken(p, TOK_KW_DEF);
+        checkToken(p, TOK_IDENT);
+        checkToken(p, TOK_LPAR);
         checkToken(TOK_RPAR);
         checkToken(TOK_COLON);
         checkToken(TOK_KW_UNIT);
@@ -127,7 +145,7 @@ void parseDefinition()
         parseDefinition();
     }
     //⟨definition⟩ → def id⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨definition⟩
-    else if (token.type == TOK_KW_DEF)
+    else if (p->currentToken.type == TOK_KW_DEF)
     {
         checkToken(TOK_KW_DEF);
         checkToken(TOK_IDENT);
@@ -138,7 +156,7 @@ void parseDefinition()
         parseDefinition();
     }
     //⟨definition⟩ → extension(id : ⟨type⟩)⟨def_block⟩⟨definition⟩
-    else if (token.type == TOK_KW_EXTENSION) //extension
+    else if (p->currentToken.type == TOK_KW_EXTENSION) //extension
     {
         checkToken(TOK_KW_EXTENSION);
         checkToken(TOK_LPAR);
