@@ -179,20 +179,20 @@ void parseDefinition(ParsedToken *p)
     }
 }
 
-void parseDefBody()
+void parseDefBody(ParsedToken *p)
 {
     //⟨def_body⟩ → ⟨block⟩
     //Predict(6) = {NL}
-    if (token.type == TOK_EOL)
+    if (p->currentToken.type == TOK_EOL)
     {
-        parseBlock();
+        parseBlock(p);
     }
     //⟨def_body⟩ → ⟨stat⟩⟨oneline⟩NL
-    else if (startsStat(token.type))
+    else if (startsStat(p->currentToken.type))
     {
-        parseStat();
-        parseOneline();
-        checkToken(TOK_EOL);
+        parseStat(p);
+        parseOneline(p);
+        checkToken(p, TOK_EOL);
     }
     else
     {
@@ -200,32 +200,32 @@ void parseDefBody()
     }
 }
 
-void parseDefBlock()
+void parseDefBlock(ParsedToken *p)
 {
     //⟨def_block⟩ → NL INDENT ⟨extension_def⟩NL DEDENT
-    checkToken(TOK_EOL);
-    checkToken(TOK_INDENT);
-    parseExtensionDef();
-    checkToken(TOK_EOL);
-    checkToken(TOK_DEDENT);
+    checkToken(p, TOK_EOL);
+    checkToken(p, TOK_INDENT);
+    parseExtensionDef(p);
+    checkToken(p, TOK_EOL);
+    checkToken(p, TOK_DEDENT);
 }
 
-void parseExtensionDef()
+void parseExtensionDef(ParsedToken *p)
 {
     //⟨extension_def⟩ → def id ⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨extension_def⟩
-    if (token.type == TOK_KW_DEF)
+    if (p->currentToken.type == TOK_KW_DEF)
     {
-        checkToken(TOK_KW_DEF);
-        checkToken(TOK_IDENT);
-        parseLop();
-        parseRetType();
-        checkToken(TOK_EQ);
-        parseDefBody();
-        parseExtensionDef();
+        checkToken(p, TOK_KW_DEF);
+        checkToken(p, TOK_IDENT);
+        parseLop(p);
+        parseRetType(p);
+        checkToken(p, TOK_EQ);
+        parseDefBody(p);
+        parseExtensionDef(p);
     }
     //⟨extension_def⟩ → epsilon
     //Predict(10) = {NL}
-    else if (token.type == TOK_EOL)
+    else if (p->currentToken.type == TOK_EOL)
     {
         return;
     }
