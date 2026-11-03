@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "parser.h"
 
 //temporary
@@ -33,7 +34,7 @@ typedef enum {
 
     //tokens for separators
     TOK_LPAR, TOK_RPAR, TOK_COMMA, TOK_COLON, TOK_SEMICOL,
-    TOK_DOT, TOK_AT,
+    TOK_DOT, TOK_AT_MAIN,
 
     //tokens for extentions
     TOK_AND, TOK_OR, TOK_NOT, TOK_PLUSPLUS,
@@ -83,6 +84,43 @@ void checkStrToken(TokenType expected, char *name)
     token = getToken();
 }
 
+bool startsStat(TokenType type)
+{
+    switch (type)
+    {
+        case TOK_IDENT:
+        case TOK_INT:
+        case TOK_DOUBLE:
+        case TOK_STRING:
+        case TOK_NOT:
+        case TOK_LPAR:
+        case TOK_KW_VAL:
+        case TOK_KW_VAR:
+        case TOK_KW_IF:
+        case TOK_KW_WHILE:
+        case TOK_KW_RETURN:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool startsExpression(TokenType type)
+{
+    switch (type)
+    {
+        case TOK_IDENT:
+        case TOK_INT:
+        case TOK_DOUBLE:
+        case TOK_STRING:
+        case TOK_NOT:
+        case TOK_LPAR:
+            return true;
+        default:
+            return false;
+    }
+}
+
 //TODO: integrate with lexer
 //TODO: true, false, ifj26, @main
 void parseProg()
@@ -104,9 +142,9 @@ void parseProg()
 void parseDefinition()
 {
     //⟨definition⟩ → @main⟨opt_NL⟩def id() : Unit = ⟨def_body⟩⟨definition⟩
-    if (token.type == @main)
+    if (token.type == TOK_AT_MAIN)
     {
-        checkToken(@main);
+        checkToken(TOK_AT_MAIN);
         parseOptNL();
         checkToken(TOK_KW_DEF);
         checkToken(TOK_IDENT);
@@ -162,10 +200,7 @@ void parseDefBody()
         parseBlock();
     }
     //⟨def_body⟩ → ⟨stat⟩⟨oneline⟩NL
-    else if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
-        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR ||
-        token.type == TOK_KW_VAL || token.type == TOK_KW_VAR ||
-        token.type == TOK_KW_IF || token.type == TOK_KW_WHILE || token.type == TOK_KW_RETURN)
+    else if (startsStat(token.type))
     {
         parseStat();
         parseOneline();
@@ -221,7 +256,8 @@ void parseOptNL()
     }
     //⟨opt_NL⟩ → epsilon
     //Predict(12) = {ifj26, ., *, def}
-    else if (token.type == ifj26 || token.type == TOK_DOT || token.type == TOK_MUL || token.type == TOK_KW_DEF)
+    else if ((token.type == TOK_IDENT && (strcmp(token.str, "ifj26") == 0)) || token.type == TOK_DOT ||
+            token.type == TOK_MUL || token.type == TOK_KW_DEF)
     {
         return;
     }
@@ -272,9 +308,7 @@ void parseOnelineEnd()
 
     }
     //17: ⟨oneline_end⟩ → ⟨stat⟩⟨oneline⟩
-    else if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
-        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR || token.type == TOK_KW_VAL ||
-        token.type == TOK_KW_VAR || token.type == TOK_KW_IF || token.type == TOK_KW_WHILE || token.type == TOK_KW_RETURN)
+    else if (startsStat(token.type))
     {
         parseStat();
         parseOneline();
@@ -309,9 +343,7 @@ void parseStList()
 void parseStListSemi()
 {
     //21: ⟨st_list_semi⟩ → ⟨stat⟩⟨st_list⟩
-    if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
-        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR || token.type == TOK_KW_VAL ||
-        token.type == TOK_KW_VAR || token.type == TOK_KW_IF || token.type == TOK_KW_WHILE || token.type == TOK_KW_RETURN)
+    if (startsStat(token.type))
     {
         parseStat();
         parseStList();
@@ -332,9 +364,7 @@ void parseStListSemi()
 void parseStListNL()
 {
     //24: ⟨st_list_NL⟩ → ⟨stat⟩⟨st_list⟩
-    if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
-        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR || token.type == TOK_KW_VAL ||
-        token.type == TOK_KW_VAR || token.type == TOK_KW_IF || token.type == TOK_KW_WHILE || token.type == TOK_KW_RETURN)
+    if (startsStat(token.type))
     {
         parseStat();
         parseStList();
@@ -353,8 +383,7 @@ void parseStListNL()
 void parseStat()
 {
     //26: ⟨stat⟩ → ⟨expression⟩
-    if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
-        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR)
+    if (startsExpression(token.type))
     {
         //precedence analysis
     }
@@ -503,8 +532,7 @@ void parseType()
 void parseReturn()
 {
     //43: ⟨return⟩ → ⟨expression⟩
-    if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
-        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR)
+    if (startsExpression(token.type))
     {
         //precedence analysis
     }
@@ -587,8 +615,7 @@ void parseLop()
 void parseArgList()
 {
     //51: ⟨arg_list⟩ → ⟨expression⟩⟨arg_end⟩
-    if (token.type == TOK_IDENT || token.type == TOK_KW_INT || token.type == TOK_KW_DOUBLE ||
-        token.type == TOK_KW_STRING || token.type == TOK_NOT || token.type == TOK_LPAR)
+    if (startsExpression(token.type))
     {
         //precedence analysis
         parseArgEnd();
