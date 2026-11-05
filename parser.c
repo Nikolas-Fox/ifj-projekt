@@ -35,12 +35,13 @@ void parseProgram()
     parseProg(&token);
 }
 
-Token lexerGetToken()
+//temporary scanner.h
+Token getToken()
 {
 
 }
 
-void getToken(ParsedToken *p)
+void getNextToken(ParsedToken *p)
 {
     if (p->lookAhead)
     {
@@ -49,7 +50,7 @@ void getToken(ParsedToken *p)
     }
     else
     {
-        p->currentToken = lexerGetToken();
+        p->currentToken = getToken();
     }
 }
 

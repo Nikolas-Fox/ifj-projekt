@@ -49,6 +49,8 @@ typedef struct {
     int line;
 }Token;
 
+Token getToken();
+
 //Parser state struct
 typedef struct {
     Token currentToken;
@@ -63,15 +65,9 @@ typedef struct {
 void printError(char *message);
 
 /**
- * @brief Gets token from lexer.
- * @return Token
- */
-Token lexerGetToken();
-
-/**
  * @brief Decides if look ahead was done or if it needs to get a new token from lexer.
  */
-void getToken(ParsedToken *p);
+void getNextToken(ParsedToken *p);
 
 /**
  * @brief Checks if token has the expected type and calls getToken() for the next one / calls printError if it doesn't.
