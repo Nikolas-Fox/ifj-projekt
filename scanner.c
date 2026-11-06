@@ -16,7 +16,13 @@ typedef enum {
     ST_LESS,
     ST_GREATER,
     ST_ASSIGN,
-    ST_NEQ
+    ST_NEQ,
+    ST_SLASH,          
+    ST_LINE_COMMENT,   
+    ST_BLOCK_COMMENT,  
+    ST_BLOCK_SLASH,    
+    ST_BLOCK_STAR,     
+    ST_AFTER_BLOCK 
 }States;
 
 static int line = 1;
