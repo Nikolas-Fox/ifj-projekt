@@ -4,17 +4,17 @@
  * File:         symtable.h
  * Date:         1. 11. 2026
  * Last change:  1. 11. 2026
- * Authors:      xpovala00 
+ * Authors:      xpovala00
  *
  * Description:  Header file of the symbol table (stack of scopes): symbol
  *               data types and the public interface.
  *****************************************************************************/
 /**
-* @file symtable.h
-*
-* @brief Header file of the symbol table
-* @author xpovala00
-*/
+ * @file symtable.h
+ *
+ * @brief Header file of the symbol table
+ * @author xpovala00
+ */
 
 #ifndef SYMTABLE_H
 #define SYMTABLE_H
@@ -140,7 +140,7 @@ SymbolData *symtableInsertFunction(Symtable *sTable, char *name,
  * @param paramType Type of the param
  * @return true/false
  */
-bool symtableAddParam(SymbolData *funcSymbol, char *paramName,
+bool symtableAddParam(Symtable *sTable, SymbolData *funcSymbol, char *paramName,
                       DataType paramType);
 
 /**

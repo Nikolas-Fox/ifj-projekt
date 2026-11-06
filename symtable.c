@@ -10,13 +10,11 @@
  *               one per scope.
  *****************************************************************************/
 /**
-* @file symtable.c
-*
-* @brief Implementation of the symbol table
-* @author xpovala00
-*/
-
-
+ * @file symtable.c
+ *
+ * @brief Implementation of the symbol table
+ * @author xpovala00
+ */
 
 #include "symtable.h"
 #include "hashtable.h"
@@ -88,7 +86,7 @@ Symtable *symtableInit(void) {
         SymbolData *f =
             symtableInsertFunction(symTable, (char *)b->name, b->ret, true);
         for (int j = 0; j < b->paramCount; j++) {
-            symtableAddParam(f, (char *)b->paramNames[j], b->params[j]);
+            symtableAddParam(symTable, f, (char *)b->paramNames[j], b->params[j]);
         }
     }
     return symTable;
@@ -196,12 +194,14 @@ static SymbolData *insertSymbol(Symtable *sTable, char *name, SymbolType sType,
 
     // Redefinition in the same scope (shadowing in outer scopes is allowed)
     if (htSearch(current, name) != NULL) {
+        symtableFree(sTable);
         fprintf(stderr, "Error 4: redefinition of '%s'\n", name);
         exit(4);
     }
 
     SymbolData *newData = malloc(sizeof(SymbolData));
     if (newData == NULL) {
+        symtableFree(sTable);
         fprintf(stderr, "Error 99: memory allocation failed\n");
         exit(99);
     }
@@ -209,6 +209,7 @@ static SymbolData *insertSymbol(Symtable *sTable, char *name, SymbolType sType,
     newData->symbolName = copyString(name);
     if (newData->symbolName == NULL) {
         free(newData);
+        symtableFree(sTable);
         fprintf(stderr, "Error 99: memory allocation failed\n");
         exit(99);
     }
@@ -223,6 +224,7 @@ static SymbolData *insertSymbol(Symtable *sTable, char *name, SymbolType sType,
     if (htInsert(current, newData->symbolName, newData) == NULL) {
         free(newData->symbolName);
         free(newData);
+        symtableFree(sTable);
         fprintf(stderr, "Error 99: symbol table is full\n");
         exit(99);
     }
@@ -245,7 +247,7 @@ SymbolData *symtableInsertFunction(Symtable *sTable, char *name,
     return insertSymbol(sTable, name, FUNCTION, returnType, isDefined);
 }
 
-bool symtableAddParam(SymbolData *funcSymbol, char *paramName,
+bool symtableAddParam(Symtable *sTable, SymbolData *funcSymbol, char *paramName,
                       DataType paramType) {
     if (funcSymbol == NULL || paramName == NULL ||
         funcSymbol->sType != FUNCTION) {
@@ -257,6 +259,7 @@ bool symtableAddParam(SymbolData *funcSymbol, char *paramName,
     FunctionParam **top = &funcSymbol->value.funcData.params;
     while (*top != NULL) {
         if (strcmp((*top)->paramName, paramName) == 0) {
+            symtableFree(sTable);
             fprintf(stderr, "Error 4: duplicate parameter '%s'\n", paramName);
             exit(4);
         }
@@ -265,6 +268,7 @@ bool symtableAddParam(SymbolData *funcSymbol, char *paramName,
 
     FunctionParam *param = malloc(sizeof(FunctionParam));
     if (param == NULL) {
+        symtableFree(sTable);
         fprintf(stderr, "Error 99: memory allocation failed\n");
         exit(99);
     }
@@ -272,6 +276,7 @@ bool symtableAddParam(SymbolData *funcSymbol, char *paramName,
     param->paramName = copyString(paramName);
     if (param->paramName == NULL) {
         free(param);
+        symtableFree(sTable);
         fprintf(stderr, "Error 99: memory allocation failed\n");
         exit(99);
     }
