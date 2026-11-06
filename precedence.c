@@ -16,6 +16,22 @@
 * @author xfoxnik00
 */
 
-// TODO: Implement precedence functions + #includes
+#include "precedence.h"
+
+// Temporary from scanner.c
+Token getToken()
+{
+    
+}
+
+
+// Temporary from symtable.c
+SymbolData *symtableSearch(Symtable *sTable, char *name)
+{
+
+}
+
+
+// TODO: Implement precedence functions
 
 /*** End of file precedence.c ***/
