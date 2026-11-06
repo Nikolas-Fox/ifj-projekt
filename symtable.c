@@ -29,15 +29,6 @@ struct Symtable {
     size_t capacity;
 };
 
-// AI: (claude) - help with the structure for Built in Functions for global
-// scope
-typedef struct {
-    const char *name;
-    DataType ret;
-    int paramCount;
-    DataType params[3];
-    const char *paramNames[3];
-} BuiltinDef;
 
 static const BuiltinDef BUILTINS[] = {
     {"print", TYPE_UNIT, 1, {TYPE_ANY}, {"value"}},

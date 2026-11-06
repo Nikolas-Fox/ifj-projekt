@@ -62,6 +62,16 @@ typedef struct {
     } value;
 } SymbolData;
 
+// AI: (claude) - help with the structure for Built in Functions for global
+// scope
+typedef struct {
+    const char *name;
+    DataType ret;
+    int paramCount;
+    DataType params[3];
+    const char *paramNames[3];
+} BuiltinDef;
+
 typedef struct Symtable Symtable;
 
 /**
