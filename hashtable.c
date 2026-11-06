@@ -11,12 +11,11 @@
  *               function.
  *****************************************************************************/
 /**
-* @file hashtable.c
-*
-* @brief Implementation of the hash table 
-* @author xpovala00
-*/
-
+ * @file hashtable.c
+ *
+ * @brief Implementation of the hash table
+ * @author xpovala00
+ */
 
 #include "hashtable.h"
 #include <stdbool.h>
@@ -91,11 +90,83 @@ HashTItem *htSearch(HashTable *table, const char *key) {
     return NULL;
 }
 
+static bool isPrime(size_t number) {
+    if (number == 1 || number == 0) {
+        return false;
+    }
+    for (size_t i = 2; i <= number / i; i++) {
+        if (number % i == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// function for searching for new size for hashtable, finding next prime number
+static size_t makeNewSize(size_t oldSize) {
+    size_t newSize = (oldSize * 2) + 1; // to make the number odd
+
+    while (!isPrime(newSize)) {
+        newSize += 2;
+    }
+    return newSize;
+}
+static HashTable *reHash(HashTable *table) {
+    if (table == NULL) {
+        return NULL;
+    }
+
+    size_t newSize = makeNewSize(table->size);
+    if (newSize < table->size) {
+        return NULL;
+    }
+
+    HashTItem *newTableHash =
+        calloc(newSize, sizeof(HashTItem)); // nastavy stavy na empty
+    if (newTableHash == NULL) {
+        return NULL;
+    }
+    size_t oldSize = table->size;
+    HashTItem *oldTable = table->tableItems;
+
+    table->size = newSize;
+    table->count_occupied = 0;
+
+    size_t count = 0;
+    while (count < oldSize) {
+        if (oldTable[count].state == OCCUPIED) {
+            size_t position = hashFunction(oldTable[count].key, newSize);
+            bool occupied = true;
+            while (occupied) {
+                if (newTableHash[position].state == EMPTY) {
+                    newTableHash[position].key = oldTable[count].key;
+                    newTableHash[position].state = OCCUPIED;
+                    newTableHash[position].data = oldTable[count].data;
+                    occupied = false;
+                    table->count_occupied += 1;
+                }
+                position = (position + 1) % newSize;
+            }
+        }
+        count++;
+    }
+    free(oldTable);
+    table->tableItems = newTableHash;
+    return table;
+}
+
 HashTItem *htInsert(HashTable *table, const char *key, void *data) {
     // check for NULL pointers
     if (table == NULL || key == NULL) {
         return NULL;
     }
+
+    if (table->count_occupied > (table->size * 0.7)) {
+        if (reHash(table) == NULL) {
+            return NULL;
+        }
+    }
+
     // the initial index from hash function
     size_t position = hashFunction(key, table->size);
     size_t count = 0;
@@ -160,7 +231,6 @@ bool htDelete(HashTable *table, const char *key) {
     if (ItemForDelete == NULL) {
         return false;
     }
-
     ItemForDelete->key = NULL;
     ItemForDelete->data = NULL;
     ItemForDelete->state = DELETED;
@@ -174,7 +244,6 @@ void htFree(HashTable *table) {
         free(table->tableItems);
         table->tableItems = NULL;
         free(table);
-        table = NULL;
     }
 }
 
