@@ -89,6 +89,8 @@ static Token makeToken(TokenType type, char *str) {
 
 Token getToken(void) {
     States state = ST_START;
+    int comment_depth = 0;
+    int comment_newline = 0;
 
     while(1) {
         int character = getchar();
@@ -129,6 +131,7 @@ Token getToken(void) {
                 if (character == '>') { state = ST_GREATER; break; }
                 if (character == '=') { state = ST_ASSIGN; break; }
                 if (character == '!') { state = ST_NEQ; break; }
+                if (character == '/') { state = ST_SLASH; break; }
 
                 //one character tokens
                 switch (character) {
@@ -149,15 +152,15 @@ Token getToken(void) {
                 break;
 
             case ST_UNDERSCORE:
-            if (isalnum(character) || character == '_') {
-                buf_add(character);
-                state = ST_ID;
-            } 
-            else {
-                fprintf(stderr, "Lexikalni chyba, samosttatne podtržítko není identifikátor");
-                exit(1);
-            }
-            break;
+                if (isalnum(character) || character == '_') {
+                    buf_add(character);
+                    state = ST_ID;
+                } 
+                else {
+                    fprintf(stderr, "Lexikalni chyba, samosttatne podtržítko není identifikátor");
+                    exit(1);
+                }
+                break;
 
             case ST_ID:
                 if (isalnum(character) || character == '_') {
@@ -198,7 +201,83 @@ Token getToken(void) {
                 if (character == '=') {
                     return makeToken(TOK_NEQ, NULL);
                 }
-                lexError("samotny vykricnik (negace je az v rozsireni)");    
+                fprintf(stderr, "Lexikalni chyba, samostatny vykricnik az v rozsireni");
+                    exit(1);
+            
+            case ST_SLASH:
+                if (character == '/') {
+                    state = ST_LINE_COMMENT;
+                } else if (character == '*') {
+                    comment_depth = 1;
+                    comment_newline = 0;
+                    state = ST_BLOCK_COMMENT;
+                } else {
+                    ungetc(character, stdin);
+                    return makeToken(TOK_DIV, NULL);
+                }
+                break;
+
+            case ST_LINE_COMMENT:
+                if (character == '\n' || character == EOF) {
+                    ungetc(character, stdin);  
+                    state = ST_START;
+                }
+                break;
+
+            case ST_BLOCK_COMMENT:
+                if (character == EOF) {
+                    fprintf(stderr, "Lexikalni chyba, neukonceny blokovy komentar");
+                    exit(1);
+                } else if (character == '\n') {
+                    line++;
+                    comment_newline = 1;
+                } else if (character == '/') {
+                    state = ST_BLOCK_SLASH;
+                } else if (character == '*') {
+                    state = ST_BLOCK_STAR;
+                }
+                break;
+            
+            case ST_BLOCK_SLASH:
+                if (character == '*') {
+                    comment_depth++;
+                    state = ST_BLOCK_COMMENT;
+                } else {
+                    ungetc(character, stdin);
+                    state = ST_BLOCK_COMMENT;
+                }
+                break;
+
+            case ST_BLOCK_STAR:
+                if (character == '/') {
+                    comment_depth--;
+                    if (comment_depth == 0) {
+                        if (comment_newline != 0) {
+                            state = ST_AFTER_BLOCK;
+                        } else {
+                            state = ST_START;
+                        }
+                    } else {
+                        state = ST_BLOCK_COMMENT;
+                    }
+                } else {
+                    ungetc(character, stdin);
+                    state = ST_BLOCK_COMMENT;
+                }
+                break;
+                
+            case ST_AFTER_BLOCK:
+                if (character == ' ' || character == '\t' || character == '\r') {
+                    break;
+                }
+                if (character == '\n' || character == EOF) {
+                    ungetc(character, stdin);
+                    state = ST_START;
+                    break;
+                }
+                fprintf(stderr, "Lexikalni chyba, po viceradkovem komentari nemuze nasledovat token");
+                    exit(1);
+                break;
         }
     }
 }
