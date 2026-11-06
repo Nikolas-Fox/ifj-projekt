@@ -1,4 +1,5 @@
 ---
+# Generated automatically using clang-format dump-config
 Language:        Cpp
 AccessModifierOffset: -2
 AlignAfterOpenBracket: Align
