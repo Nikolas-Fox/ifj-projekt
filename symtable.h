@@ -162,3 +162,5 @@ SymbolData *symtableSearch(Symtable *sTable, char *name);
 SymbolData *symtableSearchCurrentScope(Symtable *sTable, char *name);
 
 #endif
+
+ /*** End of file symtable.h ***/

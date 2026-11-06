@@ -124,3 +124,5 @@ size_t hashFunction(const char *key, size_t tableSize);
 void forEachData(HashTable *table, CallBackData callback);
 
 #endif
+
+ /*** End of file hashtable.h ***/

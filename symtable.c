@@ -316,3 +316,5 @@ SymbolData *symtableSearch(Symtable *sTable, char *name) {
     }
     return NULL;
 }
+
+ /*** End of file symtable.c ***/
