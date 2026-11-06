@@ -1,21 +1,21 @@
 /******************************************************************************
-* Project:		Implementace překladače imperativního jazyka IFJ26
-* Package:	    Symbol table
-* File:			hashtable.h
-* Date:			1.11.2026
-* Last change:	1.11.026
-* Authors: 		xpovala00
+ * Project:		Implementace překladače imperativního jazyka IFJ26
+ * Package:	    Symbol table
+ * File:			hashtable.h
+ * Date:			1.11.2026
+ * Last change:	1.11.026
+ * Authors: 		xpovala00
  *
  * Description:  Header file of the hash table - open addressing, linear
  *               probing: item and table structures, function prototypes.
-*
-*******************************************************************************/
+ *
+ *******************************************************************************/
 /**
-* @file hashtable.h
-*
-* @brief Header file of the hash table 
-* @author xpovala00
-*/
+ * @file hashtable.h
+ *
+ * @brief Header file of the hash table
+ * @author xpovala00
+ */
 
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
