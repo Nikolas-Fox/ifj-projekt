@@ -403,6 +403,54 @@ Token getToken(void) {
                     exit(1);
                 }
                 break;
+
+            case ST_EXP:
+                if (character == '+' || character == '-') {
+                    buf_add(character);
+                    state = ST_EXP_SIGN;
+                } else if (isdigit(character)) {
+                    buf_add(character);
+                    state = ST_EXP_DIGITS;
+                } else {
+                    fprintf(stderr, "Lexikalni chyba, exponent musi obsahovat cislici");
+                    exit(1);
+                }
+                break;
+
+            case ST_EXP_SIGN:
+                if (isdigit(character)) {
+                    buf_add(character);
+                    state = ST_EXP_DIGITS;
+                } else {
+                    fprintf(stderr, "Lexikalni chyba, exponent musi obsahovat cislici");
+                    exit(1);
+                }
+                break;
+
+            case ST_EXP_DIGITS:
+                if (isdigit(character)) {
+                    buf_add(character);
+                } else if (character == '_') {
+                    state = ST_EXP_US;
+                } else if (character == 'd' || character == 'D') {
+                    state = ST_SUFFIX;
+                } else {
+                    return endNumber(TOK_DOUBLE, character);
+                }
+                break;
+
+            case ST_EXP_US:
+                if (isdigit(character)) {
+                    buf_add(character);
+                    state = ST_EXP_DIGITS;
+                } else if (character != '_') {
+                    fprintf(stderr, "Lexikalni chyba, podtrzitko musi byt mezi cislicemi");
+                    exit(1);
+                }
+                break;
+
+            case ST_SUFFIX:
+                return endNumber(TOK_DOUBLE, character);
         }
     }
 }
