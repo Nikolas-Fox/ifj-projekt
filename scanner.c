@@ -22,7 +22,19 @@ typedef enum {
     ST_BLOCK_COMMENT,  
     ST_BLOCK_SLASH,    
     ST_BLOCK_STAR,     
-    ST_AFTER_BLOCK 
+    ST_AFTER_BLOCK,
+    ST_START_DOT,
+    ST_ZERO,
+    ST_INT,
+    ST_INT_US,
+    ST_DOT,
+    ST_DECIMAL,
+    ST_DECIMAL_US,
+    ST_EXP,
+    ST_EXP_SIGN,
+    ST_EXP_DIGITS,
+    ST_EXP_US,
+    ST_SUFFIX
 }States;
 
 static int line = 1;
@@ -85,6 +97,15 @@ static Token makeToken(TokenType type, char *str) {
     tok.str = str;
     tok.line = line;
     return tok;
+}
+
+static Token endNumber(TokenType type, int character) {
+    if (isalnum(character) || character == '_') {
+        fprintf(stderr, "Lexikalni chyba, neplatny znak za ciselnym literalem");
+        exit(1);
+    }
+    ungetc(character, stdin);
+    return makeToken(type, buf_copy());
 }
 
 Token getToken(void) {
