@@ -3,7 +3,7 @@
 * Package:		precedence
 * File:			precedence.h
 * Date:			5.11.2026
-* Last change:	5.11.2026
+* Last change:	7.11.2026
 * Authors: 		xfoxnik00
 *
 * Description: Header file for precedence syntactic analysis
@@ -113,9 +113,29 @@ SymbolData *symtableSearch(Symtable *sTable, char *name);
 
 /******************************************************************************/
 
+// symbol type for the precedencial analyser 
+// I group some of the symbols from the precedential table,
+// because they have the same priority and associativty 
+typedef enum
+{
+    PREC_FUNC,        // f(E)
+    PREC_DOT,         // E.E
+    PREC_SIGN,        // +P, -P
+    PREC_NOT,         // !
+    PREC_MUL_DIV,
+    PREC_PLUS_MINUS,
+    PREC_RELATION,    // >, >=, <, <=
+    PREC_EQ_NE,       // ==, !=
+    PREC_AND,
+    PREC_OR,
+    PREC_LPAR,
+    PREC_RPAR,
+    PREC_ID,
+    PREC_ASSIGN,     // =
+    PREC_END         // $
+}PrecSymbol;
 
-// TODO: Declare precedence function, define a precedence stack, define precedence symbols
-
+// TODO: Declare precedence function, define a precedence stack
 
 
 #endif   // PRECEDENCE_H
