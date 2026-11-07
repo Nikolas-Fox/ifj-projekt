@@ -379,7 +379,30 @@ Token getToken(void) {
                 }
                 break;
 
-            
+            case ST_DECIMAL:
+                if (isdigit(character)) {
+                    buf_add(character);
+                } else if (character == '_') {
+                    state = ST_DECIMAL_US;
+                } else if (character == 'e' || character == 'E') {
+                    buf_add(character);
+                    state = ST_EXP;
+                } else if (character == 'd' || character == 'D') {
+                    state = ST_SUFFIX;
+                } else {
+                    return endNumber(TOK_DOUBLE, character);
+                }
+                break;
+
+            case ST_DECIMAL_US:
+                if (isdigit(character)) {
+                    buf_add(character);
+                    state = ST_DECIMAL;
+                } else if (character != '_') {
+                    fprintf(stderr, "Lexikalni chyba, podtrzitko musi byt mezi cislicemi");
+                    exit(1);
+                }
+                break;
         }
     }
 }
