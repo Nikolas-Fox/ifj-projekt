@@ -153,6 +153,18 @@ Token getToken(void) {
                 if (character == '=') { state = ST_ASSIGN; break; }
                 if (character == '!') { state = ST_NEQ; break; }
                 if (character == '/') { state = ST_SLASH; break; }
+                if (character == '.') { state = ST_START_DOT; break; }
+
+                if (isdigit(character)) {
+                    buf_reset();
+                    buf_add(character);
+                    if (character == '0') {
+                        state = ST_ZERO;
+                    } else {
+                        state = ST_INT;
+                    }
+                    break;
+                }
 
                 //one character tokens
                 switch (character) {
@@ -299,6 +311,75 @@ Token getToken(void) {
                 fprintf(stderr, "Lexikalni chyba, po viceradkovem komentari nemuze nasledovat token");
                     exit(1);
                 break;
+
+            case ST_START_DOT:
+                if (isdigit(character)) {
+                    buf_reset();
+                    buf_add('.');
+                    buf_add(character);
+                    state = ST_DECIMAL;
+                } else {
+                    ungetc(character, stdin);
+                    return makeToken(TOK_DOT, NULL);
+                }
+                break;
+
+            case ST_ZERO:
+                if (isdigit(character)) {
+                    fprintf(stderr, "Lexikalni chyba, nenulovy literal nesmi zacinat nulou");
+                    exit(1);
+                } else if (character == '.') {
+                    buf_add(character);
+                    state = ST_DOT;
+                } else if (character == 'e' || character == 'E') {
+                    buf_add(character);
+                    state = ST_EXP;
+                } else if (character == 'd' || character == 'D') {
+                    state = ST_SUFFIX;
+                } else {
+                    return endNumber(TOK_INT, character);
+                }
+                break;
+
+            case ST_INT:
+                if (isdigit(character)) {
+                    buf_add(character);
+                } else if (character == '_') {
+                    state = ST_INT_US;
+                } else if (character == '.') {
+                    buf_add(character);
+                    state = ST_DOT;
+                } else if (character == 'e' || character == 'E') {
+                    buf_add(character);
+                    state = ST_EXP;
+                } else if (character == 'd' || character == 'D') {
+                    state = ST_SUFFIX;
+                } else {
+                    return endNumber(TOK_INT, character);
+                }
+                break;
+
+            case ST_INT_US:
+                if (isdigit(character)) {
+                    buf_add(character);
+                    state = ST_INT;
+                } else if (character != '_') {
+                    fprintf(stderr, "Lexikalni chyba, podtrzitko musi byt mezi cislicemi");
+                    exit(1);
+                }
+                break;
+
+            case ST_DOT:
+                if (isdigit(character)) {
+                    buf_add(character);
+                    state = ST_DECIMAL;
+                } else {
+                    fprintf(stderr, "Lexikalni chyba, za teckou sse ocekava cislice");
+                    exit(1);
+                }
+                break;
+
+            
         }
     }
 }
