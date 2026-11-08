@@ -191,6 +191,26 @@ PrecSymbol precStackTop(PrecStack *s);
  */
 void precStackFree(PrecStack *s);
 
+
+
+
+/**
+ * @brief Returns the first terminal on the stack
+ * @param s PrecStack type pointer
+ * @return -1 if error, PrecSymbol otherwise
+ */
+PrecSymbol precStackGetFirstTerm(PrecStack *s);
+
+/**
+ * @brief Pushes a PrecSymbol onto the stack after the first terminal
+ * @param s PrecStack type pointer
+ */
+void precStackPushAfterFirstTerm(PrecStack *s);
+
+
+
+
+
 /**
  * @brief returns the PrecSymbol equivalent of a token
  * @param current Pointer to the current token
@@ -198,7 +218,7 @@ void precStackFree(PrecStack *s);
  * @param stack Pointer to stack, where I keep a hold of the number of parentheses
  * @return -1 if token doesn't have symbol equivalent, otherwise PrecSymbol
  */
-PrecSymbol tokenToPrec(Token *current, bool previousWasOperand, PrecStack *stack);
+PrecSymbol tokenToPrec(Token *current, bool previousWasOperand, PrecStack *s);
 
 /**
  * @brief Uses precedence analysis to validate expression

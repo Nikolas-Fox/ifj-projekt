@@ -201,6 +201,64 @@ PrecSymbol tokenToPrec(Token *current, bool previousWasOperand, PrecStack *stack
     }
 }
 
+PrecSymbol precStackGetFirstTerm(PrecStack *stack)
+{
+    PrecStackElem *current = stack->top;
+
+    while(current != NULL)
+    {
+        if(current->symbol != PREC_E && current->symbol != PREC_SHIFT)
+        {
+            return current->symbol;
+        }
+        current = current->next;
+    }
+    // ERROR (we don't have any terminal on the stack)
+}
+
+void precStackPushAfterFirstTerm(PrecStack *stack, PrecSymbol symbol)
+{
+    PrecStackElem *newElem = (PrecStackElem *)malloc(sizeof(PrecStackElem));
+    // TEST FOR ERROR
+
+    newElem->symbol = symbol;
+
+    if(stack->top == NULL)
+    {
+        stack->top = newElem;
+        newElem->next = NULL;
+        return;
+    }
+
+    PrecStackElem *current = stack->top;
+    while(current != NULL)
+    {
+        if(current->symbol != PREC_E && current->symbol != PREC_SHIFT)
+        {
+            newElem->next = current->next;
+            current->next = newElem;
+            return;
+        }
+        current = current->next;
+    }
+
+    // if we find no terminal we need to add it straight to the start
+    newElem->next = stack->top;
+    stack->top = newElem;
+}
+
+
+
 // TODO: Implement precedence functions
 
 /*** End of file precedence.c ***/
+
+void parseExpression(Token *currentToken)
+{
+    PrecStack stack;
+    precStackInit(&stack);
+    precStackPush(&stack, PREC_END);
+
+    bool prevWasOperand = false;
+    
+}
