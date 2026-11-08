@@ -34,7 +34,15 @@ typedef enum {
     ST_EXP_SIGN,
     ST_EXP_DIGITS,
     ST_EXP_US,
-    ST_SUFFIX
+    ST_SUFFIX,
+    ST_STRING_START,
+    ST_STRING,
+    ST_ESCAPE,
+    ST_EMPTY_STRING,
+    ST_MUL_LINE_STRING,
+    ST_MUL_LINE_QUOTE1,
+    ST_MUL_LINE_QUOTE2,
+    ST_MUL_LINE_QUOTE3
 }States;
 
 static int line = 1;
