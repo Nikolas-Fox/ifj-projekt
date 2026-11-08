@@ -230,9 +230,9 @@ PrecSymbol tokenToPrec(Token *current, bool previousWasOperand, PrecStack *s);
 
 /**
  * @brief Uses precedence analysis to validate expression
- * @param currentToken Pointer to the current token
+ * @param p Pointer to the parsed token
  */
-void parseExpression(Token *currentToken);
+void parseExpression(ParsedToken *p);
 
 
 #endif   // PRECEDENCE_H
