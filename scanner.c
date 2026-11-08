@@ -1,6 +1,6 @@
 //scanner
 //author: Eliška Opršalová, xoprsae00
-//last change: 1. 11. 2026
+//last change: 8. 11. 2026
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -79,7 +79,7 @@ static void buf_add(int c) {
 //Copy of the buffer for the token (the token owns its text)
 static char *buf_copy(void) {
     char *copy = malloc(buf_len + 1);
-    if (!copy) exit(99);  // interní chyba překladače
+    if (!copy) exit(99);
     memcpy(copy, buf, buf_len + 1);
     return copy;
 }
@@ -181,6 +181,12 @@ Token getToken(void) {
                     } else {
                         state = ST_INT;
                     }
+                    break;
+                }
+
+                if (character == '"') {
+                    buf_reset();
+                    state = ST_STRING_START;
                     break;
                 }
 
@@ -469,6 +475,55 @@ Token getToken(void) {
 
             case ST_SUFFIX:
                 return endNumber(TOK_DOUBLE, character);
+
+            case ST_STRING_START:
+                if (character == '"') {
+                    state = ST_EMPTY_STRING;
+                } else {
+                    ungetc(character, stdin);
+                    state = ST_STRING;
+                }
+                break;
+
+            case ST_STRING:
+                if (character == '"') {
+                    return makeToken(TOK_STRING, buf_copy());
+                } else if (character == '\\') {
+                    state = ST_ESCAPE;
+                } else if (character == '\n' || character == EOF) {
+                    fprintf(stderr, "Lexikalni chyba, neukonceny retezec");
+                    exit(1);
+                } else {
+                    buf_add(character);
+                }
+                break;
+
+            case ST_ESCAPE:
+                if (character == 'n') {
+                    buf_add('\n');
+                } else if (character == 'r') {
+                    buf_add('\r');
+                } else if (character == 't') {
+                    buf_add('\t');
+                } else if (character == '\\') {
+                    buf_add('\\');
+                } else if (character == '"') {
+                    buf_add('"');
+                } else {
+                    fprintf(stderr, "Lexikalni chyba, neplatna escape sekvence");
+                    exit(1);
+                }
+                state = ST_STRING;
+                break;
+            
+            case ST_EMPTY_STRING:
+                if (character == '"') {
+                    state = ST_MUL_LINE_STRING;
+                } else {
+                    ungetc(character, stdin);
+                    return makeToken(TOK_STRING, buf_copy());
+                }
+                break;
         }
     }
 }
