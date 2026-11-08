@@ -44,7 +44,18 @@ typedef enum {
     ST_MUL_LINE_QUOTE2,
     ST_MUL_LINE_QUOTE3,
     ST_LINE_START,
-    ST_PAREN_LINE  // počítá mezery na dalším řádku uvnitř závorek
+    ST_PAREN_LINE, // počítá mezery na dalším řádku uvnitř závorek
+    ST_AMP,
+    ST_PIPE,
+    ST_INTERP_OPEN,    
+    ST_INTERP_OPEN2,   
+    ST_INTERP_TEXT,
+    ST_INTERP_ESCAPE,  
+    ST_INTERP_DOLLAR,
+    ST_INTERP_ID,
+    ST_INTERP_QUOTE1,  
+    ST_INTERP_QUOTE2,
+    ST_INTERP_QUOTE3
 }States;
 
 static int line = 1;
@@ -53,6 +64,16 @@ static int at_line_start = 1;  // 1 = začíná nový logický řádek
 static int paren_depth = 0;    // hloubka kulatých závorek
 static int line_indent = 0;    // počet mezer na začátku aktuálního logického řádku
 static int line_tab = 0;       // 1 = odsazení obsahuje tabulátor
+
+static int dot_after_number = 0;
+
+#define MAX_INTERP 32
+static int interp_depth = 0;              // how many interpolated strings are open
+static int interp_kind[MAX_INTERP];       // 0 = s"...", 1 = s"""..."""
+static int interp_in_expr[MAX_INTERP];    // 1 = inside ${ ... }
+static Token interp_queued;               // token waiting for the next call
+static int has_interp_queued = 0;
+static int resume_ident = 0;              // 1 = continue reading the identifier after $
 
 //Buffer for the lexeme text
 static char *buf = NULL;
@@ -101,7 +122,9 @@ static const KeywordPair keywords[] = {
     {"if", TOK_KW_IF},       {"else", TOK_KW_ELSE},     {"then", TOK_KW_THEN},
     {"while", TOK_KW_WHILE}, {"do", TOK_KW_DO},         {"return", TOK_KW_RETURN},
     {"import", TOK_KW_IMPORT}, {"Int", TOK_KW_INT},     {"Double", TOK_KW_DOUBLE},
-    {"String", TOK_KW_STRING}, {"Unit", TOK_KW_UNIT},
+    {"String", TOK_KW_STRING}, {"Unit", TOK_KW_UNIT},   {"Boolean", TOK_KW_BOOLEAN},
+    {"true", TOK_KW_TRUE},  {"false", TOK_KW_FALSE},    {"extension", TOK_KW_EXTENSION},
+    
 };
 
 // Vrátí typ klíčového slova, nebo TOK_ID, pokud to není klíčové slovo
@@ -133,12 +156,59 @@ static Token endNumber(TokenType type, int character) {
     return makeToken(type, buf_copy());
 }
 
-Token readToken(void) {
+// Opens an interpolated string (kind 0 = one line, 1 = multi-line)
+static void pushInterp(int kind) {
+    if (interp_depth + 1 >= MAX_INTERP) {
+        exit(99);
+    }
+    interp_kind[interp_depth] = kind;
+    interp_in_expr[interp_depth] = 0;
+    interp_depth++;
+}
+
+// Closes an interpolated string: returns the pending text (if any) and then TOK_INTERP_END
+static Token endInterpolation(void) {
+    interp_depth--;
+    Token end = makeToken(TOK_INTERP_END, NULL);
+    if (buf_len == 0) {
+        return end;
+    }
+    interp_queued = end;
+    has_interp_queued = 1;
+    return makeToken(TOK_STRING, buf_copy());
+}
+
+// Starts ${ ... }: returns the pending text (if any) and then TOK_INTERP_EXPR_START
+static Token startExpression(void) {
+    interp_in_expr[interp_depth - 1] = 1;
+    paren_depth++;  // a line break inside ${ } is only whitespace
+    Token start = makeToken(TOK_INTERP_EXPR_START, NULL);
+    if (buf_len == 0) {
+        return start;
+    }
+    interp_queued = start;
+    has_interp_queued = 1;
+    return makeToken(TOK_STRING, buf_copy());
+}
+
+static Token readToken(void) {
     States state = ST_START;
     int comment_depth = 0;
     int comment_newline = 0;
     int indent_count = 0;
-    if (at_line_start == 1) {
+
+    if (dot_after_number == 1) {
+        dot_after_number = 0;
+        return makeToken(TOK_DOT, NULL);
+    }
+
+    if (resume_ident == 1) {
+        resume_ident = 0;
+        state = ST_INTERP_ID;
+    } else if (interp_depth > 0 && interp_in_expr[interp_depth - 1] == 0) {
+        buf_reset();
+        state = ST_INTERP_TEXT;
+    } else if (at_line_start == 1) {
         at_line_start = 0;
         line_tab = 0;
         state = ST_LINE_START;
@@ -151,12 +221,20 @@ Token readToken(void) {
             case ST_START:
 
                 if(character == EOF) {
+                    if (interp_depth > 0) {
+                        fprintf(stderr, "Lexikalni chyba, neukonceny interpolovany retezec");
+                        exit(1);
+                    }
                     return makeToken(TOK_EOF, NULL);
                 }  
 
                 if (character == ' ' || character == '\t' || character == '\r') break;
 
                 if (character == '\n') {
+                    if (interp_depth > 0 && interp_kind[interp_depth - 1] == 0) {
+                        fprintf(stderr, "Lexikalni chyba, neukonceny interpolovany retezec");
+                        exit(1);
+                    }
                     if (paren_depth > 0) {
                         line++;
                         indent_count = 0;
@@ -191,6 +269,8 @@ Token readToken(void) {
                 if (character == '!') { state = ST_NEQ; break; }
                 if (character == '/') { state = ST_SLASH; break; }
                 if (character == '.') { state = ST_START_DOT; break; }
+                if (character == '&') { state = ST_AMP; break; }
+                if (character == '|') { state = ST_PIPE; break; }
 
                 if (isdigit(character)) {
                     buf_reset();
@@ -207,6 +287,14 @@ Token readToken(void) {
                     buf_reset();
                     state = ST_STRING_START;
                     break;
+                }
+
+                if (character == '}' && interp_depth > 0 && interp_in_expr[interp_depth - 1] == 1) {
+                    interp_in_expr[interp_depth - 1] = 0;
+                    if (paren_depth > 0) {
+                        paren_depth--;
+                    }
+                    return makeToken(TOK_INTERP_EXPR_END, NULL);
                 }
 
                 //one character tokens
@@ -226,8 +314,8 @@ Token readToken(void) {
                     case ':': return makeToken(TOK_COLON, NULL);
                     case '*': return makeToken(TOK_MUL, NULL);
                     case '-': return makeToken(TOK_MINUS, NULL);
-                    case '@': return makeToken(TOK_AT, NULL);
                     case '+': return makeToken(TOK_PLUS, NULL);
+                    case '@': return makeToken(TOK_AT_MAIN, NULL);
                 }
                 
                 fprintf(stderr, "Lexikalni chyba");
@@ -249,7 +337,9 @@ Token readToken(void) {
             case ST_ID:
                 if (isalnum(character) || character == '_') {
                     buf_add(character);
-                } else {
+                } else if (buf_len == 1 && buf[0] == 's' && character == '"') {
+                    state = ST_INTERP_OPEN; 
+                }else {
                     ungetc(character, stdin);  // znak už nepatří k identifikátoru
 
                     TokenType type = findKeyword(buf);
@@ -282,11 +372,19 @@ Token readToken(void) {
                 return makeToken(TOK_ASSIGN, NULL);
 
             case ST_NEQ:
-                if (character == '=') {
+                 if (character == '=') {
                     return makeToken(TOK_NEQ, NULL);
                 }
-                fprintf(stderr, "Lexikalni chyba, samostatny vykricnik az v rozsireni");
-                    exit(1);
+                ungetc(character, stdin);
+                return makeToken(TOK_NOT, NULL);
+
+            case ST_AMP:
+                if (character == '&') {
+                    return makeToken(TOK_AND, NULL);
+                }
+                fprintf(stderr, "Lexikalni chyba, samostatny znak '&' neni podprovano (ocekavano &&)");
+                exit(1);
+                break;
             
             case ST_SLASH:
                 if (character == '/') {
@@ -299,6 +397,14 @@ Token readToken(void) {
                     ungetc(character, stdin);
                     return makeToken(TOK_DIV, NULL);
                 }
+                break;
+
+            case ST_PIPE:
+                if (character == '|') {
+                    return makeToken(TOK_OR, NULL);
+                }
+                fprintf(stderr, "Lexikalni chyba, samostatny znak '|' neni podprovano (ocekavano ||)");
+                exit(1);
                 break;
 
             case ST_LINE_COMMENT:
@@ -425,8 +531,11 @@ Token readToken(void) {
                     buf_add(character);
                     state = ST_DECIMAL;
                 } else {
-                    fprintf(stderr, "Lexikalni chyba, za teckou sse ocekava cislice");
-                    exit(1);
+                    ungetc(character, stdin);
+                buf_len--;
+                buf[buf_len] = '\0';
+                dot_after_number = 1;
+                return makeToken(TOK_INT, buf_copy());
                 }
                 break;
 
@@ -625,6 +734,138 @@ Token readToken(void) {
                     }
                     ungetc(character, stdin);
                     state = ST_START;
+                }
+                break;
+
+            case ST_INTERP_OPEN:
+                if (character == '"') {
+                    state = ST_INTERP_OPEN2;
+                } else {
+                    ungetc(character, stdin);
+                    pushInterp(0);
+                    return makeToken(TOK_INTERP_START, NULL);
+                }
+                break;
+
+            case ST_INTERP_OPEN2:
+                if (character == '"') {
+                    pushInterp(1);
+                    return makeToken(TOK_INTERP_START, NULL);
+                }
+                ungetc(character, stdin);
+                interp_queued = makeToken(TOK_INTERP_END, NULL);
+                has_interp_queued = 1;
+                return makeToken(TOK_INTERP_START, NULL);
+ 
+            case ST_INTERP_TEXT:
+                if (character == EOF) {
+                    fprintf(stderr, "Lexikalni chyba, neukonceny interpolovany retezec");
+                    exit(1);
+                } else if (character == '$') {
+                    state = ST_INTERP_DOLLAR;
+                } else if (interp_kind[interp_depth - 1] == 0) {
+                    // one-line string
+                    if (character == '"') {
+                        return endInterpolation();
+                    } else if (character == '\\') {
+                        state = ST_INTERP_ESCAPE;
+                    } else if (character == '\n') {
+                        fprintf(stderr, "Lexikalni chyba, neukonceny interpolovany retezec");
+                        exit(1);
+                    } else {
+                        buf_add(character);
+                    }
+                } else {
+                    // multi-line string, everything is literal
+                    if (character == '"') {
+                        state = ST_INTERP_QUOTE1;
+                    } else {
+                        if (character == '\n') {
+                            line++;
+                        }
+                        buf_add(character);
+                    }
+                }
+                break;
+
+            case ST_INTERP_ESCAPE:
+                if (character == 'n') {
+                    buf_add('\n');
+                } else if (character == 'r') {
+                    buf_add('\r');
+                } else if (character == 't') {
+                    buf_add('\t');
+                } else if (character == '\\') {
+                    buf_add('\\');
+                } else if (character == '"') {
+                    buf_add('"');
+                } else {
+                    fprintf(stderr, "Lexikalni chyba, neplatna escape sekvence");
+                    exit(1);
+                }
+                state = ST_INTERP_TEXT;
+                break;
+
+            case ST_INTERP_DOLLAR:
+                if (character == '$') {
+                    buf_add('$');
+                    state = ST_INTERP_TEXT;
+                } else if (character == '{') {
+                    return startExpression();
+                } else if (isalpha(character) || character == '_') {
+                    if (buf_len == 0) {
+                        buf_add(character);
+                        state = ST_INTERP_ID;
+                    } else {
+                        // first return the text before $, then continue with the identifier
+                        char *text = buf_copy();
+                        buf_reset();
+                        buf_add(character);
+                        resume_ident = 1;
+                        return makeToken(TOK_STRING, text);
+                    }
+                } else {
+                    fprintf(stderr, "Lexikalni chyba, za $ ocekavano $, { nebo identifikator");
+                    exit(1);
+                }
+                break;
+
+            case ST_INTERP_ID:
+                if (isalnum(character) || character == '_') {
+                    buf_add(character);
+                } else {
+                    ungetc(character, stdin);
+                    return makeToken(TOK_ID, buf_copy());
+                }
+                break;
+ 
+            case ST_INTERP_QUOTE1:
+                if (character == '"') {
+                    state = ST_INTERP_QUOTE2;
+                } else {
+                    buf_add('"');
+                    ungetc(character, stdin);
+                    state = ST_INTERP_TEXT;
+                }
+                break;
+ 
+            case ST_INTERP_QUOTE2:
+                if (character == '"') {
+                    state = ST_INTERP_QUOTE3;
+                } else {
+                    buf_add('"');
+                    buf_add('"');
+                    ungetc(character, stdin);
+                    state = ST_INTERP_TEXT;
+                }
+                break;
+ 
+            case ST_INTERP_QUOTE3:
+                if (character == '"') {
+                    buf_add('"');
+                } else {
+                    ungetc(character, stdin);
+                    return endInterpolation();
                 }
                 break;
         }

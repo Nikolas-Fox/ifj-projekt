@@ -17,7 +17,7 @@ typedef enum {
 
     //tokens for separators
     TOK_LPAR, TOK_RPAR, TOK_COMMA, TOK_COLON, TOK_SEMICOL,
-    TOK_DOT, TOK_AT,
+    TOK_DOT, TOK_AT_MAIN,
 
     //tokens for extentions
     TOK_AND, TOK_OR, TOK_NOT, 
@@ -27,7 +27,8 @@ typedef enum {
     //tokens for keywords
     TOK_KW_DEF, TOK_KW_DO, TOK_KW_DOUBLE, TOK_KW_ELSE, TOK_KW_IF, TOK_KW_IMPORT,
     TOK_KW_INT, TOK_KW_RETURN, TOK_KW_STRING, TOK_KW_THEN, TOK_KW_UNIT, TOK_KW_VAL,
-    TOK_KW_VAR, TOK_KW_WHILE
+    TOK_KW_VAR, TOK_KW_WHILE,
+    TOK_INTERP_START, TOK_INTERP_END, TOK_INTERP_EXPR_START, TOK_INTERP_EXPR_END
 }TokenType;
 
 typedef struct {
