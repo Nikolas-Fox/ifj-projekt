@@ -524,6 +524,50 @@ Token getToken(void) {
                     return makeToken(TOK_STRING, buf_copy());
                 }
                 break;
+
+            case ST_MUL_LINE_STRING:
+                if (character == '"') {
+                    state = ST_MUL_LINE_QUOTE1;
+                } else if (character == EOF) {
+                    fprintf(stderr, "Lexikalni chyba, neukonceny viceradkovy retezec");
+                    exit(1);
+                } else {
+                    if (character == '\n') {
+                        line++;
+                    }
+                    buf_add(character);
+                }
+                break;
+
+            case ST_MUL_LINE_QUOTE1:
+                if (character == '"') {
+                    state = ST_MUL_LINE_QUOTE2;
+                } else {
+                    buf_add('"');
+                    ungetc(character, stdin);
+                    state = ST_MUL_LINE_STRING;
+                }
+                break;
+
+            case ST_MUL_LINE_QUOTE2:
+                if (character == '"') {
+                    state = ST_MUL_LINE_QUOTE3;
+                } else {
+                    buf_add('"');
+                    buf_add('"');
+                    ungetc(character, stdin);
+                    state = ST_MUL_LINE_STRING;
+                }
+                break;
+
+            case ST_MUL_LINE_QUOTE3:
+                if (character == '"') {
+                    buf_add('"');
+                } else {
+                    ungetc(character, stdin);
+                    return makeToken(TOK_STRING, buf_copy());
+                }
+                break;
         }
     }
 }
