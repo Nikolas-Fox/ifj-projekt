@@ -202,10 +202,10 @@ void precStackFree(PrecStack *s);
 PrecSymbol precStackGetFirstTerm(PrecStack *s);
 
 /**
- * @brief Pushes a PrecSymbol onto the stack after the first terminal
+ * @brief Pushes Shift PrecSymbol onto the stack after the first terminal
  * @param s PrecStack type pointer
  */
-void precStackPushAfterFirstTerm(PrecStack *s);
+void precStackShiftAfterFirstTerm(PrecStack *s);
 
 
 
