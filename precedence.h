@@ -113,7 +113,7 @@ SymbolData *symtableSearch(Symtable *sTable, char *name);
 
 /******************************************************************************/
 
-// symbol type for the precedencial analyser 
+// data type - symbol for the precedencial analyser 
 // I group some of the symbols from the precedential table,
 // because they have the same priority and associativty 
 typedef enum
@@ -131,11 +131,33 @@ typedef enum
     PREC_LPAR,
     PREC_RPAR,
     PREC_ID,
-    PREC_ASSIGN,     // =
-    PREC_END         // $
+    PREC_ASSIGN,      // =
+    PREC_END,         // $
+
+    // these are used only in the stack
+    PREC_E,           // expression
+    PREC_SHIFT        // <
 }PrecSymbol;
 
-// TODO: Declare precedence function, define a precedence stack
+
+// data type - element of the precedence stack
+typedef struct PrecStackElem
+{
+    PrecSymbol symbol;
+    DataType type;
+    char *str;      // in case the symbol is a string literal (we must free it at the end)
+    struct PrecStackElem *next;
+}PrecStackElem;
+
+
+// adt - precedence stack for symbols 
+typedef struct 
+{
+    PrecStackElem *top;
+} PrecStack;
+
+
+// TODO: Declare precedence function
 
 
 #endif   // PRECEDENCE_H
