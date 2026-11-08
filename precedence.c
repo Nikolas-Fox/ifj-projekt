@@ -77,6 +77,7 @@ void precStackPush(PrecStack *stack, PrecSymbol symbol)
     }
 }
 
+
 PrecSymbol precStackPop(PrecStack *stack)
 {
     if(stack->top == NULL)
@@ -87,6 +88,11 @@ PrecSymbol precStackPop(PrecStack *stack)
     PrecSymbol pop = stack->top->symbol;
     PrecStackElem *tmp = stack->top;
     stack->top = (stack->top->next);
+    
+    if(tmp->str != NULL)
+    {
+    free(tmp->str);
+    }
     free(tmp);
 
     if(pop == PREC_LPAR)
@@ -96,6 +102,7 @@ PrecSymbol precStackPop(PrecStack *stack)
 
     return pop;
 }
+
 
 PrecSymbol precStackTop(PrecStack *stack)
 {
@@ -107,6 +114,7 @@ PrecSymbol precStackTop(PrecStack *stack)
     return stack->top->symbol;
 }
 
+
 void PrecStackFree(PrecStack *stack)
 {
     PrecStackElem *tmp;
@@ -117,6 +125,54 @@ void PrecStackFree(PrecStack *stack)
         free(tmp);
     }
 }
+
+
+PrecSymbol precStackGetFirstTerm(PrecStack *stack)
+{
+    PrecStackElem *current = stack->top;
+
+    while(current != NULL)
+    {
+        if(current->symbol != PREC_E && current->symbol != PREC_SHIFT)
+        {
+            return current->symbol;
+        }
+        current = current->next;
+    }
+    // ERROR (we don't have any terminal on the stack)
+}
+
+void precStackPushAfterFirstTerm(PrecStack *stack, PrecSymbol symbol)
+{
+    PrecStackElem *newElem = (PrecStackElem *)malloc(sizeof(PrecStackElem));
+    // TEST FOR ERROR
+
+    newElem->symbol = symbol;
+
+    if(stack->top == NULL)
+    {
+        stack->top = newElem;
+        newElem->next = NULL;
+        return;
+    }
+
+    PrecStackElem *current = stack->top;
+    while(current != NULL)
+    {
+        if(current->symbol != PREC_E && current->symbol != PREC_SHIFT)
+        {
+            newElem->next = current->next;
+            current->next = newElem;
+            return;
+        }
+        current = current->next;
+    }
+
+    // if we find no terminal we need to add it straight to the start
+    newElem->next = stack->top;
+    stack->top = newElem;
+}
+
 
 PrecSymbol tokenToPrec(Token *current, bool previousWasOperand, PrecStack *stack)
 {
@@ -201,51 +257,6 @@ PrecSymbol tokenToPrec(Token *current, bool previousWasOperand, PrecStack *stack
     }
 }
 
-PrecSymbol precStackGetFirstTerm(PrecStack *stack)
-{
-    PrecStackElem *current = stack->top;
-
-    while(current != NULL)
-    {
-        if(current->symbol != PREC_E && current->symbol != PREC_SHIFT)
-        {
-            return current->symbol;
-        }
-        current = current->next;
-    }
-    // ERROR (we don't have any terminal on the stack)
-}
-
-void precStackPushAfterFirstTerm(PrecStack *stack, PrecSymbol symbol)
-{
-    PrecStackElem *newElem = (PrecStackElem *)malloc(sizeof(PrecStackElem));
-    // TEST FOR ERROR
-
-    newElem->symbol = symbol;
-
-    if(stack->top == NULL)
-    {
-        stack->top = newElem;
-        newElem->next = NULL;
-        return;
-    }
-
-    PrecStackElem *current = stack->top;
-    while(current != NULL)
-    {
-        if(current->symbol != PREC_E && current->symbol != PREC_SHIFT)
-        {
-            newElem->next = current->next;
-            current->next = newElem;
-            return;
-        }
-        current = current->next;
-    }
-
-    // if we find no terminal we need to add it straight to the start
-    newElem->next = stack->top;
-    stack->top = newElem;
-}
 
 
 
