@@ -31,7 +31,7 @@ void parseProgram()
 {
     ParsedToken token;
     token.lookAhead = false;
-    getToken(&token);
+    getNextToken(&token);
     parseProg(&token);
 }
 
