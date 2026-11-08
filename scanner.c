@@ -595,6 +595,38 @@ Token readToken(void) {
                     return makeToken(TOK_STRING, buf_copy());
                 }
                 break;
+
+            case ST_LINE_START:
+                if (character == ' ') {
+                    indent_count++;
+                } else if (character == '\t') {
+                    line_tab = 1;
+                } else if (character == '\r') {
+                    // CR před LF (CRLF) se ignoruje
+                } else {
+                    ungetc(character, stdin);
+                    line_indent = indent_count;
+                    state = ST_START;
+                }
+                break;
+
+            case ST_PAREN_LINE:
+                if (character == ' ') {
+                    indent_count++;
+                } else if (character == '\t' || character == '\r') {
+                    // bílý znak
+                } else if (character == '\n') {
+                    line++;
+                    indent_count = 0;
+                } else {
+                    if (character != EOF && indent_count <= line_indent) {
+                        fprintf(stderr, "Lexikalni chyba, radek uvnitr zavorek musi byt odsazen vice nez zacatek prikazu");
+                        exit(1);
+                    }
+                    ungetc(character, stdin);
+                    state = ST_START;
+                }
+                break;
         }
     }
 }
