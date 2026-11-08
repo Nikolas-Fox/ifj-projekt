@@ -56,11 +56,9 @@ typedef struct {
     int line;
 }Token;
 
-Token getToken(void);
-/******************************************************************************/
 
-/******************************************************************************/
-// temporary from symtable.h
+// temporary from symtable.h:
+
 #include <stdbool.h>
 #include <stddef.h> // for size_t
 typedef enum {
@@ -102,16 +100,27 @@ typedef struct {
 
 typedef struct Symtable Symtable;
 
-/**
- * @brief Search through all scopes
- *
- * @param sTable Pointer to the Symtable structure.
- * @param name name of the function
- * @return pointer to data
- */
 SymbolData *symtableSearch(Symtable *sTable, char *name);
 
+
+
+// temporary from parser.h:
+
+//Parser state struct
+typedef struct {
+    Token currentToken;
+    Token aheadToken;
+    bool lookAhead;
+} ParsedToken;
+
+Token getNextToken(ParsedToken *p);
+
+void getTokenAhead(ParsedToken *p);
 /******************************************************************************/
+
+
+
+
 
 // data type - symbol for the precedencial analyser 
 // I group some of the symbols from the precedential table,

@@ -20,12 +20,17 @@
 
 #define PREC_TABLE_SIZE 14
 
-// Temporary from scanner.c
-Token getToken()
+/*****************************************************************/
+// Temporary from parser
+Token getNextToken(ParsedToken *p)
 {
     
 }
 
+void getTokenAhead(ParsedToken *p)
+{
+
+}
 
 // Temporary from symtable.c
 SymbolData *symtableSearch(Symtable *sTable, char *name)
@@ -35,6 +40,7 @@ SymbolData *symtableSearch(Symtable *sTable, char *name)
 
 // Temporary sTable (it will be global)
 Symtable sTable;
+/*****************************************************************/
 
 
 static const char precTable[PREC_TABLE_SIZE][PREC_TABLE_SIZE] =  
