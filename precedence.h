@@ -3,7 +3,7 @@
 * Package:		precedence
 * File:			precedence.h
 * Date:			5.11.2026
-* Last change:	7.11.2026
+* Last change:	8.11.2026
 * Authors: 		xfoxnik00
 *
 * Description: Header file for precedence syntactic analysis
@@ -131,7 +131,6 @@ typedef enum
     PREC_LPAR,
     PREC_RPAR,
     PREC_ID,
-    PREC_ASSIGN,      // =
     PREC_END,         // $
 
     // these are used only in the stack
