@@ -190,22 +190,10 @@ void precStackShiftAfterFirstTerm(PrecStack *stack)
 }
 
 
-PrecSymbol tokenToPrec(Token *current, bool previousWasOperand, PrecStack *stack)
+PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack)
 {
-    switch(current->type)
+    switch(p->currentToken.type)
     {
-        case TOK_RPAR:
-            if(stack->openParCnt > 0)
-            {
-                return PREC_RPAR;
-            }
-        case TOK_SEMICOL:
-        case TOK_NL:
-        case TOK_KW_THEN:
-        case TOK_KW_DO:
-        case TOK_COMMA:
-            return PREC_END;
-
         case TOK_DOT:
             return PREC_DOT;
         
@@ -247,26 +235,39 @@ PrecSymbol tokenToPrec(Token *current, bool previousWasOperand, PrecStack *stack
             return PREC_LPAR;
 
         case TOK_ID:
-            SymbolData *id = symtableSearch(&sTable, current->str);
+            SymbolData *id = symtableSearch(&sTable, p->currentToken.str);
+
+            getTokenAhead(p);
+            if(p->aheadToken.type == TOK_LPAR)
+            {
+                return PREC_FUNC;        // function is caught, if it isn't a function we continue
+            }
+
 
             if(id == NULL &&                // we have a string that isn't an ID or a soft keyword
-                !(strcmp(current->str, "true") == 0 || strcmp(current->str, "false") == 0))
-                {
-                    // TODO: ERROR (we don't know what the string is, 
-                    // it's not defined anywhere and it isn't a soft KW)
-                    
-                }
+                !(strcmp(p->currentToken.str, "true") == 0 || strcmp(p->currentToken.str, "false") == 0))
+            {
+                exit();
+                // TODO: ERROR (we don't know what the string is, 
+                // it's not defined anywhere and it isn't a soft KW)
+                
+            }
 
-            if(id->sType == FUNCTION)
-                {
-                    return PREC_FUNC;        // function is caught, if it isn't a function we continue
-                }
-
-        // true and false will be returned as PREC_ID too  
+        // FALLTHROUGH
         case TOK_INT:
         case TOK_DOUBLE:
         case TOK_STRING:
             return PREC_ID;
+
+        case TOK_RPAR:
+            if(stack->openParCnt > 0)
+            {
+                return PREC_RPAR;
+            }
+
+        // FALLTHROUGH because ) can be an end too
+        default: 
+            return PREC_END;   // everything else is an end (the parser will take care of it if it's not valid)
     }
 }
 

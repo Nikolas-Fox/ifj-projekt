@@ -221,12 +221,12 @@ void precStackShiftAfterFirstTerm(PrecStack *s);
 
 /**
  * @brief returns the PrecSymbol equivalent of a token
- * @param current Pointer to the current token
+ * @param p ParsedToken pointer
  * @param previousWasOperand Keeps track of what the last token was (checking +- unary or binary)
  * @param stack Pointer to stack, where I keep a hold of the number of parentheses
  * @return -1 if token doesn't have symbol equivalent, otherwise PrecSymbol
  */
-PrecSymbol tokenToPrec(Token *current, bool previousWasOperand, PrecStack *s);
+PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *s);
 
 /**
  * @brief Uses precedence analysis to validate expression
