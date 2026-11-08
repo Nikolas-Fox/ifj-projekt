@@ -3,7 +3,7 @@
 * Package:		parser
 * File:			parser.h
 * Date:			1.11.2026
-* Last change:	3.11.2026
+* Last change:	8.11.2026
 * Authors: 		xholael00
 *
 * Description: Header file containing parser logic - recursive descent and
@@ -66,6 +66,7 @@ void printError(char *message);
 
 /**
  * @brief Decides if look ahead was done or if it needs to get a new token from lexer.
+ * @param p Struct of parser state
  */
 void getNextToken(ParsedToken *p);
 
