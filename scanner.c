@@ -631,6 +631,14 @@ Token readToken(void) {
     }
 }
 
+#define MAX_INDENT 128
+static int indent_stack[MAX_INDENT] = {0};
+static int indent_top = 0;        // index vrcholu zásobníku (0 = žádné odsazení)
+static int pending_dedents = 0;   // kolik DEDENT ještě vydat
+static int has_queued = 0;        // 1 = token ve frontě čeká
+static Token queued;              // token čekající za INDENT / DEDENT
+static int line_has_token = 0;    // měl aktuální logický řádek už nějaký token?
+
 Token getToken(void) {
     return readToken();
 }
