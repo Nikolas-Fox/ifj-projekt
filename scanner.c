@@ -42,10 +42,17 @@ typedef enum {
     ST_MUL_LINE_STRING,
     ST_MUL_LINE_QUOTE1,
     ST_MUL_LINE_QUOTE2,
-    ST_MUL_LINE_QUOTE3
+    ST_MUL_LINE_QUOTE3,
+    ST_LINE_START,
+    ST_PAREN_LINE  // počítá mezery na dalším řádku uvnitř závorek
 }States;
 
 static int line = 1;
+
+static int at_line_start = 1;  // 1 = začíná nový logický řádek
+static int paren_depth = 0;    // hloubka kulatých závorek
+static int line_indent = 0;    // počet mezer na začátku aktuálního logického řádku
+static int line_tab = 0;       // 1 = odsazení obsahuje tabulátor
 
 //Buffer for the lexeme text
 static char *buf = NULL;
@@ -126,10 +133,16 @@ static Token endNumber(TokenType type, int character) {
     return makeToken(type, buf_copy());
 }
 
-Token getToken(void) {
+Token readToken(void) {
     States state = ST_START;
     int comment_depth = 0;
     int comment_newline = 0;
+    int indent_count = 0;
+    if (at_line_start == 1) {
+        at_line_start = 0;
+        line_tab = 0;
+        state = ST_LINE_START;
+    }
 
     while(1) {
         int character = getchar();
@@ -141,13 +154,19 @@ Token getToken(void) {
                     return makeToken(TOK_EOF, NULL);
                 }  
 
-                //TO DO: indentation at the beginning of a line
                 if (character == ' ' || character == '\t' || character == '\r') break;
 
                 if (character == '\n') {
-                    Token t = makeToken(TOK_EOL, NULL);
+                    if (paren_depth > 0) {
+                        line++;
+                        indent_count = 0;
+                        state = ST_PAREN_LINE;
+                        break;
+                    }
+                    Token token = makeToken(TOK_EOL, NULL);
                     line++;
-                    return t;   //LF is EOL
+                    at_line_start = 1;
+                    return token;
                 }
 
                 //identifier starting with a letter
@@ -192,8 +211,16 @@ Token getToken(void) {
 
                 //one character tokens
                 switch (character) {
-                    case '(': return makeToken(TOK_LPAR, NULL);
-                    case ')': return makeToken(TOK_RPAR, NULL);
+                    case '(':
+                        paren_depth++;
+                        return makeToken(TOK_LPAR, NULL);
+
+                    case ')': 
+                         if (paren_depth > 0) {
+                            paren_depth--;
+                        }
+                        return makeToken(TOK_RPAR, NULL);
+
                     case ',': return makeToken(TOK_COMMA, NULL);
                     case ';': return makeToken(TOK_SEMICOL, NULL);
                     case ':': return makeToken(TOK_COLON, NULL);
@@ -309,7 +336,7 @@ Token getToken(void) {
                 if (character == '/') {
                     comment_depth--;
                     if (comment_depth == 0) {
-                        if (comment_newline != 0) {
+                        if (comment_newline == 1 && paren_depth == 0) {
                             state = ST_AFTER_BLOCK;
                         } else {
                             state = ST_START;
@@ -570,4 +597,8 @@ Token getToken(void) {
                 break;
         }
     }
+}
+
+Token getToken(void) {
+    return readToken();
 }
