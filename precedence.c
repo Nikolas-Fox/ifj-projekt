@@ -19,7 +19,7 @@
 #include "precedence.h"
 
 #define PREC_TABLE_SIZE 14
-
+#define RULE_SIZE 5
 /*****************************************************************/
 // Temporary from parser
 Token getNextToken(ParsedToken *p)
@@ -272,7 +272,52 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
 }
 
 
-// TODO: Implement precedence functions
+void parseExpression(ParsedToken *p)
+{
+    bool previousWasOperand = false;
+    PrecStack stack;
+
+    precStackInit(&stack);
+    precStackPush(&stack, PREC_END);
+
+    PrecSymbol input = tokenToPrec(p, previousWasOperand, &stack);
+    
+
+    while (input != PREC_END && 
+            !(precStackTop(&stack) == PREC_E && precStackGetFirstTerm(&stack) == PREC_END))
+    {
+        if(input == PREC_FUNC || input == PREC_DOT || input == PREC_MUL_DIV 
+        || input == PREC_PLUS_MINUS || input == PREC_RPAR || input == PREC_ID)
+        {
+            previousWasOperand = true;
+        }
+        else
+        {
+            previousWasOperand = false;
+        }
+
+        PrecSymbol topTerm = precStackGetFirstTerm(&stack);
+        switch(precTable[topTerm][input])
+        {
+            case '<':
+                precStackShiftAfterFirstTerm(&stack);
+            
+            case '=':
+                precStackPush(&stack, input);
+                getNextToken(p);
+                input = tokenToPrec(p, previousWasOperand, &stack);
+                break;
+
+            case '>':
+            // TODO: REDUCTION LOGIC
+
+
+        }
+    }
+    precStackFree(&stack);
+}
+
+
 
 
 
