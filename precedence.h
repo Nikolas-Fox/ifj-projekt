@@ -157,7 +157,12 @@ typedef struct
 } PrecStack;
 
 
-// TODO: Declare precedence function
+
+/**
+ * @brief Uses precedence analysis to validate expression
+ * @param type Token type pointer
+ */
+void parseExpression(Token *currentToken);
 
 
 #endif   // PRECEDENCE_H
