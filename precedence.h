@@ -156,11 +156,44 @@ typedef struct
     PrecStackElem *top;
 } PrecStack;
 
+/**
+ * @brief Initialises a precedence stack
+ * @param s PrecStack type pointer
+ */
+void precStackInit(PrecStack *s);
+
+/**
+ * @brief Pushes a precSymbol onto stack
+ * @param s PrecStack type pointer
+ * @param symbol PrecSymbol being pushed onto the stack
+ */
+void precStackPush(PrecStack *s, PrecSymbol symbol);
+
+/**
+ * @brief Removes and returns first symbol on stack
+ * @param s PrecStack type pointer
+ * @return -1 if nothing is left on the stack, PrecSymbol otherwise
+ */
+PrecSymbol precStackPop(PrecStack *s);
+
+/**
+ * @brief returns first symbol from stack
+ * @param s PrecStack type pointer
+ * @return -1 if nothing is left on the stack, PrecSymbol otherwise
+ */
+PrecSymbol precStackTop(PrecStack *s);
+
+/**
+ * @brief Frees the whole PrecStack
+ * @param s PrecStack type pointer
+ */
+void precStackFree(PrecStack *s);
+
 
 
 /**
  * @brief Uses precedence analysis to validate expression
- * @param type Token type pointer
+ * @param currentToken Pointer to the current token
  */
 void parseExpression(Token *currentToken);
 
