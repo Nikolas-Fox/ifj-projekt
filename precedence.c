@@ -33,7 +33,7 @@ SymbolData *symtableSearch(Symtable *sTable, char *name)
 
 }
 
-// Temporary sTable
+// Temporary sTable (it will be global)
 Symtable sTable;
 
 
@@ -88,7 +88,7 @@ PrecSymbol precStackPop(PrecStack *stack)
     PrecSymbol pop = stack->top->symbol;
     PrecStackElem *tmp = stack->top;
     stack->top = (stack->top->next);
-    
+
     if(tmp->str != NULL)
     {
     free(tmp->str);
@@ -168,7 +168,7 @@ void precStackPushAfterFirstTerm(PrecStack *stack, PrecSymbol symbol)
         current = current->next;
     }
 
-    // if we find no terminal we need to add it straight to the start
+    // if we find no terminal we need to add it straight to the top of the stack
     newElem->next = stack->top;
     stack->top = newElem;
 }
@@ -236,7 +236,7 @@ PrecSymbol tokenToPrec(Token *current, bool previousWasOperand, PrecStack *stack
         case TOK_ID:
             SymbolData *id = symtableSearch(&sTable, current->str);
 
-            if(id == NULL &&                // we don't have bool literals (soft keywords)
+            if(id == NULL &&                // we have a string that isn't an ID or a soft keyword
                 !(strcmp(current->str, "true") == 0 || strcmp(current->str, "false") == 0))
                 {
                     // TODO: ERROR (we don't know what the string is, 
@@ -244,12 +244,12 @@ PrecSymbol tokenToPrec(Token *current, bool previousWasOperand, PrecStack *stack
                     
                 }
 
-            if(id->sType == FUNCTION)      // SYMTABLE WILL BE GLOBAL
+            if(id->sType == FUNCTION)
                 {
                     return PREC_FUNC;        // function is caught, if it isn't a function we continue
                 }
 
-            
+        // true and false will be returned as PREC_ID too  
         case TOK_INT:
         case TOK_DOUBLE:
         case TOK_STRING:
@@ -258,18 +258,9 @@ PrecSymbol tokenToPrec(Token *current, bool previousWasOperand, PrecStack *stack
 }
 
 
-
-
 // TODO: Implement precedence functions
+
+
 
 /*** End of file precedence.c ***/
 
-void parseExpression(Token *currentToken)
-{
-    PrecStack stack;
-    precStackInit(&stack);
-    precStackPush(&stack, PREC_END);
-
-    bool prevWasOperand = false;
-    
-}
