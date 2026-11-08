@@ -3,7 +3,7 @@
 * Package:		parser
 * File:			parser.c
 * Date:			1.11.2026
-* Last change:	3.11.2026
+* Last change:	8.11.2026
 * Authors: 		xholael00
 *
 * Description: Implementation of parser - recursive descent and precedence analysis.
@@ -113,7 +113,6 @@ bool startsExpression(TokenType type)
 }
 
 //TODO: integrate with lexer
-//TODO: lookahead
 void parseProg(ParsedToken *p)
 {
     //⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
@@ -322,7 +321,19 @@ void parseStList(ParsedToken *p)
     //Predict(20) = {NL}
     else if (p->currentToken.type == TOK_NL)
     {
-        //TODO: lookahead
+        if (p->aheadToken.type == TOK_DEDENT) //⟨st_list⟩NL DEDENT - if st_list is epsilon, DEDENT is after NL
+        {
+            return;
+        }
+        else if (startsStat(p->aheadToken.type) || p->aheadToken.type == TOK_NL) //<st_list_NL> goes to <stat> or epsilon which goes to NL
+        {
+            checkToken(p, TOK_NL);
+            parseStListNL(p);
+        }
+        else
+        {
+           printError("Unexpected token"); 
+        }
     }
     else
     {
@@ -343,7 +354,19 @@ void parseStListSemi(ParsedToken *p)
     //Predict(23) = {NL}
     else if (p->currentToken.type == TOK_NL)
     {
-        //TODO: lookahead
+        if (p->aheadToken.type == TOK_DEDENT)
+        {
+            return;
+        }
+        else if (startsStat(p->aheadToken.type) || p->aheadToken.type == TOK_NL)
+        {
+            checkToken(p, TOK_NL);
+            parseStListNL(p);
+        }
+        else
+        {
+           printError("Unexpected token"); 
+        }
     }
     else
     {
