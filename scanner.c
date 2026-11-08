@@ -39,20 +39,30 @@ typedef enum {
 
 static int line = 1;
 
-//Buffer for the lexeme text (fixed size for now, dynamic later)
-#define BUF_MAX 256
-static char buf[BUF_MAX];
-static int buf_len = 0;
+//Buffer for the lexeme text
+static char *buf = NULL;
+static size_t buf_len = 0;
+static size_t buf_cap = 0;
 
 static void buf_reset(void) {
+    if (buf == NULL) {
+        buf_cap = 64;
+        buf = malloc(buf_cap);
+        if (buf == NULL) {
+            exit(99);    
+        }
+    }
     buf_len = 0;
     buf[0] = '\0';
 }
 
 static void buf_add(int c) {
-    if (buf_len + 1 >= BUF_MAX) {
-        fprintf(stderr, "Prilis dlouhy lexem na radku %d\n", line);
-        exit(99);
+    if (buf_len + 2 > buf_cap) {
+        size_t new_cap = buf_cap * 2;
+        char *new_buf = realloc(buf, new_cap);
+        if (new_buf == NULL) exit(99);
+        buf = new_buf;
+        buf_cap = new_cap;
     }
     buf[buf_len++] = (char)c;
     buf[buf_len] = '\0';
