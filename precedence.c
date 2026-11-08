@@ -56,6 +56,55 @@ static const char precTable[PREC_TABLE_SIZE][PREC_TABLE_SIZE] =
     /*  $   */ { '<', '<', '<', '<', '<', '<', '<', '<', '<', '<', 'X', '<', '<', '<', 'X'}
 };
 
+void precStackInit(PrecStack *stack)
+{
+    stack->top = NULL;
+}
+
+void precStackPush(PrecStack *stack, PrecSymbol symbol)
+{
+    PrecStackElem *newElem = (PrecStackElem *)malloc(sizeof(PrecStackElem));
+    // ERROR HANDLING
+    newElem->symbol = symbol;
+    newElem->next = stack->top;
+    stack->top = newElem;
+}
+
+PrecSymbol precStackPop(PrecStack *stack)
+{
+    if(stack->top == NULL)
+    {
+        return -1;
+    }
+
+    PrecSymbol pop = stack->top->symbol;
+    PrecStackElem *tmp = stack->top;
+    stack->top = (stack->top->next);
+    free(tmp);
+    return pop;
+}
+
+PrecSymbol precStackTop(PrecStack *stack)
+{
+    if(stack->top == NULL)
+    {
+        return -1;
+    }
+
+    return stack->top->symbol;
+}
+
+void PrecStackFree(PrecStack *stack)
+{
+    PrecStackElem *tmp;
+    while(stack->top != NULL)
+    {
+        tmp = stack->top;
+        stack->top = (stack->top->next);
+        free(tmp);
+    }
+}
+
 // TODO: Implement precedence functions
 
 /*** End of file precedence.c ***/
