@@ -75,6 +75,15 @@ void checkStrToken(ParsedToken *p, TokenType expected, char *name)
     getToken(p);
 }
 
+void getTokenAhead(ParsedToken *p)
+{
+    if (!p->lookAhead)
+    {
+        p->lookAhead = true;
+        p->aheadToken = getToken();
+    }
+}
+
 bool startsStat(TokenType type)
 {
     switch (type)
@@ -321,6 +330,7 @@ void parseStList(ParsedToken *p)
     //Predict(20) = {NL}
     else if (p->currentToken.type == TOK_NL)
     {
+        getTokenAhead(p);
         if (p->aheadToken.type == TOK_DEDENT) //⟨st_list⟩NL DEDENT - if st_list is epsilon, DEDENT is after NL
         {
             return;
@@ -354,6 +364,7 @@ void parseStListSemi(ParsedToken *p)
     //Predict(23) = {NL}
     else if (p->currentToken.type == TOK_NL)
     {
+        getTokenAhead(p);
         if (p->aheadToken.type == TOK_DEDENT)
         {
             return;

@@ -85,6 +85,12 @@ void checkToken(ParsedToken *p, TokenType expected);
 void checkStrToken(ParsedToken *p, TokenType expected, char *name);
 
 /**
+ * @brief Gets a new token from lexer in lookahead.
+ * @param p Struct of parser state
+ */
+void getTokenAhead(ParsedToken *p);
+
+/**
  * @brief Checks if token type belongs to Predict(<stat>).
  * @param type Token type
  * @return True if it belongs, false if it doesn't.
