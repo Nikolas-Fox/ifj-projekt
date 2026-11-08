@@ -640,5 +640,70 @@ static Token queued;              // token čekající za INDENT / DEDENT
 static int line_has_token = 0;    // měl aktuální logický řádek už nějaký token?
 
 Token getToken(void) {
-    return readToken();
+    while (1) {
+        if (pending_dedents > 0) {
+            pending_dedents--;
+            return makeToken(TOK_DEDENT, NULL);
+        }
+        if (has_queued == 1) {
+            has_queued = 0;
+            return queued;
+        }
+
+        Token token = readToken();
+
+        if (token.type == TOK_EOL) {
+            if (line_has_token == 0) {
+                continue;
+            }
+            line_has_token = 0;
+            return token;
+        }
+
+        if (token.type == TOK_EOF) {
+            // uzavřou se všechny otevřené bloky
+            pending_dedents = indent_top;
+            indent_top = 0;
+            queued = token;
+            has_queued = 1;
+            if (line_has_token == 1) {
+                line_has_token = 0;
+                return makeToken(TOK_EOL, NULL);  // poslední řádek bez LF
+            }
+            continue;
+        }
+
+        if (line_has_token == 0) {
+            // první token logického řádku: porovná se odsazení
+            line_has_token = 1;
+            if (line_tab == 1) {
+                fprintf(stderr, "Lexikalni chyba, tabulator v odsazeni");
+                exit(1);
+            }
+            if (line_indent > indent_stack[indent_top]) {
+                if (indent_top + 1 >= MAX_INDENT) {
+                    exit(99);
+                }
+                indent_top++;
+                indent_stack[indent_top] = line_indent;
+                queued = token;
+                has_queued = 1;
+                return makeToken(TOK_INDENT, NULL);
+            }
+            if (line_indent < indent_stack[indent_top]) {
+                while (indent_top > 0 && indent_stack[indent_top] > line_indent) {
+                    indent_top--;
+                    pending_dedents++;
+                }
+                if (indent_stack[indent_top] != line_indent) {
+                    fprintf(stderr, "Lexikalni chyba, nekonzistentni odsazeni");
+                    exit(1);
+                }
+                queued = token;
+                has_queued = 1;
+                continue;
+            }
+        }
+        return token;
+    }
 }
