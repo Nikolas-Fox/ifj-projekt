@@ -154,6 +154,8 @@ typedef struct PrecStackElem
 typedef struct 
 {
     PrecStackElem *top;
+    int openParCnt;    // this holds a count of how many parentheses are open
+                    // it's used in the tokenToPrec function, so we know which parentheses are $ 
 } PrecStack;
 
 /**
@@ -163,14 +165,14 @@ typedef struct
 void precStackInit(PrecStack *s);
 
 /**
- * @brief Pushes a precSymbol onto stack
+ * @brief Pushes a precSymbol onto stack, if it's a ( we increment open parenthese count
  * @param s PrecStack type pointer
  * @param symbol PrecSymbol being pushed onto the stack
  */
 void precStackPush(PrecStack *s, PrecSymbol symbol);
 
 /**
- * @brief Removes and returns first symbol on stack
+ * @brief Removes and returns first symbol on stack, if it's a ) we decrement open parenthese count
  * @param s PrecStack type pointer
  * @return -1 if nothing is left on the stack, PrecSymbol otherwise
  */
@@ -189,7 +191,14 @@ PrecSymbol precStackTop(PrecStack *s);
  */
 void precStackFree(PrecStack *s);
 
-
+/**
+ * @brief returns the PrecSymbol equivalent of a token
+ * @param current Pointer to the current token
+ * @param previousWasOperand Keeps track of what the last token was (checking +- unary or binary)
+ * @param stack Pointer to stack, where I keep a hold of the number of parentheses
+ * @return -1 if token doesn't have symbol equivalent, otherwise PrecSymbol
+ */
+PrecSymbol tokenToPrec(Token *current, bool previousWasOperand, PrecStack *stack);
 
 /**
  * @brief Uses precedence analysis to validate expression
