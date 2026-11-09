@@ -3,7 +3,7 @@
 * Package:		precedence
 * File:			precedence.h
 * Date:			5.11.2026
-* Last change:	8.11.2026
+* Last change:	9.11.2026
 * Authors: 		xfoxnik00
 *
 * Description: Header file for precedence syntactic analysis
@@ -221,12 +221,20 @@ void precStackShiftAfterFirstTerm(PrecStack *s);
 
 /**
  * @brief returns the PrecSymbol equivalent of a token
- * @param p ParsedToken pointer
+ * @param p ParsedToken
  * @param previousWasOperand Keeps track of what the last token was (checking +- unary or binary)
- * @param stack Pointer to stack, where I keep a hold of the number of parentheses
+ * @param s Pointer to stack, where I keep a hold of the number of parentheses
  * @return -1 if token doesn't have symbol equivalent, otherwise PrecSymbol
  */
 PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *s);
+
+
+
+/**
+ * @brief Reduces rules on the stack
+ * @param s Pointer to PrecStack
+ */
+void precReduce(PrecStack *s);
 
 /**
  * @brief Uses precedence analysis to validate expression
