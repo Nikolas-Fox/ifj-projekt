@@ -242,7 +242,7 @@ static Token readToken(void) {
                         state = ST_PAREN_LINE;
                         break;
                     }
-                    Token token = makeToken(TOK_EOL, NULL);
+                    Token token = makeToken(TOK_NL, NULL);
                     line++;
                     at_line_start = 1;
                     return token;
@@ -907,7 +907,7 @@ Token getToken(void) {
 
         Token token = readToken();
 
-        if (token.type == TOK_EOL) {
+        if (token.type == TOK_NL) {
             if (line_has_token == 0) {
                 continue;
             }
@@ -923,7 +923,7 @@ Token getToken(void) {
             has_queued = 1;
             if (line_has_token == 1) {
                 line_has_token = 0;
-                return makeToken(TOK_EOL, NULL);  // poslední řádek bez LF
+                return makeToken(TOK_NL, NULL);  // poslední řádek bez LF
             }
             continue;
         }
