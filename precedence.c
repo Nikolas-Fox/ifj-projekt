@@ -240,6 +240,7 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
             getTokenAhead(p);
             if(p->aheadToken.type == TOK_LPAR)
             {
+                // TODO: CHANGE PREC_FUNC to parseFunction (we don't know what to do when f(E)(E)...
                 return PREC_FUNC;        // function is caught, if it isn't a function we continue
             }
 
@@ -271,6 +272,77 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
     }
 }
 
+void precReduce(PrecStack *stack)
+{
+    PrecSymbol poppedSymbols[RULE_SIZE];
+    int popCnt = 0;
+    PrecSymbol popped;
+    
+    do
+    {
+        popped = precStackPop(stack);
+        if(popped != PREC_SHIFT)
+        {
+            if(popCnt >= RULE_SIZE)
+            {
+                // ERROR (syntax)
+            }
+            poppedSymbols[popCnt] = popped;
+            popCnt++;
+        }
+    }
+    while(popped != PREC_SHIFT && stack->top != NULL);
+
+    if(popCnt == 1 && poppedSymbols[0] == PREC_ID)
+    {
+        // rule i -> E
+        precStackPush(stack, PREC_E);
+    }
+
+    if(popCnt == 2 && poppedSymbols[0] == PREC_E) // the array is backwards
+    {
+        // rules sgnE -> E,    !E -> E
+        PrecSymbol op = poppedSymbols[1];
+        if(op == PREC_SIGN || op == PREC_NOT)
+        {
+            precStackPush(stack, PREC_E);
+        }
+    }
+
+    if(popCnt == 3)
+    {
+        if(poppedSymbols[0] == PREC_E && poppedSymbols[2] == PREC_E)
+        {
+            // rules E op E -> E
+            if(poppedSymbols[1] == PREC_DOT
+                || poppedSymbols[1] == PREC_MUL_DIV
+                || poppedSymbols[1] == PREC_PLUS_MINUS
+                || poppedSymbols[1] == PREC_AND
+                || poppedSymbols[1] == PREC_OR
+                || poppedSymbols[1] == PREC_RELATION
+                || poppedSymbols[1] == PREC_EQ_NE)
+            {
+                precStackPush(stack, PREC_E);
+            }
+        }
+
+        if(poppedSymbols[0] == PREC_RPAR && poppedSymbols[2] == PREC_LPAR && poppedSymbols[1] == PREC_E)
+            {
+                // rule (E) -> E
+                precStackPush(stack,PREC_E);
+            }
+    }
+    if(popCnt == 4)
+    {
+        // TODO: Change this from a rule to calling parseFunction
+        if(poppedSymbols[3] == PREC_FUNC && poppedSymbols[2] == PREC_LPAR &&poppedSymbols[1] == PREC_E &&poppedSymbols[0] == PREC_RPAR)
+        {
+            precStackPush(stack, PREC_E);
+        }
+        
+        // ERROR (there is no rule for input)
+    }
+}
 
 void parseExpression(ParsedToken *p)
 {
@@ -308,9 +380,10 @@ void parseExpression(ParsedToken *p)
                 break;
 
             case '>':
-            // TODO: REDUCTION LOGIC
-
-
+                precReduce(&stack);
+                break;
+            default:
+                //ERROR
         }
     }
     precStackFree(&stack);
