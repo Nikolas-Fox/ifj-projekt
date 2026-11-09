@@ -126,7 +126,6 @@ void getTokenAhead(ParsedToken *p);
 // because they have the same priority and associativty 
 typedef enum
 {
-    PREC_FUNC,        // f(E)
     PREC_DOT,         // E.E
     PREC_SIGN,        // +P, -P
     PREC_NOT,         // !
