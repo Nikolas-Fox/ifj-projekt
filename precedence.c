@@ -70,7 +70,7 @@ void precStackInit(PrecStack *stack)
 void precStackPush(PrecStack *stack, PrecSymbol symbol)
 {
     PrecStackElem *newElem = (PrecStackElem *)malloc(sizeof(PrecStackElem));
-    // ERROR HANDLING
+    // TODO: ERROR (internal error malloc)
 
     newElem->symbol = symbol;
     newElem->next = stack->top;
@@ -144,14 +144,13 @@ PrecSymbol precStackGetFirstTerm(PrecStack *stack)
         }
         current = current->next;
     }
-    // ERROR (we don't have any terminal on the stack)
-    return -1;
+    // ERROR (we don't have any terminal on the stack) (it should always contain $)
 }
 
 void precStackShiftAfterFirstTerm(PrecStack *stack)
 {
     PrecStackElem *newElem = (PrecStackElem *)malloc(sizeof(PrecStackElem));
-    // TEST FOR ERROR
+    // ERROR (malloc failure) (internal error)
 
     newElem->symbol = PREC_SHIFT;
 
@@ -184,9 +183,8 @@ void precStackShiftAfterFirstTerm(PrecStack *stack)
         current = current->next;
     }
 
-    // if we find no terminal we need to add it straight to the top of the stack (This should never happen, we should always have $)
-    newElem->next = stack->top;
-    stack->top = newElem;
+    // TODO: ERROR - we don't have any terminal on the stack (we should always have at least $)
+    //        internal error
 }
 
 
@@ -240,18 +238,17 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
             getTokenAhead(p);
             if(p->aheadToken.type == TOK_LPAR)
             {
-                // TODO: CHANGE PREC_FUNC to parseFunction (we don't know what to do when f(E)(E)...
-                return PREC_FUNC;        // function is caught, if it isn't a function we continue
+                // TODO: CHANGE PREC_FUNC to parseFunction (we don't know what to do when f(E)(E)...,
+                //       ideally implemented already in parseExpression function
+                return PREC_FUNC;
             }
 
 
-            if(id == NULL &&                // we have a string that isn't an ID or a soft keyword
+            if(id == NULL &&
                 !(strcmp(p->currentToken.str, "true") == 0 || strcmp(p->currentToken.str, "false") == 0))
             {
-                exit();
-                // TODO: ERROR (we don't know what the string is, 
-                // it's not defined anywhere and it isn't a soft KW)
-                
+                // TODO: ERROR (we don't know what the string is, it's not defined anywhere and it isn't a soft KW)
+                // "foo"   would be clasified as a string literal in lexer (those are safe)
             }
 
         // FALLTHROUGH
@@ -340,7 +337,7 @@ void precReduce(PrecStack *stack)
             precStackPush(stack, PREC_E);
         }
         
-        // ERROR (there is no rule for input)
+        // ERROR (there is no rule for input) (syntax)
     }
 }
 
@@ -372,6 +369,7 @@ void parseExpression(ParsedToken *p)
         {
             case '<':
                 precStackShiftAfterFirstTerm(&stack);
+                // FALLTHROUGH
             
             case '=':
                 precStackPush(&stack, input);
@@ -388,9 +386,6 @@ void parseExpression(ParsedToken *p)
     }
     precStackFree(&stack);
 }
-
-
-
 
 
 /*** End of file precedence.c ***/

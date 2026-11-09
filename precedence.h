@@ -103,7 +103,6 @@ typedef struct Symtable Symtable;
 SymbolData *symtableSearch(Symtable *sTable, char *name);
 
 
-
 // temporary from parser.h:
 
 //Parser state struct
@@ -142,7 +141,7 @@ typedef enum
     PREC_ID,
     PREC_END,         // $
 
-    // these are used only in the stack
+    // these are used only in the stack (not the precTable)
     PREC_E,           // expression
     PREC_SHIFT        // <
 }PrecSymbol;
@@ -163,8 +162,9 @@ typedef struct
 {
     PrecStackElem *top;
     int openParCnt;    // this holds a count of how many parentheses are open
-                    // it's used in the tokenToPrec function, so we know which parentheses are $ 
+                    // it's used in the tokenToPrec function, so we know which parentheses are PREC_END
 } PrecStack;
+
 
 /**
  * @brief Initialises a precedence stack
@@ -172,34 +172,36 @@ typedef struct
  */
 void precStackInit(PrecStack *s);
 
+
 /**
- * @brief Pushes a precSymbol onto stack, if it's a ( we increment open parenthese count
+ * @brief Pushes a precSymbol onto stack, if it's '(' we increment open parenthese count (stack variable)
  * @param s PrecStack type pointer
  * @param symbol PrecSymbol being pushed onto the stack
  */
 void precStackPush(PrecStack *s, PrecSymbol symbol);
 
+
 /**
- * @brief Removes and returns first symbol on stack, if it's a ) we decrement open parenthese count
+ * @brief Removes and returns first symbol on stack, if it's ')' we decrement open parenthese count (stack variable)
  * @param s PrecStack type pointer
  * @return -1 if nothing is left on the stack, PrecSymbol otherwise
  */
 PrecSymbol precStackPop(PrecStack *s);
 
+
 /**
- * @brief returns first symbol from stack
+ * @brief returns top symbol on stack
  * @param s PrecStack type pointer
  * @return -1 if nothing is left on the stack, PrecSymbol otherwise
  */
 PrecSymbol precStackTop(PrecStack *s);
+
 
 /**
  * @brief Frees the whole PrecStack
  * @param s PrecStack type pointer
  */
 void precStackFree(PrecStack *s);
-
-
 
 
 /**
@@ -209,6 +211,7 @@ void precStackFree(PrecStack *s);
  */
 PrecSymbol precStackGetFirstTerm(PrecStack *s);
 
+
 /**
  * @brief Pushes Shift PrecSymbol onto the stack after the first terminal
  * @param s PrecStack type pointer
@@ -216,18 +219,14 @@ PrecSymbol precStackGetFirstTerm(PrecStack *s);
 void precStackShiftAfterFirstTerm(PrecStack *s);
 
 
-
-
-
 /**
  * @brief returns the PrecSymbol equivalent of a token
  * @param p ParsedToken
  * @param previousWasOperand Keeps track of what the last token was (checking +- unary or binary)
- * @param s Pointer to stack, where I keep a hold of the number of parentheses
- * @return -1 if token doesn't have symbol equivalent, otherwise PrecSymbol
+ * @param s Pointer to stack (used to track open parenthese count)
+ * @return PrecSymbol equivalent of token
  */
 PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *s);
-
 
 
 /**
@@ -235,6 +234,7 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *s);
  * @param s Pointer to PrecStack
  */
 void precReduce(PrecStack *s);
+
 
 /**
  * @brief Uses precedence analysis to validate expression
