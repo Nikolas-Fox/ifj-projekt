@@ -286,8 +286,7 @@ void parseExpression(ParsedToken *p)
     while (input != PREC_END && 
             !(precStackTop(&stack) == PREC_E && precStackGetFirstTerm(&stack) == PREC_END))
     {
-        if(input == PREC_FUNC || input == PREC_DOT || input == PREC_MUL_DIV 
-        || input == PREC_PLUS_MINUS || input == PREC_RPAR || input == PREC_ID)
+        if(input == PREC_ID || input == PREC_RPAR)
         {
             previousWasOperand = true;
         }
