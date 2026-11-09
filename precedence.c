@@ -119,7 +119,7 @@ PrecSymbol precStackTop(PrecStack *stack)
 }
 
 
-void PrecStackFree(PrecStack *stack)
+void precStackFree(PrecStack *stack)
 {
     PrecStackElem *tmp;
     while(stack->top != NULL)
