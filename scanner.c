@@ -55,7 +55,8 @@ typedef enum {
     ST_INTERP_ID,
     ST_INTERP_QUOTE1,  
     ST_INTERP_QUOTE2,
-    ST_INTERP_QUOTE3
+    ST_INTERP_QUOTE3,
+    ST_AT
 }States;
 
 static int line = 1;
@@ -271,6 +272,7 @@ static Token readToken(void) {
                 if (character == '.') { state = ST_START_DOT; break; }
                 if (character == '&') { state = ST_AMP; break; }
                 if (character == '|') { state = ST_PIPE; break; }
+                if (character == '@') { buf_reset(); state = ST_AT; break; }
 
                 if (isdigit(character)) {
                     buf_reset();
@@ -315,7 +317,6 @@ static Token readToken(void) {
                     case '*': return makeToken(TOK_MUL, NULL);
                     case '-': return makeToken(TOK_MINUS, NULL);
                     case '+': return makeToken(TOK_PLUS, NULL);
-                    case '@': return makeToken(TOK_AT_MAIN, NULL);
                 }
                 
                 fprintf(stderr, "Lexikalni chyba");
@@ -866,6 +867,19 @@ static Token readToken(void) {
                 } else {
                     ungetc(character, stdin);
                     return endInterpolation();
+                }
+                break;
+
+            case ST_AT:
+                if (isalnum(character) || character == '_') {
+                    buf_add(character);
+                } else {
+                    ungetc(character, stdin);
+                    if (strcmp(buf, "main") == 0) {
+                        return makeToken(TOK_AT_MAIN, NULL);
+                    }
+                    fprintf(stderr, "za @ musi bezprostredne nasledovat main");
+                    exit(1); //2?
                 }
                 break;
         }
