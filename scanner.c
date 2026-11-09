@@ -888,18 +888,46 @@ static Token readToken(void) {
 
 #define MAX_INDENT 128
 static int indent_stack[MAX_INDENT] = {0};
-static int indent_top = 0;        // index vrcholu zásobníku (0 = žádné odsazení)
-static int pending_dedents = 0;   // kolik DEDENT ještě vydat
-static int has_queued = 0;        // 1 = token ve frontě čeká
-static Token queued;              // token čekající za INDENT / DEDENT
-static int line_has_token = 0;    // měl aktuální logický řádek už nějaký token?
+static int indent_top = 0;        // index of the stack top (0 = no indentation)
+static int send_dedents = 0;   // how many DEDENT tokens are still to be returned
+static int send_nl = 0;          // 1 = return the held TOK_EOL next
+static int send_indent = 0;       // 1 = return TOK_INDENT next
+static int has_queued = 0;        // 1 = a token is waiting in the queue
+static Token queued;              // token waiting behind EOL / INDENT / DEDENT
+static int line_has_token = 0;    // has the current logical line already had a token?
+static int eol_held = 0;          // 1 = TOK_EOL is held back until we know what follows
+static Token held_nl_token;        // the held TOK_EOL
+static int closing_blocks = 0;     // at EOF: how many blocks are still to be closed
+static int closing_eol = 0;        // at EOF: 1 = the next token is the EOL of the closed block
 
+// Returns the next token, including TOK_INDENT and TOK_DEDENT.
+// TOK_EOL directly before TOK_DEDENT is dropped.
 Token getToken(void) {
     while (1) {
-        if (pending_dedents > 0) {
-            pending_dedents--;
+        if (send_nl == 1) {
+            send_nl = 0;
+            return held_nl_token;
+        }
+        if (send_indent == 1) {
+            send_indent = 0;
+            return makeToken(TOK_INDENT, NULL);
+        }
+        if (send_dedents > 0) {
+            send_dedents--;
             return makeToken(TOK_DEDENT, NULL);
         }
+
+        if (closing_blocks > 0) {
+            // at EOF every open block is closed by the pair EOL, DEDENT
+            if (closing_eol == 1) {
+                closing_eol = 0;
+                return makeToken(TOK_NL, NULL);
+            }
+            closing_eol = 1;
+            closing_blocks--;
+            return makeToken(TOK_DEDENT, NULL);
+        }
+
         if (has_queued == 1) {
             has_queued = 0;
             return queued;
@@ -908,32 +936,42 @@ Token getToken(void) {
         Token token = readToken();
 
         if (token.type == TOK_NL) {
-            if (line_has_token == 0) {
-                continue;
-            }
-            line_has_token = 0;
-            return token;
-        }
-
-        if (token.type == TOK_EOF) {
-            // uzavřou se všechny otevřené bloky
-            pending_dedents = indent_top;
-            indent_top = 0;
-            queued = token;
-            has_queued = 1;
             if (line_has_token == 1) {
                 line_has_token = 0;
-                return makeToken(TOK_NL, NULL);  // poslední řádek bez LF
+                eol_held = 1;   // we do not know yet whether DEDENT follows
+                held_nl_token = token;
             }
             continue;
         }
 
+        if (token.type == TOK_EOF) {
+            if (line_has_token == 1) {
+                // the last line has no LF
+                line_has_token = 0;
+                eol_held = 1;
+                held_nl_token = makeToken(TOK_NL, NULL);
+            }
+            if (indent_top > 0) {
+                // the EOLs are returned together with the DEDENTs (see closing_blocks)
+                eol_held = 0;
+                closing_blocks = indent_top;
+                closing_eol = 1;
+                indent_top = 0;
+            } else if (eol_held == 1) {
+                eol_held = 0;
+                send_nl = 1;
+            }
+            queued = token;
+            has_queued = 1;
+            continue;
+        }
+
         if (line_has_token == 0) {
-            // první token logického řádku: porovná se odsazení
+            // first token of a logical line: compare the indentation
             line_has_token = 1;
             if (line_tab == 1) {
                 fprintf(stderr, "Lexikalni chyba, tabulator v odsazeni");
-                exit(1);
+                    exit(1);
             }
             if (line_indent > indent_stack[indent_top]) {
                 if (indent_top + 1 >= MAX_INDENT) {
@@ -941,23 +979,38 @@ Token getToken(void) {
                 }
                 indent_top++;
                 indent_stack[indent_top] = line_indent;
+                if (eol_held == 1) {
+                    eol_held = 0;
+                    send_nl = 1;   // EOL stays before INDENT
+                }
+                send_indent = 1;
                 queued = token;
                 has_queued = 1;
-                return makeToken(TOK_INDENT, NULL);
+                continue;
             }
             if (line_indent < indent_stack[indent_top]) {
                 while (indent_top > 0 && indent_stack[indent_top] > line_indent) {
                     indent_top--;
-                    pending_dedents++;
+                    send_dedents++;
                 }
                 if (indent_stack[indent_top] != line_indent) {
                     fprintf(stderr, "Lexikalni chyba, nekonzistentni odsazeni");
                     exit(1);
                 }
+                eol_held = 0;       // EOL before DEDENT is dropped
                 queued = token;
                 has_queued = 1;
                 continue;
             }
+        }
+
+        if (eol_held == 1) {
+            // same indentation: the held EOL is returned before the token
+            eol_held = 0;
+            send_nl = 1;
+            queued = token;
+            has_queued = 1;
+            continue;
         }
         return token;
     }
