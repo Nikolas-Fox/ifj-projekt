@@ -534,7 +534,10 @@ void parseLoa(ParsedToken *p)
     //46: ⟨loa⟩ → (⟨arg_list⟩)⟨loa⟩
     if (p->currentToken.type == TOK_LPAR)
     {
-
+        checkToken(p, TOK_LPAR);
+        parseArgList(p);
+        checkToken(p, TOK_RPAR);
+        parseLoa(p);
     }
     //47: ⟨loa⟩ → epsilon
     else if (p->currentToken.type == TOK_KW_THEN || p->currentToken.type == TOK_KW_DO ||
