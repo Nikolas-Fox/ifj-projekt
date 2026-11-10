@@ -274,50 +274,30 @@ void parseStList(ParsedToken *p)
 
 void parseStat(ParsedToken *p)
 {
-    //26: ⟨stat⟩ → ⟨expression⟩
-    if (startsExpression(p->currentToken.type))
+    //16: ⟨stat⟩ → ⟨line⟩⟨line_end⟩
+    if (startsStat(p->currentToken.type))
     {
-        //precedence analysis
+        parseLine(p);
+        parseLineEnd(p);
     }
     else
     {
         switch (p->currentToken.type)
         {
-            case TOK_KW_VAL: //27: ⟨stat⟩ → val id⟨ret_type⟩ = ⟨expression⟩
-                checkToken(p, TOK_KW_VAL);
-                checkToken(p, TOK_ID);
-                parseRetType(p);
-                checkToken(p, TOK_EQ);
-                //precedence analysis
-                break;
-            case TOK_KW_VAR: //28: ⟨stat⟩ → var id⟨ret_type⟩ = ⟨expression⟩
-                checkToken(p, TOK_KW_VAR);
-                checkToken(p, TOK_ID);
-                parseRetType(p);
-                checkToken(p, TOK_EQ);
-                //precedence analysis
-                break;
-            case TOK_KW_IF: //29: ⟨stat⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
+            case TOK_KW_IF: //17: ⟨stat⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
                 checkToken(p, TOK_KW_IF);
-                //precedence analysis
+                parseExpression();
                 checkToken(p, TOK_KW_THEN);
                 parseBlock(p);
-                parseElseChoice(p);  
-                break;
-            case TOK_KW_RETURN: //30: ⟨stat⟩ → return⟨return⟩
-                checkToken(p, TOK_KW_RETURN);
-                parseReturn(p);
-                break;
-            case TOK_KW_WHILE: //31: ⟨stat⟩ → while ⟨expression⟩ do ⟨block⟩
+                parseElseChoice(p);
+            case TOK_KW_WHILE: //18: ⟨stat⟩ → while ⟨expression⟩ do ⟨block⟩
                 checkToken(p, TOK_KW_WHILE);
-                //precedence analysis
+                parseExpression();
                 checkToken(p, TOK_KW_DO);
                 parseBlock(p);
-                break;
             default:
                 printError("Unexpected token");
                 break;
-            
         }
     }
 }
