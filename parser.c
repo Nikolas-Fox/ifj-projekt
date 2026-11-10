@@ -139,53 +139,45 @@ void parseProg(ParsedToken *p)
 
 void parseDefinition(ParsedToken *p)
 {
-    //⟨definition⟩ → @main⟨opt_NL⟩def id() : Unit = ⟨def_body⟩⟨definition⟩
-    if (p->currentToken.type == TOK_AT_MAIN)
+    switch (p->currentToken.type)
     {
-        checkToken(p, TOK_AT_MAIN);
-        parseOptNL(p);
-        checkToken(p, TOK_KW_DEF);
-        checkToken(p, TOK_ID);
-        checkToken(p, TOK_LPAR);
-        checkToken(p, TOK_RPAR);
-        checkToken(p, TOK_COLON);
-        checkToken(p, TOK_KW_UNIT);
-        checkToken(p, TOK_EQ);
-        parseDefBody(p);
-        parseDefinition(p);
-    }
-    //⟨definition⟩ → def id⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨definition⟩
-    else if (p->currentToken.type == TOK_KW_DEF)
-    {
-        checkToken(p, TOK_KW_DEF);
-        checkToken(p, TOK_ID);
-        parseLop(p);
-        parseRetType(p);
-        checkToken(p, TOK_EQ);
-        parseDefBody(p);
-        parseDefinition(p);
-    }
-    //⟨definition⟩ → extension(id : ⟨type⟩)⟨def_block⟩⟨definition⟩
-    else if (p->currentToken.type == TOK_KW_EXTENSION)
-    {
-        checkToken(p, TOK_KW_EXTENSION);
-        checkToken(p, TOK_LPAR);
-        checkToken(p, TOK_ID);
-        checkToken(p, TOK_COLON);
-        parseType(p);
-        checkToken(p, TOK_RPAR);
-        parseDefBlock(p);
-        parseDefinition(p);
-    }
-    //⟨definition⟩ → epsilon
-    //Predict(5) = {EOF}
-    else if (p->currentToken.type == TOK_EOF)
-    {
-        return;
-    }
-    else
-    {
-        printError("Unexpected token, expected @main/def/extension/EOF.");
+        case TOK_AT_MAIN: //2: ⟨definition⟩ → @main⟨opt_NL⟩def id() : Unit = ⟨def_body⟩⟨definition⟩
+            checkToken(p, TOK_AT_MAIN);
+            parseOptNL(p);
+            checkToken(p, TOK_KW_DEF);
+            checkToken(p, TOK_ID);
+            checkToken(p, TOK_LPAR);
+            checkToken(p, TOK_RPAR);
+            checkToken(p, TOK_COLON);
+            checkToken(p, TOK_KW_UNIT);
+            checkToken(p, TOK_EQ);
+            parseDefBody(p);
+            parseDefinition(p);
+            break;
+        case TOK_KW_DEF: //3: ⟨definition⟩ → def id⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨definition⟩
+            checkToken(p, TOK_KW_DEF);
+            checkToken(p, TOK_ID);
+            parseLop(p);
+            parseRetType(p);
+            checkToken(p, TOK_EQ);
+            parseDefBody(p);
+            parseDefinition(p);
+            break;
+        case TOK_KW_EXTENSION: //4: ⟨definition⟩ → extension(id : ⟨type⟩)⟨def_block⟩⟨definition⟩
+            checkToken(p, TOK_KW_EXTENSION);
+            checkToken(p, TOK_LPAR);
+            checkToken(p, TOK_ID);
+            checkToken(p, TOK_COLON);
+            parseType(p);
+            checkToken(p, TOK_RPAR);
+            parseDefBlock(p);
+            parseDefinition(p);
+            break;
+        case TOK_EOF: //5: ⟨definition⟩ → epsilon
+            return;
+        default:
+            printError("Unexpected token, expected @main/def/extension/EOF.");
+            break;
     }
 }
 
@@ -222,26 +214,22 @@ void parseDefBlock(ParsedToken *p)
 
 void parseExtensionDef(ParsedToken *p)
 {
-    //⟨extension_def⟩ → def id ⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨extension_def⟩
-    if (p->currentToken.type == TOK_KW_DEF)
+    switch (p->currentToken.type)
     {
-        checkToken(p, TOK_KW_DEF);
-        checkToken(p, TOK_ID);
-        parseLop(p);
-        parseRetType(p);
-        checkToken(p, TOK_EQ);
-        parseDefBody(p);
-        parseExtensionDef(p);
-    }
-    //⟨extension_def⟩ → epsilon
-    //Predict(10) = {NL}
-    else if (p->currentToken.type == TOK_NL)
-    {
-        return;
-    }
-    else
-    {
-        printError("Unexpected token");
+        case TOK_KW_DEF: //⟨extension_def⟩ → def id ⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨extension_def⟩
+           checkToken(p, TOK_KW_DEF);
+            checkToken(p, TOK_ID);
+            parseLop(p);
+            parseRetType(p);
+            checkToken(p, TOK_EQ);
+            parseDefBody(p);
+            parseExtensionDef(p);
+            break;
+        case TOK_NL: //⟨extension_def⟩ → epsilon
+            return;
+        default:
+            printError("Unexpected token");
+            break;
     }
 }
 
@@ -317,145 +305,124 @@ void parseStat(ParsedToken *p)
     {
         //precedence analysis
     }
-    //27: ⟨stat⟩ → val id⟨ret_type⟩ = ⟨expression⟩
-    else if (p->currentToken.type == TOK_KW_VAL)
-    {
-        checkToken(p, TOK_KW_VAL);
-        checkToken(p, TOK_ID);
-        parseRetType(p);
-        checkToken(p, TOK_EQ);
-        //precedence analysis
-    }
-    //28: ⟨stat⟩ → var id⟨ret_type⟩ = ⟨expression⟩
-    else if (p->currentToken.type == TOK_KW_VAR)
-    {
-        checkToken(p, TOK_KW_VAR);
-        checkToken(p, TOK_ID);
-        parseRetType(p);
-        checkToken(p, TOK_EQ);
-        //precedence analysis
-    }
-    //29: ⟨stat⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
-    else if (p->currentToken.type == TOK_KW_IF)
-    {
-        checkToken(p, TOK_KW_IF);
-        //precedence analysis
-        checkToken(p, TOK_KW_THEN);
-        parseBlock(p);
-        parseElseChoice(p);
-    }
-    //30: ⟨stat⟩ → return⟨return⟩
-    else if (p->currentToken.type == TOK_KW_RETURN)
-    {
-        checkToken(p, TOK_KW_RETURN);
-        parseReturn(p);
-    }
-    //31: ⟨stat⟩ → while ⟨expression⟩ do ⟨block⟩
-    else if (p->currentToken.type == TOK_KW_WHILE)
-    {
-        checkToken(p, TOK_KW_WHILE);
-        //precedence analysis
-        checkToken(p, TOK_KW_DO);
-        parseBlock(p);
-    }
     else
     {
-        printError("Unexpected token");
+        switch (p->currentToken.type)
+        {
+            case TOK_KW_VAL: //27: ⟨stat⟩ → val id⟨ret_type⟩ = ⟨expression⟩
+                checkToken(p, TOK_KW_VAL);
+                checkToken(p, TOK_ID);
+                parseRetType(p);
+                checkToken(p, TOK_EQ);
+                //precedence analysis
+                break;
+            case TOK_KW_VAR: //28: ⟨stat⟩ → var id⟨ret_type⟩ = ⟨expression⟩
+                checkToken(p, TOK_KW_VAR);
+                checkToken(p, TOK_ID);
+                parseRetType(p);
+                checkToken(p, TOK_EQ);
+                //precedence analysis
+                break;
+            case TOK_KW_IF: //29: ⟨stat⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
+                checkToken(p, TOK_KW_IF);
+                //precedence analysis
+                checkToken(p, TOK_KW_THEN);
+                parseBlock(p);
+                parseElseChoice(p);  
+                break;
+            case TOK_KW_RETURN: //30: ⟨stat⟩ → return⟨return⟩
+                checkToken(p, TOK_KW_RETURN);
+                parseReturn(p);
+                break;
+            case TOK_KW_WHILE: //31: ⟨stat⟩ → while ⟨expression⟩ do ⟨block⟩
+                checkToken(p, TOK_KW_WHILE);
+                //precedence analysis
+                checkToken(p, TOK_KW_DO);
+                parseBlock(p);
+                break;
+            default:
+                printError("Unexpected token");
+                break;
+            
+        }
     }
 }
 
 void parseElseChoice(ParsedToken *p)
 {
-    //32: ⟨else_choice⟩ → else ⟨else⟩
-    if (p->currentToken.type == TOK_KW_ELSE)
+    switch (p->currentToken.type)
     {
-        checkToken(p, TOK_KW_ELSE);
-        parseElse(p);
-    }
-    //33: ⟨else_choice⟩ → epsilon
-    //Predict(33) = {NL,;}
-    else if (p->currentToken.type == TOK_NL || p->currentToken.type == TOK_SEMICOL)
-    {
-        return;
-    }
-    else
-    {
-        printError("Unexpected token");
+        case TOK_KW_ELSE: //32: ⟨else_choice⟩ → else ⟨else⟩
+            checkToken(p, TOK_KW_ELSE);
+            parseElse(p);
+            break;
+        case TOK_NL: //33: ⟨else_choice⟩ → epsilon
+        case TOK_SEMICOL:
+            return;
+        default:
+            printError("Unexpected token");
+            break;
     }
 }
 
 void parseElse(ParsedToken *p)
 {
-    //34: ⟨else⟩ → ⟨block⟩
-    if (p->currentToken.type == TOK_NL)
+    switch (p->currentToken.type)
     {
-        parseBlock(p);
-    }
-    //35: ⟨else⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
-    else if (p->currentToken.type == TOK_KW_IF)
-    {
-        checkToken(p, TOK_KW_IF);
-        //precedence analysis
-        checkToken(p, TOK_KW_THEN);
-        parseBlock(p);
-        parseElseChoice(p);
-    }
-    else
-    {
-        printError("Unexpected token");
+        case TOK_NL: //34: ⟨else⟩ → ⟨block⟩
+            parseBlock(p);
+            break;
+        case TOK_KW_IF: //35: ⟨else⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
+            checkToken(p, TOK_KW_IF);
+            //precedence analysis
+            checkToken(p, TOK_KW_THEN);
+            parseBlock(p);
+            parseElseChoice(p);
+            break;
+        default:
+            printError("Unexpected token");
+            break;
     }
 }
 
 void parseRetType(ParsedToken *p)
 {
-    //36: ⟨ret_type⟩ →: ⟨type⟩
-    if (p->currentToken.type == TOK_COLON)
+    switch (p->currentToken.type)
     {
-        checkToken(p, TOK_COLON);
-        parseType(p);
-    }
-    //37: ⟨ret_type⟩ → epsilon
-    //Predict(37) = {=}
-    else if (p->currentToken.type == TOK_EQ)
-    {
-        return;
-    }
-    else
-    {
-        printError("Unexpected token");
+        case TOK_COLON: //36: ⟨ret_type⟩ →: ⟨type⟩
+            checkToken(p, TOK_COLON);
+            parseType(p);
+            break;
+        case TOK_EQ: //37: ⟨ret_type⟩ → epsilon
+            return;
+        default:
+            printError("Unexpected token");
+            break;
     }
 }
 
 void parseType(ParsedToken *p)
 {
-    //38: ⟨type⟩ → Int
-    if (p->currentToken.type == TOK_KW_INT)
+    switch (p->currentToken.type)
     {
-        checkToken(p, TOK_KW_INT);
-    }
-    //39: ⟨type⟩ → Double
-    else if (p->currentToken.type == TOK_KW_DOUBLE)
-    {
-        checkToken(p, TOK_KW_DOUBLE);
-    }
-    //40: ⟨type⟩ → String
-    else if (p->currentToken.type == TOK_KW_STRING)
-    {
-        checkToken(p, TOK_KW_STRING);
-    }
-    //41: ⟨type⟩ → Unit
-    else if (p->currentToken.type == TOK_KW_UNIT)
-    {
-        checkToken(p, TOK_KW_UNIT);
-    }
-    //42: ⟨type⟩ → Boolean
-    else if (p->currentToken.type == TOK_KW_BOOLEAN)
-    {
-        checkToken(p, TOK_KW_BOOLEAN);
-    }
-    else
-    {
-        printError("Unexpected token");
+        case TOK_KW_INT: //38: ⟨type⟩ → Int
+            checkToken(p, TOK_KW_INT);
+            break;
+        case TOK_KW_DOUBLE: //39: ⟨type⟩ → Double
+            checkToken(p, TOK_KW_DOUBLE);
+            break;
+        case TOK_KW_STRING: //40: ⟨type⟩ → String
+            checkToken(p, TOK_KW_STRING);
+            break;
+        case TOK_KW_UNIT: //41: ⟨type⟩ → Unit
+            checkToken(p, TOK_KW_UNIT);
+            break;
+        case TOK_KW_BOOLEAN: //42: ⟨type⟩ → Boolean
+            checkToken(p, TOK_KW_BOOLEAN);
+            break;
+        default:
+            printError("Unexpected token");
+            break;
     }
 }
 
@@ -480,65 +447,54 @@ void parseReturn(ParsedToken *p)
 
 void parseParamList(ParsedToken *p)
 {
-    //45: ⟨param_list⟩ → id : ⟨type⟩⟨param_end⟩
-    if (p->currentToken.type == TOK_ID)
+    switch (p->currentToken.type)
     {
-        checkToken(p, TOK_ID);
-        checkToken(p, TOK_COLON);
-        parseType(p);
-        parseParamEnd(p);
-    }
-    //46: ⟨param_list⟩ → epsilon
-    //Predict(46) = {)}
-    else if (p->currentToken.type == TOK_RPAR)
-    {
-        return;
-    }
-    else
-    {
-        printError("Unexpected token");
+        case TOK_ID: //45: ⟨param_list⟩ → id : ⟨type⟩⟨param_end⟩
+            checkToken(p, TOK_ID);
+            checkToken(p, TOK_COLON);
+            parseType(p);
+            parseParamEnd(p);
+            break;
+        case TOK_RPAR: //46: ⟨param_list⟩ → epsilon
+            return;
+        default:
+            printError("Unexpected token");
+            break;
     }
 }
 
 void parseParamEnd(ParsedToken *p)
 {
-    //47: ⟨param_end⟩ →,⟨param_list⟩
-    if (p->currentToken.type == TOK_COMMA)
+    switch (p->currentToken.type)
     {
-        checkToken(p, TOK_COMMA);
-        parseParamList(p);
-    }
-    //48: ⟨param_end⟩ → epsilon
-    //Predict(48) = {)}
-    else if (p->currentToken.type == TOK_RPAR)
-    {
-        return;
-    }
-    else
-    {
-        printError("Unexpected token");
+        case TOK_COMMA: //47: ⟨param_end⟩ →,⟨param_list⟩
+            checkToken(p, TOK_COMMA);
+            parseParamList(p);
+            break;
+        case TOK_RPAR: //48: ⟨param_end⟩ → epsilon
+            return;
+        default:
+            printError("Unexpected token");
+            break;
     }
 }
 
 void parseLop(ParsedToken *p)
 {
-    //49: ⟨lop⟩ → (⟨param_list⟩)⟨lop⟩
-    if (p->currentToken.type == TOK_LPAR)
+    switch(p->currentToken.type)
     {
-        checkToken(p, TOK_LPAR);
-        parseParamList(p);
-        checkToken(p, TOK_RPAR);
-        parseLop(p);
-    }
-    //50: ⟨lop⟩ → epsilon
-    //Predict(50) = {:, =}
-    else if (p->currentToken.type == TOK_COLON || p->currentToken.type == TOK_EQ)
-    {
-        return;
-    }
-    else
-    {
-        printError("Unexpected token");
+        case TOK_LPAR: //49: ⟨lop⟩ → (⟨param_list⟩)⟨lop⟩
+            checkToken(p, TOK_LPAR);
+            parseParamList(p);
+            checkToken(p, TOK_RPAR);
+            parseLop(p);
+            break;
+        case TOK_COLON: //50: ⟨lop⟩ → epsilon
+        case TOK_EQ:
+            return;
+        default:
+            printError("Unexpected token");
+            break;
     }
 }
 
@@ -564,21 +520,17 @@ void parseArgList(ParsedToken *p)
 
 void parseArgEnd(ParsedToken *p)
 {
-    //53: ⟨arg_end⟩ →,⟨arg_list⟩
-    if (p->currentToken.type == TOK_COMMA)
+    switch (p->currentToken.type)
     {
-        checkToken(p, TOK_COMMA);
-        parseArgList(p);
-    }
-    //54: ⟨arg_end⟩ → epsilon
-    //Predict(54) = {)}
-    else if (p->currentToken.type == TOK_RPAR)
-    {
-        return;
-    }
-    else
-    {
-        printError("Unexpected token");
+        case TOK_COMMA: //53: ⟨arg_end⟩ →,⟨arg_list⟩
+            checkToken(p, TOK_COMMA);
+            parseArgList(p);
+            break;
+        case TOK_RPAR: //54: ⟨arg_end⟩ → epsilon
+            return;
+        default:
+            printError("Unexpected token");
+            break;
     }
 }
 
