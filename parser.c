@@ -357,6 +357,24 @@ void parseLineEnd(ParsedToken *p)
     }
 }
 
+void parseLineSemi(ParsedToken *p)
+{
+    //25: ⟨line_semi⟩ → ⟨stat⟩
+    if (startsStat(p))
+    {
+        parseStat(p);
+    }
+    //26: ⟨line_semi⟩ → NL
+    else if (p->currentToken.type == TOK_NL)
+    {
+        checkToken(p, TOK_NL);
+    }
+    else
+    {
+        printError("Unexpected token after if block, expected 'else' or end of statement.");
+    }
+}
+
 void parseElseChoice(ParsedToken *p)
 {
     //27: ⟨else_choice⟩ → else ⟨else⟩

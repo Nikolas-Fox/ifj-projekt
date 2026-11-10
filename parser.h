@@ -172,6 +172,12 @@ void parseLine(ParsedToken *p);
 void parseLineEnd(ParsedToken *p);
 
 /**
+ * @brief Parses <line_semi>, implements LL grammar rules 25 and 26.
+ * @param p Struct of parser state
+ */
+void parseLineSemi(ParsedToken *p);
+
+/**
  * @brief Parses <else_choice>, implements LL grammar rules 32 and 33.
  * @param p Struct of parser state
  */
