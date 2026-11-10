@@ -86,18 +86,17 @@ void getTokenAhead(ParsedToken *p)
 
 bool startsStat(TokenType type)
 {
+    if (startsExpression(type))
+    {
+        return true;
+    }
+    
     switch (type)
     {
-        case TOK_ID:
-        case TOK_INT:
-        case TOK_DOUBLE:
-        case TOK_STRING:
-        case TOK_NOT:
-        case TOK_LPAR:
-        case TOK_KW_VAL:
-        case TOK_KW_VAR:
         case TOK_KW_IF:
         case TOK_KW_WHILE:
+        case TOK_KW_VAR:
+        case TOK_KW_VAL:
         case TOK_KW_RETURN:
             return true;
         default:
@@ -109,12 +108,14 @@ bool startsExpression(TokenType type)
 {
     switch (type)
     {
+        case TOK_PLUS:
+        case TOK_MINUS:
+        case TOK_NOT:
+        case TOK_LPAR:
         case TOK_ID:
         case TOK_INT:
         case TOK_DOUBLE:
         case TOK_STRING:
-        case TOK_NOT:
-        case TOK_LPAR:
             return true;
         default:
             return false;
