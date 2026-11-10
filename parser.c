@@ -291,11 +291,13 @@ void parseStat(ParsedToken *p)
                 checkToken(p, TOK_KW_THEN);
                 parseBlock(p);
                 parseElseChoice(p);
+                break;
             case TOK_KW_WHILE: //18: ⟨stat⟩ → while ⟨expression⟩ do ⟨block⟩
                 checkToken(p, TOK_KW_WHILE);
                 parseExpression();
                 checkToken(p, TOK_KW_DO);
                 parseBlock(p);
+                break;
             default:
                 printError("Unexpected token");
                 break;
