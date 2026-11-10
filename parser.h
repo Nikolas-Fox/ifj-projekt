@@ -148,34 +148,10 @@ void parseOptNL(ParsedToken *p);
 void parseBlock(ParsedToken *p);
 
 /**
- * @brief Parses <oneline>, implements LL grammar rules 14 and 15.
- * @param p Struct of parser state
- */
-void parseOneline(ParsedToken *p);
-
-/**
- * @brief Parses <oneline_end>, implements LL grammar rules 16 and 17.
- * @param p Struct of parser state
- */
-void parseOnelineEnd(ParsedToken *p);
-
-/**
  * @brief Parses <st_list>, implements LL grammar rules 18-20.
  * @param p Struct of parser state
  */
 void parseStList(ParsedToken *p);
-
-/**
- * @brief Parses <st_list_semi>, implements LL grammar rules 21-23.
- * @param p Struct of parser state
- */
-void parseStListSemi(ParsedToken *p);
-
-/**
- * @brief Parses <st_list_NL>, implements LL grammar rules 24, 25.
- * @param p Struct of parser state
- */
-void parseStListNL(ParsedToken *p);
 
 /**
  * @brief Parses <stat>, implements LL grammar rules 26-31.

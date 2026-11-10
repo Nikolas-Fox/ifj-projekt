@@ -276,47 +276,6 @@ void parseBlock(ParsedToken *p)
     checkToken(p, TOK_DEDENT);
 }
 
-void parseOneline(ParsedToken *p)
-{
-    //14: ⟨oneline⟩ → ;⟨oneline_end⟩
-    if (p->currentToken.type == TOK_SEMICOL)
-    {
-        checkToken(p, TOK_SEMICOL);
-        parseOnelineEnd(p);
-    }
-    //15: ⟨oneline⟩ → epsilon
-    //Predict(15) = {NL}
-    else if (p->currentToken.type == TOK_NL)
-    {
-        return;
-    }
-    else
-    {
-        printError("Unexpected token");
-    }
-}
-
-void parseOnelineEnd(ParsedToken *p)
-{
-    //16: ⟨oneline_end⟩ → epsilon
-    //Predict(16) = {NL}
-    if (p->currentToken.type == TOK_NL)
-    {
-        return;
-
-    }
-    //17: ⟨oneline_end⟩ → ⟨stat⟩⟨oneline⟩
-    else if (startsStat(p->currentToken.type))
-    {
-        parseStat(p);
-        parseOneline(p);
-    }
-    else
-    {
-        printError("Unexpected token");
-    }
-}
-
 void parseStList(ParsedToken *p)
 {
     //18: ⟨st_list⟩ →;⟨st_list_semi⟩
@@ -344,59 +303,6 @@ void parseStList(ParsedToken *p)
         {
            printError("Unexpected token"); 
         }
-    }
-    else
-    {
-        printError("Unexpected token");
-    }
-}
-
-void parseStListSemi(ParsedToken *p)
-{
-    //21: ⟨st_list_semi⟩ → ⟨stat⟩⟨st_list⟩
-    if (startsStat(p->currentToken.type))
-    {
-        parseStat(p);
-        parseStList(p);
-    }
-    //22: ⟨st_list_semi⟩ → NL⟨st_list_NL⟩
-    //23: ⟨st_list_semi⟩ → epsilon
-    //Predict(23) = {NL}
-    else if (p->currentToken.type == TOK_NL)
-    {
-        getTokenAhead(p);
-        if (p->aheadToken.type == TOK_DEDENT)
-        {
-            return;
-        }
-        else if (startsStat(p->aheadToken.type) || p->aheadToken.type == TOK_NL)
-        {
-            checkToken(p, TOK_NL);
-            parseStListNL(p);
-        }
-        else
-        {
-           printError("Unexpected token"); 
-        }
-    }
-    else
-    {
-        printError("Unexpected token");
-    }
-}
-
-void parseStListNL(ParsedToken *p)
-{
-    //24: ⟨st_list_NL⟩ → ⟨stat⟩⟨st_list⟩
-    if (startsStat(p->currentToken.type))
-    {
-        parseStat(p);
-        parseStList(p);
-    }
-    //25: ⟨st_list_NL⟩ → epsilon
-    else if (p->currentToken.type == TOK_NL)
-    {
-        return;
     }
     else
     {
