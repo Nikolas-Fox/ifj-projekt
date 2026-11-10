@@ -305,16 +305,21 @@ void parseStat(ParsedToken *p)
 
 void parseElseChoice(ParsedToken *p)
 {
-    switch (p->currentToken.type)
+    //27: ⟨else_choice⟩ → else ⟨else⟩
+    if (p->currentToken.type == TOK_KW_ELSE)
     {
-        case TOK_KW_ELSE: //27: ⟨else_choice⟩ → else ⟨else⟩
-            checkToken(p, TOK_KW_ELSE);
-            parseElse(p);
-            break;
-        //TODO //28: ⟨else_choice⟩ → epsilon
-        default:
-            printError("Unexpected token");
-            break;
+        checkToken(p, TOK_KW_ELSE);
+        parseElse(p);
+    }
+    // 28: ⟨else_choice⟩ → epsilon
+    else if (startsStat(p->currentToken.type) || p->currentToken.type == TOK_AT_MAIN || p->currentToken.type == TOK_KW_DEF ||
+            p->currentToken.type == TOK_KW_EXTENSION || p->currentToken.type == TOK_EOF || p->currentToken.type == TOK_DEDENT)
+    {
+        return;
+    }
+    else
+    {
+        printError("Unexpected token after if block, expected 'else' or end of statement.");
     }
 }
 
@@ -381,10 +386,13 @@ void parseType(ParsedToken *p)
 
 void parseReturn(ParsedToken *p)
 {
-    //TODO //38: ⟨return⟩ → ⟨expression⟩
-    
+    //38: ⟨return⟩ → ⟨expression⟩
+    if (startsExpression(p))
+    {
+        parseExpression(p);
+    }
     //39: ⟨return⟩ → epsilon
-    if (p->currentToken.type == TOK_NL || p->currentToken.type == TOK_SEMICOL)
+    else if (p->currentToken.type == TOK_NL || p->currentToken.type == TOK_SEMICOL)
     {
         return;
     }
@@ -449,9 +457,14 @@ void parseLop(ParsedToken *p)
 
 void parseArgList(ParsedToken *p)
 {
-    //TODO //48: ⟨arg_list⟩ → ⟨expression⟩⟨arg_end⟩
+    //48: ⟨arg_list⟩ → ⟨expression⟩⟨arg_end⟩
+    if (startsExpression(p))
+    {
+        parseExpression(p);
+        parseArgEnd(p);
+    }
     //49: ⟨arg_list⟩ → epsilon
-    if (p->currentToken.type == TOK_RPAR)
+    else if (p->currentToken.type == TOK_RPAR)
     {
         return;
     }
