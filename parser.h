@@ -118,7 +118,7 @@ void parseProg(ParsedToken *p);
 void parseDefinition(ParsedToken *p);
 
 /**
- * @brief Parses <def_body>, implements LL grammar rules 6-8.
+ * @brief Parses <def_body>, implements LL grammar rules 6-7.
  * @param p Struct of parser state
  */
 void parseDefBody(ParsedToken *p);
@@ -148,13 +148,13 @@ void parseOptNL(ParsedToken *p);
 void parseBlock(ParsedToken *p);
 
 /**
- * @brief Parses <st_list>, implements LL grammar rules 18-20.
+ * @brief Parses <st_list>, implements LL grammar rules 14 and 15.
  * @param p Struct of parser state
  */
 void parseStList(ParsedToken *p);
 
 /**
- * @brief Parses <stat>, implements LL grammar rules 26-31.
+ * @brief Parses <stat>, implements LL grammar rules 16-18.
  * @param p Struct of parser state
  */
 void parseStat(ParsedToken *p);
@@ -178,49 +178,49 @@ void parseLineEnd(ParsedToken *p);
 void parseLineSemi(ParsedToken *p);
 
 /**
- * @brief Parses <else_choice>, implements LL grammar rules 32 and 33.
+ * @brief Parses <else_choice>, implements LL grammar rules 27 and 28.
  * @param p Struct of parser state
  */
 void parseElseChoice(ParsedToken *p);
 
 /**
- * @brief Parses <else>, implements LL grammar rules 34 and 35.
+ * @brief Parses <else>, implements LL grammar rules 29 and 30.
  * @param p Struct of parser state
  */
 void parseElse(ParsedToken *p);
 
 /**
- * @brief Parses <ret_type>, implements LL grammar rules 36 and 37.
+ * @brief Parses <ret_type>, implements LL grammar rules 31 and 32.
  * @param p Struct of parser state
  */
 void parseRetType(ParsedToken *p);
 
 /**
- * @brief Parses <type>, implements LL grammar rules 38-42.
+ * @brief Parses <type>, implements LL grammar rules 33-37.
  * @param p Struct of parser state
  */
 void parseType(ParsedToken *p);
 
 /**
- * @brief Parses <return>, implements LL grammar rules 43 and 44.
+ * @brief Parses <return>, implements LL grammar rules 38 and 39.
  * @param p Struct of parser state
  */
 void parseReturn(ParsedToken *p);
 
 /**
- * @brief Parses <param_list>, implements LL grammar rules 45 and 46.
+ * @brief Parses <param_list>, implements LL grammar rules 40 and 41.
  * @param p Struct of parser state
  */
 void parseParamList(ParsedToken *p);
 
 /**
- * @brief Parses <param_end>, implements LL grammar rules 47 and 48.
+ * @brief Parses <param_end>, implements LL grammar rules 42 and 43.
  * @param p Struct of parser state
  */
 void parseParamEnd(ParsedToken *p);
 
 /**
- * @brief Parses <lop>, implements LL grammar rules 49 and 50.
+ * @brief Parses <lop>, implements LL grammar rules 44 and 45.
  * @param p Struct of parser state
  */
 void parseLop(ParsedToken *p);
@@ -232,13 +232,13 @@ void parseLop(ParsedToken *p);
 void parseLoa(ParsedToken *p);
 
 /**
- * @brief Parses <arg_list>, implements LL grammar rules 51 and 52.
+ * @brief Parses <arg_list>, implements LL grammar rules 48 and 49.
  * @param p Struct of parser state
  */
 void parseArgList(ParsedToken *p);
 
 /**
- * @brief Parses <arg_end>, implements LL grammar rules 53 and 54.
+ * @brief Parses <arg_end>, implements LL grammar rules 50 and 51.
  * @param p Struct of parser state
  */
 void parseArgEnd(ParsedToken *p);
