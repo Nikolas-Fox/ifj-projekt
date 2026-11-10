@@ -303,6 +303,44 @@ void parseStat(ParsedToken *p)
     }
 }
 
+void parseLine(ParsedToken *p)
+{
+    //19: ⟨line⟩ → ⟨expression⟩
+    if (startsExpression(p))
+    {
+        parseExpression();
+    }
+    //20: ⟨line⟩ → val id ⟨ret_type⟩ = ⟨expression⟩
+    else if (p->currentToken.type == TOK_KW_VAL)
+    {
+        checkToken(p, TOK_KW_VAL);
+        checkToken(p, TOK_ID);
+        parseRetType(p);
+        checkToken(p, TOK_EQ);
+        parseExpression();
+    }
+    //21: ⟨line⟩ → var id ⟨ret_type⟩ = ⟨expression⟩
+    else if (p->currentToken.type == TOK_KW_VAR)
+    {
+        checkToken(p, TOK_KW_VAR);
+        checkToken(p, TOK_ID);
+        parseRetType(p);
+        checkToken(p, TOK_EQ);
+        parseExpression();
+    }
+    //22: ⟨line⟩ → return ⟨return⟩
+    else if (p->currentToken.type == TOK_KW_RETURN)
+    {
+        checkToken(p, TOK_KW_RETURN);
+        parseReturn(p);
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+
+}
+
 void parseElseChoice(ParsedToken *p)
 {
     //27: ⟨else_choice⟩ → else ⟨else⟩

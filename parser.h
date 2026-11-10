@@ -160,6 +160,12 @@ void parseStList(ParsedToken *p);
 void parseStat(ParsedToken *p);
 
 /**
+ * @brief Parses <line>, implements LL grammar rules 19-22.
+ * @param p Struct of parser state
+ */
+void parseLine(ParsedToken *p);
+
+/**
  * @brief Parses <else_choice>, implements LL grammar rules 32 and 33.
  * @param p Struct of parser state
  */
