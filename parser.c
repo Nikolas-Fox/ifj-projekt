@@ -3,7 +3,7 @@
 * Package:		parser
 * File:			parser.c
 * Date:			1.11.2026
-* Last change:	8.11.2026
+* Last change:	10.11.2026
 * Authors: 		xholael00
 *
 * Description: Implementation of parser - recursive descent and precedence analysis.
@@ -125,7 +125,7 @@ bool startsExpression(TokenType type)
 //TODO: integrate with lexer
 void parseProg(ParsedToken *p)
 {
-    //⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
+    //1: ⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
     checkToken(p, TOK_KW_IMPORT);
     parseOptNL(p);
     checkStrToken(p, TOK_ID, "ifj26");
@@ -406,7 +406,7 @@ void parseElse(ParsedToken *p)
             break;
         case TOK_KW_IF: //30: ⟨else⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
             checkToken(p, TOK_KW_IF);
-            //precedence analysis
+            parseExpression();
             checkToken(p, TOK_KW_THEN);
             parseBlock(p);
             parseElseChoice(p);
