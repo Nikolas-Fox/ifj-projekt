@@ -338,7 +338,23 @@ void parseLine(ParsedToken *p)
     {
         printError("Unexpected token");
     }
+}
 
+void parseLineEnd(ParsedToken *p)
+{
+    switch (p->currentToken.type)
+    {
+        case TOK_SEMICOL: //23: ⟨line_end⟩ → ;⟨line_semi⟩
+            checkToken(p, TOK_SEMICOL);
+            parseLineSemi(p);
+            break;
+        case TOK_NL: //24: ⟨line_end⟩ → NL
+            checkToken(p, TOK_NL);
+            break;
+        default:
+            printError("Unexpected token");
+            break;
+    }
 }
 
 void parseElseChoice(ParsedToken *p)
