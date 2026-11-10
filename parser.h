@@ -226,6 +226,12 @@ void parseParamEnd(ParsedToken *p);
 void parseLop(ParsedToken *p);
 
 /**
+ * @brief Parses <loa>, implements LL grammar rules 46 and 47.
+ * @param p Struct of parser state
+ */
+void parseLoa(ParsedToken *p);
+
+/**
  * @brief Parses <arg_list>, implements LL grammar rules 51 and 52.
  * @param p Struct of parser state
  */

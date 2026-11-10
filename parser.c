@@ -527,6 +527,25 @@ void parseLop(ParsedToken *p)
     }
 }
 
+void parseLoa(ParsedToken *p)
+{
+    //46: ⟨loa⟩ → (⟨arg_list⟩)⟨loa⟩
+    if (p->currentToken.type == TOK_LPAR)
+    {
+
+    }
+    //47: ⟨loa⟩ → epsilon
+    else if (p->currentToken.type == TOK_KW_THEN || p->currentToken.type == TOK_KW_DO ||
+            p->currentToken.type == TOK_SEMICOL || p->currentToken.type == TOK_NL || p->currentToken.type == TOK_COMMA)
+    {
+        return;
+    }
+    else
+    {
+        printError("Unexpected token");
+    }
+}
+
 void parseArgList(ParsedToken *p)
 {
     //48: ⟨arg_list⟩ → ⟨expression⟩⟨arg_end⟩
