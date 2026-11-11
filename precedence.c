@@ -64,42 +64,44 @@ static const char precTable[PREC_TABLE_SIZE][PREC_TABLE_SIZE] =
 void precStackInit(PrecStack *stack)
 {
     stack->top = NULL;
+    stack->openParCnt = 0;
 }
 
-void precStackPush(PrecStack *stack, PrecSymbol symbol)
+void precStackPush(PrecStack *stack, PrecStackElem *element)
 {
     PrecStackElem *newElem = (PrecStackElem *)malloc(sizeof(PrecStackElem));
     // TODO: ERROR (internal error malloc)
 
-    newElem->symbol = symbol;
+    newElem->symbol = element->symbol;
+    newElem->str = element->str;
+    newElem->type = element->type;
+
     newElem->next = stack->top;
     stack->top = newElem;
 
-    if(symbol == PREC_LPAR)
+    if(element->symbol == PREC_LPAR)
     {
         stack->openParCnt++;
     }
 }
 
 
-PrecSymbol precStackPop(PrecStack *stack)
+PrecStackElem precStackPop(PrecStack *stack)
 {
     if(stack->top == NULL)
     {
-        return -1;
+        PrecStackElem empty = {0};
+        empty.symbol = -1;
+        return empty; // nothing is left on the stack
     }
 
-    PrecSymbol pop = stack->top->symbol;
+    PrecStackElem pop = *(stack->top);
     PrecStackElem *tmp = stack->top;
     stack->top = (stack->top->next);
 
-    if(tmp->str != NULL)
-    {
-    free(tmp->str);
-    }
     free(tmp);
 
-    if(pop == PREC_LPAR)
+    if(pop.symbol == PREC_LPAR)
     {
         stack->openParCnt--;
     }
@@ -126,6 +128,11 @@ void precStackFree(PrecStack *stack)
     {
         tmp = stack->top;
         stack->top = (stack->top->next);
+
+        if(tmp->str != NULL)
+        {
+            free(tmp->str);
+        }
         free(tmp);
     }
 }
@@ -152,6 +159,9 @@ void precStackShiftAfterFirstTerm(PrecStack *stack)
     // ERROR (malloc failure) (internal error)
 
     newElem->symbol = PREC_SHIFT;
+    newElem->str = NULL;
+    newElem->next = NULL;
+    newElem->type = -1;
 
     if(stack->top == NULL)
     {
@@ -269,62 +279,70 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
 
 void precReduce(PrecStack *stack)
 {
-    PrecSymbol poppedSymbols[RULE_SIZE];
+    PrecStackElem poppedElements[RULE_SIZE];
     int popCnt = 0;
-    PrecSymbol popped;
+    PrecStackElem popped;
     
     do
     {
         popped = precStackPop(stack);
-        if(popped != PREC_SHIFT)
+        if(popped.symbol != PREC_SHIFT)
         {
             if(popCnt >= RULE_SIZE)
             {
                 // ERROR (syntax)
             }
-            poppedSymbols[popCnt] = popped;
+            poppedElements[popCnt] = popped;
             popCnt++;
         }
     }
-    while(popped != PREC_SHIFT && stack->top != NULL);
+    while(popped.symbol != PREC_SHIFT && stack->top != NULL);
 
-    if(popCnt == 1 && poppedSymbols[0] == PREC_ID)
+    if(popCnt == 1 && poppedElements[0].symbol == PREC_ID)
     {
         // rule i -> E
-        precStackPush(stack, PREC_E);
+        PrecStackElem element = {0};
+        element.symbol = PREC_E;
+        precStackPush(stack, &element);
     }
 
-    if(popCnt == 2 && poppedSymbols[0] == PREC_E) // the array is backwards
+    if(popCnt == 2 && poppedElements[0].symbol == PREC_E) // the array is backwards
     {
         // rules sgnE -> E,    !E -> E
-        PrecSymbol op = poppedSymbols[1];
+        PrecSymbol op = poppedElements[1].symbol;
         if(op == PREC_SIGN || op == PREC_NOT)
         {
-            precStackPush(stack, PREC_E);
+            PrecStackElem element = {0};
+            element.symbol = PREC_E;
+            precStackPush(stack, &element);
         }
     }
 
     if(popCnt == 3)
     {
-        if(poppedSymbols[0] == PREC_E && poppedSymbols[2] == PREC_E)
+        if(poppedElements[0].symbol == PREC_E && poppedElements[2].symbol == PREC_E)
         {
             // rules E op E -> E
-            if(poppedSymbols[1] == PREC_DOT
-                || poppedSymbols[1] == PREC_MUL_DIV
-                || poppedSymbols[1] == PREC_PLUS_MINUS
-                || poppedSymbols[1] == PREC_AND
-                || poppedSymbols[1] == PREC_OR
-                || poppedSymbols[1] == PREC_RELATION
-                || poppedSymbols[1] == PREC_EQ_NE)
+            if(poppedElements[1].symbol == PREC_DOT
+                || poppedElements[1].symbol == PREC_MUL_DIV
+                || poppedElements[1].symbol == PREC_PLUS_MINUS
+                || poppedElements[1].symbol == PREC_AND
+                || poppedElements[1].symbol == PREC_OR
+                || poppedElements[1].symbol == PREC_RELATION
+                || poppedElements[1].symbol == PREC_EQ_NE)
             {
-                precStackPush(stack, PREC_E);
+                PrecStackElem element = {0};
+                element.symbol = PREC_E;
+                precStackPush(stack, &element);
             }
         }
 
-        if(poppedSymbols[0] == PREC_RPAR && poppedSymbols[2] == PREC_LPAR && poppedSymbols[1] == PREC_E)
+        if(poppedElements[0].symbol == PREC_RPAR && poppedElements[2].symbol == PREC_LPAR && poppedElements[1].symbol == PREC_E)
             {
                 // rule (E) -> E
-                precStackPush(stack,PREC_E);
+                PrecStackElem element = {0};
+                element.symbol = PREC_E;
+                precStackPush(stack, &element);
             }
     }
 }
@@ -335,7 +353,11 @@ void parseExpression(ParsedToken *p)
     PrecStack stack;
 
     precStackInit(&stack);
-    precStackPush(&stack, PREC_END);
+
+    PrecStackElem endSymbol = {0};
+    endSymbol.symbol = PREC_END;
+
+    precStackPush(&stack, &endSymbol);
 
     PrecSymbol input = tokenToPrec(p, previousWasOperand, &stack);
     
@@ -359,7 +381,10 @@ void parseExpression(ParsedToken *p)
                 // FALLTHROUGH
             
             case '=':
+                PrecStackElem element = {0};
+                element.symbol = input;
                 precStackPush(&stack, input);
+                
                 getNextToken(p);
                 input = tokenToPrec(p, previousWasOperand, &stack);
                 break;

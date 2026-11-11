@@ -173,19 +173,19 @@ void precStackInit(PrecStack *s);
 
 
 /**
- * @brief Pushes a precSymbol onto stack, if it's '(' we increment open parenthese count (stack variable)
+ * @brief Pushes a PrecStackElement onto stack, if it's '(' we increment open parenthese count (stack variable)
  * @param s PrecStack type pointer
- * @param symbol PrecSymbol being pushed onto the stack
+ * @param element PrecSymbol being pushed onto the stack (with PrecSymbol, type, string and next)
  */
-void precStackPush(PrecStack *s, PrecSymbol symbol);
+void precStackPush(PrecStack *s, PrecStackElem *element);
 
 
 /**
  * @brief Removes and returns first symbol on stack, if it's ')' we decrement open parenthese count (stack variable)
  * @param s PrecStack type pointer
- * @return -1 if nothing is left on the stack, PrecSymbol otherwise
+ * @return -1 if nothing is left on the stack, PrecStackElem otherwise
  */
-PrecSymbol precStackPop(PrecStack *s);
+PrecStackElem precStackPop(PrecStack *s);
 
 
 /**
