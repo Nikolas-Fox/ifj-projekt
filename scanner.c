@@ -148,10 +148,14 @@ static Token makeToken(TokenType type, char *str) {
     return tok;
 }
 
+static void lexError(const char *message) {
+       fprintf(stderr, "Lexical error on line %d: %s\n", line, message);
+       exit(1);
+   }
+
 static Token endNumber(TokenType type, int character) {
     if (isalnum(character) || character == '_') {
-        fprintf(stderr, "Lexikalni chyba, neplatny znak za ciselnym literalem");
-        exit(1);
+        lexError("invalid character after numeric literal");
     }
     ungetc(character, stdin);
     return makeToken(type, bufCopy());
@@ -223,8 +227,7 @@ static Token readToken(void) {
 
                 if(character == EOF) {
                     if (interpDepth > 0) {
-                        fprintf(stderr, "Lexikalni chyba, neukonceny interpolovany retezec");
-                        exit(1);
+                        lexError("unterminated interpolated chain");
                     }
                     return makeToken(TOK_EOF, NULL);
                 }  
@@ -233,8 +236,7 @@ static Token readToken(void) {
 
                 if (character == '\n') {
                     if (interpDepth > 0 && interpKind[interpDepth - 1] == 0) {
-                        fprintf(stderr, "Lexikalni chyba, neukonceny interpolovany retezec");
-                        exit(1);
+                        lexError("unterminated interpolated chain");
                     }
                     if (parenDepth > 0) {
                         line++;
@@ -319,8 +321,7 @@ static Token readToken(void) {
                     case '+': return makeToken(TOK_PLUS, NULL);
                 }
                 
-                fprintf(stderr, "Lexikalni chyba");
-                exit(1);
+                lexError("lexical error");
 
                 break;
 
@@ -330,8 +331,7 @@ static Token readToken(void) {
                     state = ST_ID;
                 } 
                 else {
-                    fprintf(stderr, "Lexikalni chyba, samosttatne podtržítko není identifikátor");
-                    exit(1);
+                    lexError("A standalone underscore is not an identifier");
                 }
                 break;
 
@@ -383,8 +383,7 @@ static Token readToken(void) {
                 if (character == '&') {
                     return makeToken(TOK_AND, NULL);
                 }
-                fprintf(stderr, "Lexikalni chyba, samostatny znak '&' neni podprovano (ocekavano &&)");
-                exit(1);
+                lexError("A standalone '&' character is not supported (expected '&&')");
                 break;
             
             case ST_SLASH:
@@ -404,8 +403,7 @@ static Token readToken(void) {
                 if (character == '|') {
                     return makeToken(TOK_OR, NULL);
                 }
-                fprintf(stderr, "Lexikalni chyba, samostatny znak '|' neni podprovano (ocekavano ||)");
-                exit(1);
+                lexError("A standalone '|' character is not supported (expected '||')");
                 break;
 
             case ST_LINE_COMMENT:
@@ -417,8 +415,7 @@ static Token readToken(void) {
 
             case ST_BLOCK_COMMENT:
                 if (character == EOF) {
-                    fprintf(stderr, "Lexikalni chyba, neukonceny blokovy komentar");
-                    exit(1);
+                    lexError("unterminated block comment");
                 } else if (character == '\n') {
                     line++;
                     commentNL = 1;
@@ -466,8 +463,7 @@ static Token readToken(void) {
                     state = ST_START;
                     break;
                 }
-                fprintf(stderr, "Lexikalni chyba, po viceradkovem komentari nemuze nasledovat token");
-                    exit(1);
+                lexError("A token cannot follow a multi-line comment.");
                 break;
 
             case ST_START_DOT:
@@ -484,8 +480,7 @@ static Token readToken(void) {
 
             case ST_ZERO:
                 if (isdigit(character)) {
-                    fprintf(stderr, "Lexikalni chyba, nenulovy literal nesmi zacinat nulou");
-                    exit(1);
+                    lexError("A non-zero literal must not begin with a zero.");
                 } else if (character == '.') {
                     bufAdd(character);
                     state = ST_DOT;
@@ -522,8 +517,7 @@ static Token readToken(void) {
                     bufAdd(character);
                     state = ST_INT;
                 } else if (character != '_') {
-                    fprintf(stderr, "Lexikalni chyba, podtrzitko musi byt mezi cislicemi");
-                    exit(1);
+                    lexError("the underscore must be between figures");
                 }
                 break;
 
@@ -560,8 +554,7 @@ static Token readToken(void) {
                     bufAdd(character);
                     state = ST_DECIMAL;
                 } else if (character != '_') {
-                    fprintf(stderr, "Lexikalni chyba, podtrzitko musi byt mezi cislicemi");
-                    exit(1);
+                    lexError("the underscore must be between figures");
                 }
                 break;
 
@@ -573,8 +566,7 @@ static Token readToken(void) {
                     bufAdd(character);
                     state = ST_EXP_DIGITS;
                 } else {
-                    fprintf(stderr, "Lexikalni chyba, exponent musi obsahovat cislici");
-                    exit(1);
+                    lexError("The exponent must contain a digit");
                 }
                 break;
 
@@ -583,8 +575,7 @@ static Token readToken(void) {
                     bufAdd(character);
                     state = ST_EXP_DIGITS;
                 } else {
-                    fprintf(stderr, "Lexikalni chyba, exponent musi obsahovat cislici");
-                    exit(1);
+                    lexError("The exponent must contain a digit");
                 }
                 break;
 
@@ -605,8 +596,7 @@ static Token readToken(void) {
                     bufAdd(character);
                     state = ST_EXP_DIGITS;
                 } else if (character != '_') {
-                    fprintf(stderr, "Lexikalni chyba, podtrzitko musi byt mezi cislicemi");
-                    exit(1);
+                    lexError("the underscore must be between figures");
                 }
                 break;
 
@@ -628,8 +618,7 @@ static Token readToken(void) {
                 } else if (character == '\\') {
                     state = ST_ESCAPE;
                 } else if (character == '\n' || character == EOF) {
-                    fprintf(stderr, "Lexikalni chyba, neukonceny retezec");
-                    exit(1);
+                    lexError("unfinished string");
                 } else {
                     bufAdd(character);
                 }
@@ -647,8 +636,7 @@ static Token readToken(void) {
                 } else if (character == '"') {
                     bufAdd('"');
                 } else {
-                    fprintf(stderr, "Lexikalni chyba, neplatna escape sekvence");
-                    exit(1);
+                    lexError("invalid escape sequence");
                 }
                 state = ST_STRING;
                 break;
@@ -666,8 +654,7 @@ static Token readToken(void) {
                 if (character == '"') {
                     state = ST_MUL_LINE_QUOTE1;
                 } else if (character == EOF) {
-                    fprintf(stderr, "Lexikalni chyba, neukonceny viceradkovy retezec");
-                    exit(1);
+                    lexError("unterminated multi-row chain");
                 } else {
                     if (character == '\n') {
                         line++;
@@ -730,8 +717,7 @@ static Token readToken(void) {
                     indentCount = 0;
                 } else {
                     if (character != EOF && indentCount <= lineIndent) {
-                        fprintf(stderr, "Lexikalni chyba, radek uvnitr zavorek musi byt odsazen vice nez zacatek prikazu");
-                        exit(1);
+                        lexError("The code inside the parentheses must be indented further than the start of the command.");
                     }
                     ungetc(character, stdin);
                     state = ST_START;
@@ -760,8 +746,7 @@ static Token readToken(void) {
  
             case ST_INTERP_TEXT:
                 if (character == EOF) {
-                    fprintf(stderr, "Lexikalni chyba, neukonceny interpolovany retezec");
-                    exit(1);
+                    lexError("unterminated interpolated string");
                 } else if (character == '$') {
                     state = ST_INTERP_DOLLAR;
                 } else if (interpKind[interpDepth - 1] == 0) {
@@ -771,8 +756,7 @@ static Token readToken(void) {
                     } else if (character == '\\') {
                         state = ST_INTERP_ESCAPE;
                     } else if (character == '\n') {
-                        fprintf(stderr, "Lexikalni chyba, neukonceny interpolovany retezec");
-                        exit(1);
+                        lexError("unterminated interpolated string");
                     } else {
                         bufAdd(character);
                     }
@@ -801,8 +785,7 @@ static Token readToken(void) {
                 } else if (character == '"') {
                     bufAdd('"');
                 } else {
-                    fprintf(stderr, "Lexikalni chyba, neplatna escape sekvence");
-                    exit(1);
+                    lexError("invalid escape sequence");
                 }
                 state = ST_INTERP_TEXT;
                 break;
@@ -826,8 +809,7 @@ static Token readToken(void) {
                         return makeToken(TOK_STRING, text);
                     }
                 } else {
-                    fprintf(stderr, "Lexikalni chyba, za $ ocekavano $, { nebo identifikator");
-                    exit(1);
+                    lexError("after $ expected $, { or identifier");
                 }
                 break;
 
@@ -878,7 +860,7 @@ static Token readToken(void) {
                     if (strcmp(buf, "main") == 0) {
                         return makeToken(TOK_AT_MAIN, NULL);
                     }
-                    fprintf(stderr, "za @ musi bezprostredne nasledovat main");
+                    fprintf(stderr, "@ must be immediately followed by main");
                     exit(2);
                 }
                 break;
@@ -970,8 +952,7 @@ Token getToken(void) {
             // first token of a logical line: compare the indentation
             lineHasToken = 1;
             if (lineTab == 1) {
-                fprintf(stderr, "Lexikalni chyba, tabulator v odsazeni");
-                    exit(1);
+                lexError("tab character in indentation");
             }
             if (lineIndent > indentStack[indentTop]) {
                 if (indentTop + 1 >= MAX_INDENT) {
@@ -994,8 +975,7 @@ Token getToken(void) {
                     sendDedents++;
                 }
                 if (indentStack[indentTop] != lineIndent) {
-                    fprintf(stderr, "Lexikalni chyba, nekonzistentni odsazeni");
-                    exit(1);
+                    lexError("inconsistent indentation");
                 }
                 eolHeld = 0;       // EOL before DEDENT is dropped
                 queued = token;
