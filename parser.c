@@ -122,6 +122,24 @@ bool startsExpression(TokenType type)
     }
 }
 
+bool startsLine(TokenType type)
+{
+    if (startsExpression(type))
+    {
+        return true;
+    }
+
+    switch (type)
+    {
+        case TOK_KW_VAR:
+        case TOK_KW_VAL:
+        case TOK_KW_RETURN:
+            return true;
+        default:
+            return false;
+    }
+}
+
 //TODO: integrate with lexer
 void parseProg(ParsedToken *p)
 {
@@ -279,7 +297,7 @@ void parseStList(ParsedToken *p)
 void parseStat(ParsedToken *p)
 {
     //16: ⟨stat⟩ → ⟨line⟩⟨line_end⟩
-    if (startsStat(p->currentToken.type))
+    if (startsLine(p->currentToken.type))
     {
         parseLine(p);
         parseLineEnd(p);

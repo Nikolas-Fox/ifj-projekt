@@ -106,6 +106,13 @@ bool startsStat(TokenType type);
 bool startsExpression(TokenType type);
 
 /**
+ * @brief Checks if token type belongs to Predict(<line>).
+ * @param type Token type
+ * @return True if it belongs, false if it doesn't.
+ */
+bool startsLine(TokenType type);
+
+/**
  * @brief Parses <prog>, implements LL grammar rule 1.
  * @param p Struct of parser state
  */
