@@ -236,6 +236,27 @@ void precReduce(PrecStack *s);
 
 
 /**
+ * @brief Parses <loa>, implements LL grammar rules 46
+ * @param p Struct of parser state
+ */
+void parseLoa(ParsedToken *p);
+
+
+/**
+ * @brief Parses <arg_list>, implements LL grammar rules 48 and 49.
+ * @param p Struct of parser state
+ */
+void parseArgList(ParsedToken *p);
+
+
+/**
+ * @brief Parses <arg_end>, implements LL grammar rules 50 and 51.
+ * @param p Struct of parser state
+ */
+void parseArgEnd(ParsedToken *p);
+
+
+/**
  * @brief Uses precedence analysis to validate expression
  * @param p Pointer to the parsed token
  */

@@ -247,7 +247,8 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
             getTokenAhead(p);
             if(p->aheadToken.type == TOK_LPAR)
             {
-                parseFunction(p);
+                getNextToken(p);  // parseLoa expects the first symbol to be '(', not id
+                parseLoa(p);
                 return PREC_ID;   // functions are simplified to ID
             }
 
@@ -347,6 +348,68 @@ void precReduce(PrecStack *stack)
     }
 }
 
+
+void parseLoa(ParsedToken *p)
+{
+    //46: ⟨loa⟩ → (⟨arg_list⟩)⟨loa⟩
+    if (p->currentToken.type == TOK_LPAR)
+    {
+        checkToken(p, TOK_LPAR);
+        parseArgList(p);
+        
+        if(p->currentToken.type != TOK_RPAR)
+        {
+            //ERROR (syntax error)
+        }
+
+        getTokenAhead(p);
+        if(p->aheadToken.type == TOK_LPAR)
+        {
+            getNextToken(p);   // we need to go to the next token
+            parseLoa(p);
+        }
+    }
+    return;
+}
+
+
+void parseArgList(ParsedToken *p)
+{
+    //48: ⟨arg_list⟩ → ⟨expression⟩⟨arg_end⟩
+    if (startsExpression(p->currentToken.type))
+    {
+        parseExpression(p);
+        parseArgEnd(p);
+    }
+    //49: ⟨arg_list⟩ → epsilon
+    else if (p->currentToken.type == TOK_RPAR)
+    {
+        return;
+    }
+    else
+    {
+        // ERROR (syntax error)
+    }
+}
+
+
+void parseArgEnd(ParsedToken *p)
+{
+    switch (p->currentToken.type)
+    {
+        case TOK_COMMA: //50: ⟨arg_end⟩ →,⟨arg_list⟩
+            checkToken(p, TOK_COMMA);
+            parseArgList(p);
+            break;
+        case TOK_RPAR: //51: ⟨arg_end⟩ → epsilon
+            return;
+        default:
+            printError("Unexpected token");
+            break;
+    }
+}
+
+
 void parseExpression(ParsedToken *p)
 {
     bool previousWasOperand = false;
@@ -383,7 +446,7 @@ void parseExpression(ParsedToken *p)
             case '=':
                 PrecStackElem element = {0};
                 element.symbol = input;
-                precStackPush(&stack, input);
+                precStackPush(&stack, &element);
                 
                 getNextToken(p);
                 input = tokenToPrec(p, previousWasOperand, &stack);
