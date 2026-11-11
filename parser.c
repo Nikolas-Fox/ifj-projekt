@@ -259,17 +259,20 @@ void parseBlock(ParsedToken *p)
 
 void parseStList(ParsedToken *p)
 {
-    switch (p->currentToken.type)
+    //14: ⟨st_list⟩ → ⟨stat⟩⟨st_list⟩
+    if (startsStat(p->currentToken.type))
     {
-        case TOK_SEMICOL: //14: ⟨st_list⟩ → ⟨stat⟩⟨st_list_NL⟩
-            checkToken(p, TOK_SEMICOL);
-            parseStListSemi(p);
-            break;
-        case TOK_DEDENT: //15: ⟨st_list⟩ → epsilon
-            return;
-        default:
-            printError("Unexpected token");
-            break;
+        parseStat(p);
+        parseStList(p);
+    }
+    //15: ⟨st_list⟩ → epsilon
+    else if (p->currentToken.type == TOK_DEDENT)
+    {
+        return;
+    }
+    else
+    {
+        printError("Unexpected token");
     }
 }
 
