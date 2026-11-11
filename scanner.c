@@ -293,7 +293,7 @@ static Token readToken(void) {
 
                 if (character == '}' && interp_depth > 0 && interp_in_expr[interp_depth - 1] == 1) {
                     interp_in_expr[interp_depth - 1] = 0;
-                    if (paren_depth > 0) {
+                    if (paren_depth > 0) { //TODO kontrola interp_depth??
                         paren_depth--;
                     }
                     return makeToken(TOK_INTERP_EXPR_END, NULL);
@@ -879,7 +879,7 @@ static Token readToken(void) {
                         return makeToken(TOK_AT_MAIN, NULL);
                     }
                     fprintf(stderr, "za @ musi bezprostredne nasledovat main");
-                    exit(1); //2?
+                    exit(2); //2? TODO
                 }
                 break;
         }
@@ -901,7 +901,7 @@ static int closing_blocks = 0;     // at EOF: how many blocks are still to be cl
 static int closing_eol = 0;        // at EOF: 1 = the next token is the EOL of the closed block
 
 // Returns the next token, including TOK_INDENT and TOK_DEDENT.
-// TOK_EOL directly before TOK_DEDENT is dropped.
+// TOK_NL directly before TOK_DEDENT is dropped. TODO smazat
 Token getToken(void) {
     while (1) {
         if (send_nl == 1) {
@@ -917,8 +917,8 @@ Token getToken(void) {
             return makeToken(TOK_DEDENT, NULL);
         }
 
-        if (closing_blocks > 0) {
-            // at EOF every open block is closed by the pair EOL, DEDENT
+        if (closing_blocks > 0) { 
+            // at EOF every open block is closed by the pair NL, DEDENT, TODO smazat NL
             if (closing_eol == 1) {
                 closing_eol = 0;
                 return makeToken(TOK_NL, NULL);
