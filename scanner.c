@@ -227,7 +227,7 @@ static Token readToken(void) {
 
                 if(character == EOF) {
                     if (interpDepth > 0) {
-                        lexError("unterminated interpolated chain");
+                        lexError("unterminated interpolated string");
                     }
                     return makeToken(TOK_EOF, NULL);
                 }  
@@ -236,7 +236,7 @@ static Token readToken(void) {
 
                 if (character == '\n') {
                     if (interpDepth > 0 && interpKind[interpDepth - 1] == 0) {
-                        lexError("unterminated interpolated chain");
+                        lexError("unterminated interpolated string");
                     }
                     if (parenDepth > 0) {
                         line++;
@@ -654,7 +654,7 @@ static Token readToken(void) {
                 if (character == '"') {
                     state = ST_MUL_LINE_QUOTE1;
                 } else if (character == EOF) {
-                    lexError("unterminated multi-row chain");
+                    lexError("unterminated multi-row string");
                 } else {
                     if (character == '\n') {
                         line++;
