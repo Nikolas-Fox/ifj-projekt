@@ -880,6 +880,7 @@ static int sendDedents = 0;   // how many DEDENT tokens are still to be returned
 static int hasQueued = 0;        // 1 = a token is waiting in the queue
 static Token queued;              // token waiting behind EOL / INDENT / DEDENT
 static int lineHasToken = 0;    // has the current logical line already had a token?
+static int afterSemicolon = 0;    // 1 = the previous token was ';'
 
 // Returns the next token, including TOK_INDENT and TOK_DEDENT.
 Token getToken(void) {
@@ -895,6 +896,15 @@ Token getToken(void) {
         }
 
         Token token = readToken();
+
+        if (token.type == TOK_SEMICOL) {
+            if (afterSemicolon == 1) {
+                continue; // repeated ';' is dropped
+            }
+            afterSemicolon = 1;
+        } else {
+            afterSemicolon = 0;
+        }
 
         if (token.type == TOK_NL) {
             if (lineHasToken == 0) {
