@@ -3,7 +3,7 @@
 * Package:		parser
 * File:			parser.h
 * Date:			1.11.2026
-* Last change:	10.11.2026
+* Last change:	11.11.2026
 * Authors: 		xholael00
 *
 * Description: Header file containing parser logic - recursive descent and
@@ -252,7 +252,7 @@ void parseId(ParsedToken *p);
 /**
  * @brief Precedence analysis
  */
-void parseExpression();
+void parseExpression(ParsedToken *p);
 
 #endif
 /*** End of file parser.h ***/

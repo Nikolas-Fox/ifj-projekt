@@ -3,7 +3,7 @@
 * Package:		parser
 * File:			parser.c
 * Date:			1.11.2026
-* Last change:	10.11.2026
+* Last change:	11.11.2026
 * Authors: 		xholael00
 *
 * Description: Implementation of parser - recursive descent and precedence analysis.
@@ -62,7 +62,7 @@ void checkToken(ParsedToken *p, TokenType expected)
     }
     else
     {
-        getToken(p);
+        getNextToken(p);
     }
 }
 
@@ -72,7 +72,7 @@ void checkStrToken(ParsedToken *p, TokenType expected, char *name)
     {
         printError("Unexpected token");
     }
-    getToken(p);
+    getNextToken(p);
 }
 
 void getTokenAhead(ParsedToken *p)
@@ -287,14 +287,14 @@ void parseStat(ParsedToken *p)
         {
             case TOK_KW_IF: //17: ⟨stat⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
                 checkToken(p, TOK_KW_IF);
-                parseExpression();
+                parseExpression(p);
                 checkToken(p, TOK_KW_THEN);
                 parseBlock(p);
                 parseElseChoice(p);
                 break;
             case TOK_KW_WHILE: //18: ⟨stat⟩ → while ⟨expression⟩ do ⟨block⟩
                 checkToken(p, TOK_KW_WHILE);
-                parseExpression();
+                parseExpression(p);
                 checkToken(p, TOK_KW_DO);
                 parseBlock(p);
                 break;
@@ -308,9 +308,9 @@ void parseStat(ParsedToken *p)
 void parseLine(ParsedToken *p)
 {
     //19: ⟨line⟩ → ⟨expression⟩
-    if (startsExpression(p))
+    if (startsExpression(p->currentToken.type))
     {
-        parseExpression();
+        parseExpression(p);
     }
     //20: ⟨line⟩ → val id ⟨ret_type⟩ = ⟨expression⟩
     else if (p->currentToken.type == TOK_KW_VAL)
@@ -319,7 +319,7 @@ void parseLine(ParsedToken *p)
         checkToken(p, TOK_ID);
         parseRetType(p);
         checkToken(p, TOK_EQ);
-        parseExpression();
+        parseExpression(p);
     }
     //21: ⟨line⟩ → var id ⟨ret_type⟩ = ⟨expression⟩
     else if (p->currentToken.type == TOK_KW_VAR)
@@ -328,7 +328,7 @@ void parseLine(ParsedToken *p)
         checkToken(p, TOK_ID);
         parseRetType(p);
         checkToken(p, TOK_EQ);
-        parseExpression();
+        parseExpression(p);
     }
     //22: ⟨line⟩ → return ⟨return⟩
     else if (p->currentToken.type == TOK_KW_RETURN)
@@ -362,7 +362,7 @@ void parseLineEnd(ParsedToken *p)
 void parseLineSemi(ParsedToken *p)
 {
     //25: ⟨line_semi⟩ → ⟨stat⟩
-    if (startsStat(p))
+    if (startsStat(p->currentToken.type))
     {
         parseStat(p);
     }
@@ -406,7 +406,7 @@ void parseElse(ParsedToken *p)
             break;
         case TOK_KW_IF: //30: ⟨else⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
             checkToken(p, TOK_KW_IF);
-            parseExpression();
+            parseExpression(p);
             checkToken(p, TOK_KW_THEN);
             parseBlock(p);
             parseElseChoice(p);
@@ -461,7 +461,7 @@ void parseType(ParsedToken *p)
 void parseReturn(ParsedToken *p)
 {
     //38: ⟨return⟩ → ⟨expression⟩
-    if (startsExpression(p))
+    if (startsExpression(p->currentToken.type))
     {
         parseExpression(p);
     }
@@ -554,7 +554,7 @@ void parseLoa(ParsedToken *p)
 void parseArgList(ParsedToken *p)
 {
     //48: ⟨arg_list⟩ → ⟨expression⟩⟨arg_end⟩
-    if (startsExpression(p))
+    if (startsExpression(p->currentToken.type))
     {
         parseExpression(p);
         parseArgEnd(p);
@@ -594,7 +594,7 @@ void parseId(ParsedToken *p)
     {
         checkToken(p, TOK_ID);
         checkToken(p, TOK_EQ);
-        parseExpression();
+        parseExpression(p);
     }
     //52: ⟨func⟩ → id ⟨loa⟩
     else
@@ -605,7 +605,7 @@ void parseId(ParsedToken *p)
 }
 
 //TODO: precedence analysis
-void parseExpression()
+void parseExpression(ParsedToken *p)
 {
 
 }
