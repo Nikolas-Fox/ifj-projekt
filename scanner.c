@@ -202,6 +202,11 @@ static Token readToken(void) {
     int commentNL = 0;
     int indentCount = 0;
 
+    if (hasInterpQueued == 1) {
+        hasInterpQueued = 0;
+        return interpQueued;
+    }
+
     if (dotAfterNumber == 1) {
         dotAfterNumber = 0;
         return makeToken(TOK_DOT, NULL);
@@ -872,41 +877,15 @@ static Token readToken(void) {
 static int indentStack[MAX_INDENT] = {0};
 static int indentTop = 0;        // index of the stack top (0 = no indentation)
 static int sendDedents = 0;   // how many DEDENT tokens are still to be returned
-static int sendNL = 0;          // 1 = return the held TOK_EOL next
-static int sendIndent = 0;       // 1 = return TOK_INDENT next
 static int hasQueued = 0;        // 1 = a token is waiting in the queue
 static Token queued;              // token waiting behind EOL / INDENT / DEDENT
 static int lineHasToken = 0;    // has the current logical line already had a token?
-static int eolHeld = 0;          // 1 = TOK_EOL is held back until we know what follows
-static Token heldNLToken;        // the held TOK_EOL
-static int closingBlocks = 0;     // at EOF: how many blocks are still to be closed
-static int closingEol = 0;        // at EOF: 1 = the next token is the EOL of the closed block
 
 // Returns the next token, including TOK_INDENT and TOK_DEDENT.
-// TOK_NL directly before TOK_DEDENT is dropped. TODO smazat
 Token getToken(void) {
-    while (1) {
-        if (sendNL == 1) {
-            sendNL = 0;
-            return heldNLToken;
-        }
-        if (sendIndent == 1) {
-            sendIndent = 0;
-            return makeToken(TOK_INDENT, NULL);
-        }
+    while (1) {     
         if (sendDedents > 0) {
             sendDedents--;
-            return makeToken(TOK_DEDENT, NULL);
-        }
-
-        if (closingBlocks > 0) { 
-            // at EOF every open block is closed by the pair NL, DEDENT, TODO smazat NL
-            if (closingEol == 1) {
-                closingEol = 0;
-                return makeToken(TOK_NL, NULL);
-            }
-            closingEol = 1;
-            closingBlocks--;
             return makeToken(TOK_DEDENT, NULL);
         }
 
@@ -918,33 +897,23 @@ Token getToken(void) {
         Token token = readToken();
 
         if (token.type == TOK_NL) {
-            if (lineHasToken == 1) {
-                lineHasToken = 0;
-                eolHeld = 1;   // we do not know yet whether DEDENT follows
-                heldNLToken = token;
+            if (lineHasToken == 0) {
+                continue;
             }
-            continue;
+            lineHasToken = 0;
+            return token;
         }
 
         if (token.type == TOK_EOF) {
+            sendDedents = indentTop;
+            indentTop = 0;
+            queued = token;
+            hasQueued = 1;
             if (lineHasToken == 1) {
                 // the last line has no LF
                 lineHasToken = 0;
-                eolHeld = 1;
-                heldNLToken = makeToken(TOK_NL, NULL);
+                return makeToken(TOK_NL, NULL);
             }
-            if (indentTop > 0) {
-                // the EOLs are returned together with the DEDENTs (see closingBlocks)
-                eolHeld = 0;
-                closingBlocks = indentTop;
-                closingEol = 1;
-                indentTop = 0;
-            } else if (eolHeld == 1) {
-                eolHeld = 0;
-                sendNL = 1;
-            }
-            queued = token;
-            hasQueued = 1;
             continue;
         }
 
@@ -960,14 +929,9 @@ Token getToken(void) {
                 }
                 indentTop++;
                 indentStack[indentTop] = lineIndent;
-                if (eolHeld == 1) {
-                    eolHeld = 0;
-                    sendNL = 1;   // EOL stays before INDENT
-                }
-                sendIndent = 1;
                 queued = token;
                 hasQueued = 1;
-                continue;
+                return makeToken(TOK_INDENT, NULL);
             }
             if (lineIndent < indentStack[indentTop]) {
                 while (indentTop > 0 && indentStack[indentTop] > lineIndent) {
@@ -977,20 +941,10 @@ Token getToken(void) {
                 if (indentStack[indentTop] != lineIndent) {
                     lexError("inconsistent indentation");
                 }
-                eolHeld = 0;       // EOL before DEDENT is dropped
                 queued = token;
                 hasQueued = 1;
                 continue;
             }
-        }
-
-        if (eolHeld == 1) {
-            // same indentation: the held EOL is returned before the token
-            eolHeld = 0;
-            sendNL = 1;
-            queued = token;
-            hasQueued = 1;
-            continue;
         }
         return token;
     }
