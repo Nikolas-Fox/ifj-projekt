@@ -586,6 +586,24 @@ void parseArgEnd(ParsedToken *p)
     }
 }
 
+void parseId(ParsedToken *p)
+{
+    getTokenAhead(p);
+    //53: ⟨assign⟩ → id = ⟨expression⟩
+    if (p->aheadToken.type == TOK_EQ)
+    {
+        checkToken(p, TOK_ID);
+        checkToken(p, TOK_EQ);
+        parseExpression();
+    }
+    //52: ⟨func⟩ → id ⟨loa⟩
+    else
+    {
+        checkToken(p, TOK_ID);
+        parseLoa(p);
+    }
+}
+
 //TODO: precedence analysis
 void parseExpression()
 {

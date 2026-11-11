@@ -244,6 +244,12 @@ void parseArgList(ParsedToken *p);
 void parseArgEnd(ParsedToken *p);
 
 /**
+ * @brief Parses <func> and <assign>, called from precedence.c.
+ * @param p Struct of parser state
+ */
+void parseId(ParsedToken *p);
+
+/**
  * @brief Precedence analysis
  */
 void parseExpression();
