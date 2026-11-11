@@ -246,7 +246,7 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
                 !(strcmp(p->currentToken.str, "true") == 0 || strcmp(p->currentToken.str, "false") == 0))
             {
                 // TODO: ERROR (we don't know what the string is, it's not defined anywhere and it isn't a soft KW)
-                // "foo"   would be clasified as a string literal in lexer (those are safe)
+                // ' "hello" '   would be clasified as a string literal in lexer (those are safe)
             }
 
         // FALLTHROUGH
@@ -340,8 +340,7 @@ void parseExpression(ParsedToken *p)
     PrecSymbol input = tokenToPrec(p, previousWasOperand, &stack);
     
 
-    while (input != PREC_END && 
-            !(precStackTop(&stack) == PREC_E && precStackGetFirstTerm(&stack) == PREC_END))
+    while (!(input == PREC_END && precStackTop(&stack) == PREC_E && precStackGetFirstTerm(&stack) == PREC_END))
     {
         if(input == PREC_ID || input == PREC_RPAR)
         {
@@ -369,7 +368,7 @@ void parseExpression(ParsedToken *p)
                 precReduce(&stack);
                 break;
             default:
-                //ERROR
+                //ERROR (syntactic error)
         }
     }
     precStackFree(&stack);
