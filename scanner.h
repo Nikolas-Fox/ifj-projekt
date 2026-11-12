@@ -54,7 +54,7 @@ typedef struct {
 
 /**
 * @brief Returns the next token from the standard input
-* @return 
+* @return token
 */
 Token getToken(void);
 
