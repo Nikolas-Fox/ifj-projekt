@@ -1,3 +1,5 @@
+//AI generated with Gemini
+// prompt: vygeneruj mi jednotkové testy pro tento soubor
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
