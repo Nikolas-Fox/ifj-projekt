@@ -78,6 +78,9 @@ static Token interpQueued;               // token waiting for the next call
 static int hasInterpQueued = 0;
 static int resumeId = 0;              // 1 = continue reading the identifier after $
 
+static int comma = 0;   // 1 = the last token was a comma
+static int commaNL = 0;        // 1 = a newline has appeared since that comma
+
 //Buffer for the lexeme text
 static char *buf = NULL;
 static size_t bufLen = 0;
@@ -246,6 +249,9 @@ static Token readToken(void) {
                         lexError("unterminated interpolated string");
                     }
                     if (parenDepth > 0) {
+                        if (comma == 1) {
+                            commaNL = 1;
+                        }
                         line++;
                         indentCount = 0;
                         state = ST_PAREN_LINE;
@@ -256,6 +262,15 @@ static Token readToken(void) {
                     atLineStart = 1;
                     return token;
                 }
+
+                if (character == ')' && comma == 1 && commaNL == 0) {
+                    fprintf(stderr, "trailing comma must be followed by a newline before ')'");
+                    exit(2);
+                }
+                if (character != '/') {
+                    comma = 0;
+                    commaNL = 0;
+}
 
                 //identifier starting with a letter
                 if (isalpha(character)) {
@@ -322,7 +337,11 @@ static Token readToken(void) {
                         }
                         return makeToken(TOK_RPAR, NULL);
 
-                    case ',': return makeToken(TOK_COMMA, NULL);
+                    case ',': {
+                        comma = 1;
+                        commaNL = 0;
+                        return makeToken(TOK_COMMA, NULL);
+                    } 
                     case ';': return makeToken(TOK_SEMICOL, NULL);
                     case ':': return makeToken(TOK_COLON, NULL);
                     case '*': return makeToken(TOK_MUL, NULL);
