@@ -25,63 +25,40 @@
 
 //auromat states
 typedef enum {
-    ST_START,
-    ST_UNDERSCORE,
-    ST_ID,
-    ST_LESS,
-    ST_GREATER,
-    ST_ASSIGN,
-    ST_NEQ,
-    ST_SLASH,          
-    ST_LINE_COMMENT,   
-    ST_BLOCK_COMMENT,  
-    ST_BLOCK_SLASH,    
-    ST_BLOCK_STAR,     
-    ST_AFTER_BLOCK,
-    ST_START_DOT,
-    ST_ZERO,
-    ST_INT,
-    ST_INT_US,
-    ST_DOT,
-    ST_DECIMAL,
-    ST_DECIMAL_US,
-    ST_EXP,
-    ST_EXP_SIGN,
-    ST_EXP_DIGITS,
-    ST_EXP_US,
-    ST_SUFFIX,
-    ST_STRING_START,
-    ST_STRING,
-    ST_ESCAPE,
-    ST_EMPTY_STRING,
-    ST_MUL_LINE_STRING,
-    ST_MUL_LINE_QUOTE1,
-    ST_MUL_LINE_QUOTE2,
-    ST_MUL_LINE_QUOTE3,
-    ST_LINE_START,
-    ST_PAREN_LINE, // počítá mezery na dalším řádku uvnitř závorek
-    ST_AMP,
-    ST_PIPE,
-    ST_INTERP_OPEN,    
-    ST_INTERP_OPEN2,   
-    ST_INTERP_TEXT,
-    ST_INTERP_ESCAPE,  
-    ST_INTERP_DOLLAR,
-    ST_INTERP_ID,
-    ST_INTERP_QUOTE1,  
-    ST_INTERP_QUOTE2,
-    ST_INTERP_QUOTE3,
-    ST_AT,
-    ST_PLUS,
-    ST_MINUS
+    // general states
+    ST_START, ST_UNDERSCORE, ST_ID,
+    ST_LESS, ST_GREATER, ST_ASSIGN,
+    ST_NEQ, ST_AT, ST_PLUS, ST_MINUS,
+    ST_AMP, ST_PIPE, 
+    
+    // states for comments
+    ST_SLASH, ST_LINE_COMMENT, ST_BLOCK_COMMENT,        
+    ST_BLOCK_SLASH, ST_BLOCK_STAR, ST_AFTER_BLOCK,
+      
+    // states for numeric literals
+    ST_START_DOT, ST_ZERO, ST_INT,
+    ST_INT_US, ST_DOT, ST_DECIMAL,
+    ST_DECIMAL_US, ST_EXP, ST_EXP_SIGN,
+    ST_EXP_DIGITS,  ST_EXP_US, ST_SUFFIX,
+    
+    // states for string
+    ST_STRING_START, ST_STRING, ST_ESCAPE, ST_EMPTY_STRING,
+    ST_MUL_LINE_STRING, ST_MUL_LINE_QUOTE1, ST_MUL_LINE_QUOTE2,
+    ST_MUL_LINE_QUOTE3, ST_LINE_START, ST_PAREN_LINE, // counts spaces on the next line inside parentheses
+    
+    // interpolated strings
+    ST_INTERP_OPEN, ST_INTERP_OPEN2, ST_INTERP_TEXT,
+    ST_INTERP_ESCAPE, ST_INTERP_DOLLAR, ST_INTERP_ID,
+    ST_INTERP_QUOTE1, ST_INTERP_QUOTE2, ST_INTERP_QUOTE3
+    
 }States;
 
 static int line = 1;
 
-static int atLineStart = 1;  // 1 = začíná nový logický řádek
-static int parenDepth = 0;    // hloubka kulatých závorek
-static int lineIndent = 0;    // počet mezer na začátku aktuálního logického řádku
-static int lineTab = 0;       // 1 = odsazení obsahuje tabulátor
+static int atLineStart = 1;     // 1 = starts a new logical line
+static int parenDepth = 0;   
+static int lineIndent = 0;    // number of spaces at the beginning of the current logical line
+static int lineTab = 0;       // 1 = indentation contains a tab
 
 static int dotAfterNumber = 0;
 
@@ -93,14 +70,17 @@ static Token interpQueued;               // token waiting for the next call
 static int hasInterpQueued = 0;
 static int resumeId = 0;              // 1 = continue reading the identifier after $
 
-static int comma = 0;   // 1 = the last token was a comma
-static int commaNL = 0;        // 1 = a newline has appeared since that comma
+static int comma = 0;  // 1 = the last token was a comma
+static int commaNL = 0;  // 1 = a newline has appeared since that comma
 
-//Buffer for the lexeme text
+// Buffer for the lexeme text
+// AI: vygeneruj mi funkce pro dynamickou práci s buffrem
+// functions slightly after generated
 static char *buf = NULL;
 static size_t bufLen = 0;
 static size_t bufCap = 0;
 
+// AI: same prompt
 static void bufReset(void) {
     if (buf == NULL) {
         bufCap = 64;
@@ -113,6 +93,7 @@ static void bufReset(void) {
     buf[0] = '\0';
 }
 
+//AI: same prompt
 static void bufAdd(int c) {
     if (bufLen + 2 > bufCap) {
         size_t newCap = bufCap * 2;
@@ -125,7 +106,8 @@ static void bufAdd(int c) {
     buf[bufLen] = '\0';
 }
  
-//Copy of the buffer for the token (the token owns its text)
+//copy of the buffer for the token (the token owns its text)
+//AI: same prompt
 static char *bufCopy(void) {
     char *copy = malloc(bufLen + 1);
     if (!copy) exit(99);
@@ -148,7 +130,7 @@ static const KeywordPair keywords[] = {
     
 };
 
-// Vrátí typ klíčového slova, nebo TOK_ID, pokud to není klíčové slovo
+// returns the keyword token type, or TOK_ID if it is not a keyword
 static TokenType findKeyword(const char *word) {
     size_t count = sizeof keywords / sizeof keywords[0];
 
@@ -173,6 +155,7 @@ static void lexError(const char *message) {
        exit(1);
    }
 
+// checks the character after a numeric literal, pushes back the excess character, and creates the token
 static Token endNumber(TokenType type, int character) {
     if (isalnum(character) || character == '_') {
         lexError("invalid character after numeric literal");
@@ -181,7 +164,11 @@ static Token endNumber(TokenType type, int character) {
     return makeToken(type, bufCopy());
 }
 
-// Opens an interpolated string (kind 0 = one line, 1 = multi-line)
+// opens an interpolated string (kind 0 = one line, 1 = multi-line)
+// INTERPOLATEDS extention AI: explained and partialy generated
+// prompts:
+// vysvětli mi jak funguje rozšíření INTERPOLATEDS
+// navrni mi kostru, jak by to zhruba mělo vypadat
 static void pushInterp(int kind) {
     if (interpDepth + 1 >= MAX_INTERP) {
         exit(99);
@@ -191,7 +178,7 @@ static void pushInterp(int kind) {
     interpDepth++;
 }
 
-// Closes an interpolated string: returns the pending text (if any) and then TOK_INTERP_END
+// closes an interpolated string: returns the pending text (if any) and then TOK_INTERP_END
 static Token endInterpolation(void) {
     interpDepth--;
     Token end = makeToken(TOK_INTERP_END, NULL);
@@ -203,7 +190,7 @@ static Token endInterpolation(void) {
     return makeToken(TOK_STRING, bufCopy());
 }
 
-// Starts ${ ... }: returns the pending text (if any) and then TOK_INTERP_EXPR_START
+// starts ${ ... }: returns the pending text (if any) and then TOK_INTERP_EXPR_START
 static Token startExpression(void) {
     interpInExpr[interpDepth - 1] = 1;
     parenDepth++;  // a line break inside ${ } is only whitespace
@@ -216,22 +203,26 @@ static Token startExpression(void) {
     return makeToken(TOK_STRING, bufCopy());
 }
 
+// reads the next token from the input stream using a finite state machine
 static Token readToken(void) {
     States state = ST_START;
     int commentDepth = 0;
     int commentNL = 0;
     int indentCount = 0;
 
+    // handle any pre-queued interpolation tokens
     if (hasInterpQueued == 1) {
         hasInterpQueued = 0;
         return interpQueued;
     }
 
+    // handle a pending dot token that follows a numeric literal
     if (dotAfterNumber == 1) {
         dotAfterNumber = 0;
         return makeToken(TOK_DOT, NULL);
     }
 
+    // handle resumption states for identifiers, interpolation text, or line starts
     if (resumeId == 1) {
         resumeId = 0;
         state = ST_INTERP_ID;
@@ -259,6 +250,7 @@ static Token readToken(void) {
 
                 if (character == ' ' || character == '\t' || character == '\r') break;
 
+                // handle NL, indentation checks, and line breaks inside parentheses
                 if (character == '\n') {
                     if (interpDepth > 0 && interpKind[interpDepth - 1] == 0) {
                         lexError("unterminated interpolated string");
@@ -278,6 +270,7 @@ static Token readToken(void) {
                     return token;
                 }
 
+                // check for invalid trailing commas before a closing parenthesis
                 if (character == ')' && comma == 1 && commaNL == 0) {
                     fprintf(stderr, "trailing comma must be followed by a newline before ')'");
                     exit(2);
@@ -287,14 +280,14 @@ static Token readToken(void) {
                     commaNL = 0;
 }
 
-                //identifier starting with a letter
+                // identifier starting with a letter
                 if (isalpha(character)) {
                     bufReset();
                     bufAdd(character);
                     state = ST_ID;
                     break;
                 }
-                //identifier starting with a underscore
+                // identifier starting with a underscore
                 if (character == '_') {
                     bufReset();
                     bufAdd(character);
@@ -302,7 +295,7 @@ static Token readToken(void) {
                     break;
                 }
 
-                //operators that may have a second character
+                // operators that may have a second character
                 if (character == '<') { state = ST_LESS; break; }
                 if (character == '>') { state = ST_GREATER; break; }
                 if (character == '=') { state = ST_ASSIGN; break; }
@@ -315,6 +308,7 @@ static Token readToken(void) {
                 if (character == '+') { state = ST_PLUS; break; }
                 if (character == '-') { state = ST_MINUS; break; }
 
+                // numeric literal
                 if (isdigit(character)) {
                     bufReset();
                     bufAdd(character);
@@ -326,12 +320,14 @@ static Token readToken(void) {
                     break;
                 }
 
+                // string literal
                 if (character == '"') {
                     bufReset();
                     state = ST_STRING_START;
                     break;
                 }
 
+                // end of an interpolated expression block inside a string
                 if (character == '}' && interpDepth > 0 && interpInExpr[interpDepth - 1] == 1) {
                     interpInExpr[interpDepth - 1] = 0;
                     if (parenDepth > 0) { //TODO kontrola interpDepth??
@@ -366,7 +362,9 @@ static Token readToken(void) {
 
                 break;
 
+            //cases for general states
             case ST_UNDERSCORE:
+            // check if the standalone underscore is followed by valid identifier characters
                 if (isalnum(character) || character == '_') {
                     bufAdd(character);
                     state = ST_ID;
@@ -377,12 +375,13 @@ static Token readToken(void) {
                 break;
 
             case ST_ID:
+                // accumulate identifier characters or check for interpolated string prefix 's"'
                 if (isalnum(character) || character == '_') {
                     bufAdd(character);
                 } else if (bufLen == 1 && buf[0] == 's' && character == '"') {
                     state = ST_INTERP_OPEN; 
                 }else {
-                    ungetc(character, stdin);  // znak už nepatří k identifikátoru
+                    ungetc(character, stdin);  // Push back non-identifier character
 
                     TokenType type = findKeyword(buf);
                     if (type == TOK_ID) {
@@ -426,7 +425,36 @@ static Token readToken(void) {
                 }
                 lexError("A standalone '&' character is not supported (expected '&&')");
                 break;
+
+            case ST_AT:
+            // validate main function annotation (@main)
+                if (isalnum(character) || character == '_') {
+                    bufAdd(character);
+                } else {
+                    ungetc(character, stdin);
+                    if (strcmp(buf, "main") == 0) {
+                        return makeToken(TOK_AT_MAIN, NULL);
+                    }
+                    fprintf(stderr, "@ must be immediately followed by main");
+                    exit(2);
+                }
+                break;
+
+            case ST_PLUS:
+                if (character == '+' || character == '-') {
+                    lexError("'+' and '-' must be separated by a space");
+                }
+                ungetc(character, stdin);
+                return makeToken(TOK_PLUS, NULL);
+
+            case ST_MINUS:
+                if (character == '+' || character == '-') {
+                    lexError("'+' and '-' must be separated by a space");
+                }
+                ungetc(character, stdin);
+                return makeToken(TOK_MINUS, NULL);
             
+            // cases for comment states
             case ST_SLASH:
                 if (character == '/') {
                     state = ST_LINE_COMMENT;
@@ -448,6 +476,7 @@ static Token readToken(void) {
                 break;
 
             case ST_LINE_COMMENT:
+            // consume characters until NL or EOF
                 if (character == '\n' || character == EOF) {
                     ungetc(character, stdin);  
                     state = ST_START;
@@ -507,6 +536,7 @@ static Token readToken(void) {
                 lexError("A token cannot follow a multi-line comment.");
                 break;
 
+            // cases for numeric literal states
             case ST_START_DOT:
                 if (isdigit(character)) {
                     bufReset();
@@ -644,6 +674,7 @@ static Token readToken(void) {
             case ST_SUFFIX:
                 return endNumber(TOK_DOUBLE, character);
 
+            // cases for string states
             case ST_STRING_START:
                 if (character == '"') {
                     state = ST_EMPTY_STRING;
@@ -692,6 +723,7 @@ static Token readToken(void) {
                 break;
 
             case ST_MUL_LINE_STRING:
+            // consume characters until the end of the line or file
                 if (character == '"') {
                     state = ST_MUL_LINE_QUOTE1;
                 } else if (character == EOF) {
@@ -735,12 +767,13 @@ static Token readToken(void) {
                 break;
 
             case ST_LINE_START:
+            // measure leading indentation at the start of a logical line
                 if (character == ' ') {
                     indentCount++;
                 } else if (character == '\t') {
                     lineTab = 1;
                 } else if (character == '\r') {
-                    // CR před LF (CRLF) se ignoruje
+
                 } else {
                     ungetc(character, stdin);
                     lineIndent = indentCount;
@@ -749,6 +782,7 @@ static Token readToken(void) {
                 break;
 
             case ST_PAREN_LINE:
+            // count spaces on continuation lines inside parentheses
                 if (character == ' ') {
                     indentCount++;
                 } else if (character == '\t' || character == '\r') {
@@ -765,6 +799,7 @@ static Token readToken(void) {
                 }
                 break;
 
+            // cases for interpolated string states
             case ST_INTERP_OPEN:
                 if (character == '"') {
                     state = ST_INTERP_OPEN2;
@@ -786,6 +821,7 @@ static Token readToken(void) {
                 return makeToken(TOK_INTERP_START, NULL);
  
             case ST_INTERP_TEXT:
+            // parse text segments and handle variable interpolations within strings
                 if (character == EOF) {
                     lexError("unterminated interpolated string");
                 } else if (character == '$') {
@@ -832,6 +868,7 @@ static Token readToken(void) {
                 break;
 
             case ST_INTERP_DOLLAR:
+            // handle escaped dollar signs ($$) or expression interpolations (${...})
                 if (character == '$') {
                     bufAdd('$');
                     state = ST_INTERP_TEXT;
@@ -892,35 +929,8 @@ static Token readToken(void) {
                     return endInterpolation();
                 }
                 break;
-
-            case ST_AT:
-                if (isalnum(character) || character == '_') {
-                    bufAdd(character);
-                } else {
-                    ungetc(character, stdin);
-                    if (strcmp(buf, "main") == 0) {
-                        return makeToken(TOK_AT_MAIN, NULL);
-                    }
-                    fprintf(stderr, "@ must be immediately followed by main");
-                    exit(2);
-                }
-                break;
-
-            case ST_PLUS:
-                if (character == '+' || character == '-') {
-                    lexError("'+' and '-' must be separated by a space");
-                }
-                ungetc(character, stdin);
-                return makeToken(TOK_PLUS, NULL);
-
-            case ST_MINUS:
-                if (character == '+' || character == '-') {
-                    lexError("'+' and '-' must be separated by a space");
-                }
-                ungetc(character, stdin);
-                return makeToken(TOK_MINUS, NULL);
-                    }
-                }
+            }
+        }   
 }
 
 #define MAX_INDENT 128
@@ -932,7 +942,7 @@ static Token queued;              // token waiting behind EOL / INDENT / DEDENT
 static int lineHasToken = 0;    // has the current logical line already had a token?
 static int afterSemicolon = 0;    // 1 = the previous token was ';'
 
-// Returns the next token, including TOK_INDENT and TOK_DEDENT.
+// Returns the next token, including TOK_INDENT and TOK_DEDENT
 Token getToken(void) {
     while (1) {     
         if (sendDedents > 0) {
