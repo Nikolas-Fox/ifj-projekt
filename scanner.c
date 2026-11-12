@@ -56,7 +56,9 @@ typedef enum {
     ST_INTERP_QUOTE1,  
     ST_INTERP_QUOTE2,
     ST_INTERP_QUOTE3,
-    ST_AT
+    ST_AT,
+    ST_PLUS,
+    ST_MINUS
 }States;
 
 static int line = 1;
@@ -280,6 +282,8 @@ static Token readToken(void) {
                 if (character == '&') { state = ST_AMP; break; }
                 if (character == '|') { state = ST_PIPE; break; }
                 if (character == '@') { bufReset(); state = ST_AT; break; }
+                if (character == '+') { state = ST_PLUS; break; }
+                if (character == '-') { state = ST_MINUS; break; }
 
                 if (isdigit(character)) {
                     bufReset();
@@ -322,8 +326,6 @@ static Token readToken(void) {
                     case ';': return makeToken(TOK_SEMICOL, NULL);
                     case ':': return makeToken(TOK_COLON, NULL);
                     case '*': return makeToken(TOK_MUL, NULL);
-                    case '-': return makeToken(TOK_MINUS, NULL);
-                    case '+': return makeToken(TOK_PLUS, NULL);
                 }
                 
                 lexError("lexical error");
@@ -869,8 +871,22 @@ static Token readToken(void) {
                     exit(2);
                 }
                 break;
-        }
-    }
+
+            case ST_PLUS:
+                if (character == '+' || character == '-') {
+                    lexError("'+' and '-' must be separated by a space");
+                }
+                ungetc(character, stdin);
+                return makeToken(TOK_PLUS, NULL);
+
+            case ST_MINUS:
+                if (character == '+' || character == '-') {
+                    lexError("'+' and '-' must be separated by a space");
+                }
+                ungetc(character, stdin);
+                return makeToken(TOK_MINUS, NULL);
+                    }
+                }
 }
 
 #define MAX_INDENT 128
