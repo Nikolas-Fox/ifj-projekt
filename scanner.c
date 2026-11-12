@@ -1,6 +1,21 @@
-//scanner
-//author: Eliška Opršalová, xoprsae00
-//last change: 8. 11. 2026
+/******************************************************************************
+* Project:		IFJ
+* Package:		Lexical analysis
+* File:			scanner.c
+* Date:			18.10.2026
+* Last change:	12.11.2026
+* Author: 		Eliška Opršalová xoprsae00
+*
+* Description: implementation of lexer - implemented as a deterministic finite automat            
+*
+*******************************************************************************/
+/**
+* @file scanner.c
+*
+* @brief implementation of lexer
+*
+* @author Eliška Opršalová xoprsae00
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -994,3 +1009,5 @@ Token getToken(void) {
         return token;
     }
 }
+
+/*** End of file scanner.c ***/

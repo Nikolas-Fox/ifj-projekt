@@ -1,6 +1,21 @@
-//Project IFJ26
-//author: xoprsae00
-//last change: 18.10.2026
+/******************************************************************************
+* Project:		IFJ
+* Package:		Lexical analysis
+* File:			scanner.h
+* Date:			18.10.2026
+* Last change:	12.11.2026
+* Author: 		Eliška Opršalová xoprsae00
+*
+* Description: 	header file - defines the token types, the Token structure
+*               and the getToken() function
+*
+*******************************************************************************/
+/**
+* @file scanner.h
+*
+* @brief lexer header file
+* @author Eliška Opršalová xoprsae00
+*/
 
 #ifndef SCANNER_H
 #define SCANNER_H
@@ -37,7 +52,13 @@ typedef struct {
     int line;
 }Token;
 
+/**
+* @brief Returns the next token from the standard input
+* @return 
+*/
 Token getToken(void);
 
 
 #endif
+
+/*** End of file scanner.h ***/
