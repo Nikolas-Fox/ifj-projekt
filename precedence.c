@@ -311,6 +311,7 @@ void precReduce(PrecStack *stack)
         PrecStackElem element = {0};
         element.symbol = PREC_E;
         precStackPush(stack, &element);
+        return;
     }
 
     if(popCnt == 2 && poppedElements[0].symbol == PREC_E) // the array is backwards
@@ -322,7 +323,17 @@ void precReduce(PrecStack *stack)
             PrecStackElem element = {0};
             element.symbol = PREC_E;
             precStackPush(stack, &element);
+            return;
         }
+    }
+
+    if(popCnt == 2 && poppedElements[1].symbol == PREC_LPAR && poppedElements[0].symbol == PREC_RPAR)
+    {
+        // rule () -> E
+        PrecStackElem element = {0};
+        element.symbol = PREC_E;
+        precStackPush(stack, &element);
+        return;
     }
 
     if(popCnt == 3)
@@ -341,17 +352,22 @@ void precReduce(PrecStack *stack)
                 PrecStackElem element = {0};
                 element.symbol = PREC_E;
                 precStackPush(stack, &element);
+                return;
             }
         }
 
         if(poppedElements[0].symbol == PREC_RPAR && poppedElements[2].symbol == PREC_LPAR && poppedElements[1].symbol == PREC_E)
-            {
-                // rule (E) -> E
-                PrecStackElem element = {0};
-                element.symbol = PREC_E;
-                precStackPush(stack, &element);
-            }
+        {
+            // rule (E) -> E
+            PrecStackElem element = {0};
+            element.symbol = PREC_E;
+            precStackPush(stack, &element);
+            return;
+        }
     }
+    // ERROR (syntax)
+    // if we reach this point no valid rule to reduce was used
+    exit(2);
 }
 
 
