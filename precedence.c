@@ -71,6 +71,7 @@ void precStackPush(PrecStack *stack, PrecStackElem *element)
 {
     PrecStackElem *newElem = (PrecStackElem *)malloc(sizeof(PrecStackElem));
     // TODO: ERROR (internal error malloc)
+    exit(99);
 
     newElem->symbol = element->symbol;
     newElem->str = element->str;
@@ -150,12 +151,14 @@ PrecSymbol precStackGetFirstTerm(PrecStack *stack)
         current = current->next;
     }
     // ERROR (we don't have any terminal on the stack) (it should always contain $)
+    exit(99);
 }
 
 void precStackShiftAfterFirstTerm(PrecStack *stack)
 {
     PrecStackElem *newElem = (PrecStackElem *)malloc(sizeof(PrecStackElem));
     // ERROR (malloc failure) (internal error)
+    exit(99);
 
     newElem->symbol = PREC_SHIFT;
     newElem->str = NULL;
@@ -193,6 +196,7 @@ void precStackShiftAfterFirstTerm(PrecStack *stack)
 
     // TODO: ERROR - we don't have any terminal on the stack (we should always have at least $)
     //        internal error
+    exit(99);
 }
 
 
@@ -241,8 +245,6 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
             return PREC_LPAR;
 
         case TOK_ID:
-            SymbolData *id = symtableSearch(&sTable, p->currentToken.str);
-
             getTokenAhead(p);
             if(p->aheadToken.type == TOK_LPAR)
             {
@@ -251,14 +253,12 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
                 return PREC_ID;   // functions are simplified to ID
             }
 
+            // all other identifier tokens are valid
+            // true and false are soft keywords, 
+            // they don't show up in the symtable but are clasified as TOK_ID by the lexer
 
-            if(id == NULL &&
-                !(strcmp(p->currentToken.str, "true") == 0 || strcmp(p->currentToken.str, "false") == 0))
-            {
-                // TODO: ERROR (we don't know what the string is, it's not defined anywhere and it isn't a soft KW)
-                // ' "hello" '   would be clasified as a string literal in lexer (those are safe)
-            }
-
+            // functions without a parameter list will also fallthrough
+            
         // FALLTHROUGH
         case TOK_INT:
         case TOK_DOUBLE:
