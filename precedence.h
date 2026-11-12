@@ -236,6 +236,7 @@ void precReduce(PrecStack *s);
 
 
 /**
+ * @author Eliška Holá (xholael00)
  * @brief Parses <loa>, implements LL grammar rules 46
  * @param p Struct of parser state
  */
@@ -243,6 +244,7 @@ void parseLoa(ParsedToken *p);
 
 
 /**
+ * @author Eliška Holá (xholael00)
  * @brief Parses <arg_list>, implements LL grammar rules 48 and 49.
  * @param p Struct of parser state
  */
@@ -250,6 +252,7 @@ void parseArgList(ParsedToken *p);
 
 
 /**
+ * @author Eliška Holá (xholael00)
  * @brief Parses <arg_end>, implements LL grammar rules 50 and 51.
  * @param p Struct of parser state
  */
