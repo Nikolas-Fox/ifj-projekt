@@ -83,6 +83,11 @@ void precStackPush(PrecStack *stack, PrecStackElem *element)
     {
         stack->openParCnt++;
     }
+
+    if(element->symbol == PREC_RPAR)
+    {
+        stack->openParCnt--;
+    }
 }
 
 
@@ -100,12 +105,6 @@ PrecStackElem precStackPop(PrecStack *stack)
     stack->top = (stack->top->next);
 
     free(tmp);
-
-    if(pop.symbol == PREC_LPAR)
-    {
-        stack->openParCnt--;
-    }
-
     return pop;
 }
 
