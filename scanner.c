@@ -330,7 +330,7 @@ static Token readToken(void) {
                 // end of an interpolated expression block inside a string
                 if (character == '}' && interpDepth > 0 && interpInExpr[interpDepth - 1] == 1) {
                     interpInExpr[interpDepth - 1] = 0;
-                    if (parenDepth > 0) { //TODO kontrola interpDepth??
+                    if (parenDepth > 0) { 
                         parenDepth--;
                     }
                     return makeToken(TOK_INTERP_EXPR_END, NULL);
