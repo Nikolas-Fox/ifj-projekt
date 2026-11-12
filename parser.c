@@ -3,7 +3,7 @@
 * Package:		parser
 * File:			parser.c
 * Date:			1.11.2026
-* Last change:	11.11.2026
+* Last change:	12.11.2026
 * Authors: 		xholael00
 *
 * Description: Implementation of parser - recursive descent and precedence analysis.
@@ -33,12 +33,6 @@ void parseProgram()
     token.lookAhead = false;
     getNextToken(&token);
     parseProg(&token);
-}
-
-//temporary scanner.h
-Token getToken()
-{
-
 }
 
 void getNextToken(ParsedToken *p)
@@ -331,7 +325,14 @@ void parseLine(ParsedToken *p)
     //19: ⟨line⟩ → ⟨expression⟩
     if (startsExpression(p->currentToken.type))
     {
-        parseExpression(p);
+        if (p->currentToken.type == TOK_ID)
+        {
+            parseId(p);
+        }
+        else
+        {
+            parseExpression(p);
+        }
     }
     //20: ⟨line⟩ → val id ⟨ret_type⟩ = ⟨expression⟩
     else if (p->currentToken.type == TOK_KW_VAL)
@@ -617,17 +618,9 @@ void parseId(ParsedToken *p)
         checkToken(p, TOK_EQ);
         parseExpression(p);
     }
-    //52: ⟨func⟩ → id ⟨loa⟩
     else
     {
-        checkToken(p, TOK_ID);
-        parseLoa(p);
+        parseExpression(p);
     }
-}
-
-//TODO: precedence analysis
-void parseExpression(ParsedToken *p)
-{
-
 }
 /*** End of file parser.c ***/
