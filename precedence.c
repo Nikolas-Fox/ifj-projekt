@@ -3,7 +3,7 @@
 * Package:		precedence
 * File:			precedence.c
 * Date:			5.11.2026
-* Last change:	8.11.2026
+* Last change:	12.11.2026
 * Authors: 		xfoxnik00
 *
 * Description: Implementation of precedence syntactic analysis logic
@@ -49,7 +49,7 @@ static const char precTable[PREC_TABLE_SIZE][PREC_TABLE_SIZE] =
     /* E.E  */ { '>', '>', '>', '>', '>', '>', '>', '>', '>', 'X', '>', '<', '>'},
     /* +-P  */ { '<', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '>'},
     /*  !   */ { '<', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '>'},
-    /*  /*  */ { '<', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '>'},
+    /*  / * */ { '<', '<', '<', '>', '>', '>', '>', '>', '>', '<', '>', '<', '>'},
     /*  +-  */ { '<', '<', '<', '<', '>', '>', '>', '>', '>', '<', '>', '<', '>'},
     /* REL  */ { '<', '<', '<', '<', '<', 'X', '>', '>', '>', '<', '>', '<', '>'},
     /* EQ-NE*/ { '<', '<', '<', '<', '<', '<', 'X', '>', '>', '<', '>', '<', '>'},
@@ -70,8 +70,11 @@ void precStackInit(PrecStack *stack)
 void precStackPush(PrecStack *stack, PrecStackElem *element)
 {
     PrecStackElem *newElem = (PrecStackElem *)malloc(sizeof(PrecStackElem));
-    // TODO: ERROR (internal error malloc)
-    exit(99);
+    if(newElem == NULL)
+    {
+        // TODO: ERROR (internal error malloc)
+        exit(99);
+    }
 
     newElem->symbol = element->symbol;
     newElem->str = element->str;
@@ -157,8 +160,11 @@ PrecSymbol precStackGetFirstTerm(PrecStack *stack)
 void precStackShiftAfterFirstTerm(PrecStack *stack)
 {
     PrecStackElem *newElem = (PrecStackElem *)malloc(sizeof(PrecStackElem));
-    // ERROR (malloc failure) (internal error)
-    exit(99);
+    if(newElem == NULL)
+    {
+        // ERROR (malloc failure) (internal error)
+        exit(99);
+    }
 
     newElem->symbol = PREC_SHIFT;
     newElem->str = NULL;
@@ -291,6 +297,7 @@ void precReduce(PrecStack *stack)
             if(popCnt >= RULE_SIZE)
             {
                 // ERROR (syntax)
+                exit(2);
             }
             poppedElements[popCnt] = popped;
             popCnt++;
@@ -359,6 +366,7 @@ void parseLoa(ParsedToken *p)
         if(p->currentToken.type != TOK_RPAR)
         {
             //ERROR (syntax error)
+            exit(2);
         }
 
         getTokenAhead(p);
@@ -388,6 +396,7 @@ void parseArgList(ParsedToken *p)
     else
     {
         // ERROR (syntax error)
+        exit(2);
     }
 }
 
@@ -403,7 +412,8 @@ void parseArgEnd(ParsedToken *p)
         case TOK_RPAR: //51: ⟨arg_end⟩ → epsilon
             return;
         default:
-            printError("Unexpected token");
+            // ERROR (syntax error)
+            exit(2);
             break;
     }
 }
@@ -455,7 +465,8 @@ void parseExpression(ParsedToken *p)
                 precReduce(&stack);
                 break;
             default:
-                //ERROR (syntactic error)
+                //ERROR (syntax error)
+                exit(2);
         }
     }
     precStackFree(&stack);
