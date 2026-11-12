@@ -551,63 +551,6 @@ void parseLop(ParsedToken *p)
     }
 }
 
-void parseLoa(ParsedToken *p)
-{
-    //46: ⟨loa⟩ → (⟨arg_list⟩)⟨loa⟩
-    if (p->currentToken.type == TOK_LPAR)
-    {
-        checkToken(p, TOK_LPAR);
-        parseArgList(p);
-        checkToken(p, TOK_RPAR);
-        parseLoa(p);
-    }
-    //47: ⟨loa⟩ → epsilon
-    else if (p->currentToken.type == TOK_KW_THEN || p->currentToken.type == TOK_KW_DO ||
-            p->currentToken.type == TOK_SEMICOL || p->currentToken.type == TOK_NL || p->currentToken.type == TOK_COMMA)
-    {
-        return;
-    }
-    else
-    {
-        printError("Unexpected token");
-    }
-}
-
-void parseArgList(ParsedToken *p)
-{
-    //48: ⟨arg_list⟩ → ⟨expression⟩⟨arg_end⟩
-    if (startsExpression(p->currentToken.type))
-    {
-        parseExpression(p);
-        parseArgEnd(p);
-    }
-    //49: ⟨arg_list⟩ → epsilon
-    else if (p->currentToken.type == TOK_RPAR)
-    {
-        return;
-    }
-    else
-    {
-        printError("Unexpected token");
-    }
-}
-
-void parseArgEnd(ParsedToken *p)
-{
-    switch (p->currentToken.type)
-    {
-        case TOK_COMMA: //50: ⟨arg_end⟩ →,⟨arg_list⟩
-            checkToken(p, TOK_COMMA);
-            parseArgList(p);
-            break;
-        case TOK_RPAR: //51: ⟨arg_end⟩ → epsilon
-            return;
-        default:
-            printError("Unexpected token");
-            break;
-    }
-}
-
 void parseId(ParsedToken *p)
 {
     getTokenAhead(p);
