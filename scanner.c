@@ -478,7 +478,9 @@ static Token readToken(void) {
             case ST_LINE_COMMENT:
             // consume characters until NL or EOF
                 if (character == '\n' || character == EOF) {
-                    ungetc(character, stdin);  
+                    if (character != EOF) {
+                        ungetc(character, stdin);  
+                    } 
                     state = ST_START;
                 }
                 break;
