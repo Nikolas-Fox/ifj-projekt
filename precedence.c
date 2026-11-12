@@ -469,6 +469,7 @@ void parseExpression(ParsedToken *p)
                 // FALLTHROUGH
             
             case '=':
+            {
                 PrecStackElem element = {0};
                 element.symbol = input;
                 precStackPush(&stack, &element);
@@ -476,7 +477,8 @@ void parseExpression(ParsedToken *p)
                 getNextToken(p);
                 input = tokenToPrec(p, previousWasOperand, &stack);
                 break;
-
+            }
+            
             case '>':
                 precReduce(&stack);
                 break;
