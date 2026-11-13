@@ -36,8 +36,7 @@ typedef enum {
 
     //tokens for extentions
     TOK_AND, TOK_OR, TOK_NOT, 
-    TOK_KW_BOOLEAN, TOK_KW_TRUE, TOK_KW_FALSE,
-    TOK_KW_EXTENSION, 
+    TOK_KW_BOOLEAN, TOK_KW_EXTENSION, 
 
     //tokens for keywords
     TOK_KW_DEF, TOK_KW_DO, TOK_KW_DOUBLE, TOK_KW_ELSE, TOK_KW_IF, TOK_KW_IMPORT,
