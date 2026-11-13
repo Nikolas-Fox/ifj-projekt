@@ -4,10 +4,9 @@
 * File:			parser.h
 * Date:			1.11.2026
 * Last change:	13.11.2026
-* Authors: 		xholael00
+* Authors: 		Eliška Holá xholael00
 *
-* Description: Header file containing parser logic - recursive descent and
-*              precedence analysis logic.
+* Description: Header file of parser logic
 *
 *******************************************************************************/
 /**

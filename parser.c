@@ -4,9 +4,9 @@
 * File:			parser.c
 * Date:			1.11.2026
 * Last change:	13.11.2026
-* Authors: 		xholael00
+* Authors: 		Eliška Holá xholael00
 *
-* Description: Implementation of parser - recursive descent and precedence analysis.
+* Description: Implementation of parser - recursive descent
 *
 *******************************************************************************/
 /**
