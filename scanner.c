@@ -74,13 +74,13 @@ static int comma = 0;  // 1 = the last token was a comma
 static int commaNL = 0;  // 1 = a newline has appeared since that comma
 
 // Buffer for the lexeme text
-// AI: vygeneruj mi funkce pro dynamickou práci s buffrem
+// AI (Claude): vygeneruj mi funkce pro dynamickou práci s buffrem
 // functions slightly after generated
 static char *buf = NULL;
 static size_t bufLen = 0;
 static size_t bufCap = 0;
 
-// AI: same prompt
+// AI (Claude): same prompt
 static void bufReset(void) {
     if (buf == NULL) {
         bufCap = 64;
@@ -93,7 +93,7 @@ static void bufReset(void) {
     buf[0] = '\0';
 }
 
-//AI: same prompt
+//AI (Claude): same prompt
 static void bufAdd(int c) {
     if (bufLen + 2 > bufCap) {
         size_t newCap = bufCap * 2;
@@ -107,7 +107,7 @@ static void bufAdd(int c) {
 }
  
 //copy of the buffer for the token (the token owns its text)
-//AI: same prompt
+//AI (Claude): same prompt
 static char *bufCopy(void) {
     char *copy = malloc(bufLen + 1);
     if (!copy) exit(99);
@@ -165,7 +165,7 @@ static Token endNumber(TokenType type, int character) {
 }
 
 // opens an interpolated string (kind 0 = one line, 1 = multi-line)
-// INTERPOLATEDS extention AI: explained and partialy generated
+// INTERPOLATEDS extention AI (Claude): explained and partialy generated
 // prompts:
 // vysvětli mi jak funguje rozšíření INTERPOLATEDS
 // navrni mi kostru, jak by to zhruba mělo vypadat
