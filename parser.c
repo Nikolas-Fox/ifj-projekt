@@ -3,7 +3,7 @@
 * Package:		parser
 * File:			parser.c
 * Date:			1.11.2026
-* Last change:	12.11.2026
+* Last change:	13.11.2026
 * Authors: 		xholael00
 *
 * Description: Implementation of parser - recursive descent and precedence analysis.
@@ -21,7 +21,34 @@
 #include <stdbool.h>
 #include "parser.h"
 
-void printError(char *message)
+//recursive descent functions prototypes
+static void parseProg(ParsedToken *p);
+static void parseDefinition(ParsedToken *p);
+static void parseDefBody(ParsedToken *p);
+static void parseDefBlock(ParsedToken *p);
+static void parseExtensionDef(ParsedToken *p);
+static void parseOptNL(ParsedToken *p);
+static void parseBlock(ParsedToken *p);
+static void parseStList(ParsedToken *p);
+static void parseStat(ParsedToken *p);
+static void parseLine(ParsedToken *p);
+static void parseLineEnd(ParsedToken *p);
+static void parseLineSemi(ParsedToken *p);
+static void parseElseChoice(ParsedToken *p);
+static void parseElse(ParsedToken *p);
+static void parseRetType(ParsedToken *p);
+static void parseType(ParsedToken *p);
+static void parseReturn(ParsedToken *p);
+static void parseParamList(ParsedToken *p);
+static void parseParamEnd(ParsedToken *p);
+static void parseLop(ParsedToken *p);
+static void parseId(ParsedToken *p);
+
+/**
+ * @brief Prints error message and exits with code 2 (syntax analysis error).
+ * @param message Error message to print.
+ */
+static void printError(char *message)
 {
     fprintf(stderr, "Syntactic analysis error: %s\n", message);
     exit(2);
@@ -48,7 +75,21 @@ void getNextToken(ParsedToken *p)
     }
 }
 
-void checkToken(ParsedToken *p, TokenType expected)
+void getTokenAhead(ParsedToken *p)
+{
+    if (!p->lookAhead)
+    {
+        p->lookAhead = true;
+        p->aheadToken = getToken();
+    }
+}
+
+/**
+ * @brief Checks if token has the expected type and calls getToken() for the next one / calls printError if it doesn't.
+ * @param p Struct of parser state
+ * @param expected Expected token type
+ */
+static void checkToken(ParsedToken *p, TokenType expected)
 {
     if (p->currentToken.type != expected)
     {
@@ -60,7 +101,13 @@ void checkToken(ParsedToken *p, TokenType expected)
     }
 }
 
-void checkStrToken(ParsedToken *p, TokenType expected, char *name)
+/**
+ * @brief Checks if token has the expected type and name (used for TOK_ID), calls getToken() for the next one / calls printError if it doesn't.
+ * @param p Struct of parser state
+ * @param expected Expected token type
+ * @param name Name of id
+ */
+static void checkStrToken(ParsedToken *p, TokenType expected, char *name)
 {
     if (p->currentToken.type != expected || p->currentToken.str == NULL || strcmp(p->currentToken.str, name) != 0)
     {
@@ -69,16 +116,35 @@ void checkStrToken(ParsedToken *p, TokenType expected, char *name)
     getNextToken(p);
 }
 
-void getTokenAhead(ParsedToken *p)
+/**
+ * @brief Checks if token type belongs to Predict(<expression>).
+ * @param type Token type
+ * @return True if it belongs, false if it doesn't.
+ */
+static bool startsExpression(TokenType type)
 {
-    if (!p->lookAhead)
+    switch (type)
     {
-        p->lookAhead = true;
-        p->aheadToken = getToken();
+        case TOK_PLUS:
+        case TOK_MINUS:
+        case TOK_NOT:
+        case TOK_LPAR:
+        case TOK_ID:
+        case TOK_INT:
+        case TOK_DOUBLE:
+        case TOK_STRING:
+            return true;
+        default:
+            return false;
     }
 }
 
-bool startsStat(TokenType type)
+/**
+ * @brief Checks if token type belongs to Predict(<stat>).
+ * @param type Token type
+ * @return True if it belongs, false if it doesn't.
+ */
+static bool startsStat(TokenType type)
 {
     if (startsExpression(type))
     {
@@ -98,25 +164,12 @@ bool startsStat(TokenType type)
     }
 }
 
-bool startsExpression(TokenType type)
-{
-    switch (type)
-    {
-        case TOK_PLUS:
-        case TOK_MINUS:
-        case TOK_NOT:
-        case TOK_LPAR:
-        case TOK_ID:
-        case TOK_INT:
-        case TOK_DOUBLE:
-        case TOK_STRING:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool startsLine(TokenType type)
+/**
+ * @brief Checks if token type belongs to Predict(<line>).
+ * @param type Token type
+ * @return True if it belongs, false if it doesn't.
+ */
+static bool startsLine(TokenType type)
 {
     if (startsExpression(type))
     {
@@ -135,7 +188,7 @@ bool startsLine(TokenType type)
 }
 
 //TODO: integrate with lexer
-void parseProg(ParsedToken *p)
+static void parseProg(ParsedToken *p)
 {
     //1: ⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
     checkToken(p, TOK_KW_IMPORT);
@@ -150,7 +203,7 @@ void parseProg(ParsedToken *p)
     checkToken(p, TOK_EOF);
 }
 
-void parseDefinition(ParsedToken *p)
+static void parseDefinition(ParsedToken *p)
 {
     switch (p->currentToken.type)
     {
@@ -192,7 +245,7 @@ void parseDefinition(ParsedToken *p)
     }
 }
 
-void parseDefBody(ParsedToken *p)
+static void parseDefBody(ParsedToken *p)
 {
     //6: ⟨def_body⟩ → ⟨block⟩
     if (p->currentToken.type == TOK_NL)
@@ -210,7 +263,7 @@ void parseDefBody(ParsedToken *p)
     }
 }
 
-void parseDefBlock(ParsedToken *p)
+static void parseDefBlock(ParsedToken *p)
 {
     //8: ⟨def_block⟩ → NL INDENT ⟨extension_def⟩ DEDENT
     checkToken(p, TOK_NL);
@@ -219,7 +272,7 @@ void parseDefBlock(ParsedToken *p)
     checkToken(p, TOK_DEDENT);
 }
 
-void parseExtensionDef(ParsedToken *p)
+static void parseExtensionDef(ParsedToken *p)
 {
     switch (p->currentToken.type)
     {
@@ -240,7 +293,7 @@ void parseExtensionDef(ParsedToken *p)
     }
 }
 
-void parseOptNL(ParsedToken *p)
+static void parseOptNL(ParsedToken *p)
 {
     //11: ⟨opt_NL⟩ → NL
     if (p->currentToken.type == TOK_NL)
@@ -259,7 +312,7 @@ void parseOptNL(ParsedToken *p)
     }
 }
 
-void parseBlock(ParsedToken *p)
+static void parseBlock(ParsedToken *p)
 {
     //13: ⟨block⟩ → NL INDENT ⟨stat⟩⟨st_list⟩ DEDENT
     checkToken(p, TOK_NL);
@@ -269,7 +322,7 @@ void parseBlock(ParsedToken *p)
     checkToken(p, TOK_DEDENT);
 }
 
-void parseStList(ParsedToken *p)
+static void parseStList(ParsedToken *p)
 {
     //14: ⟨st_list⟩ → ⟨stat⟩⟨st_list⟩
     if (startsStat(p->currentToken.type))
@@ -288,7 +341,7 @@ void parseStList(ParsedToken *p)
     }
 }
 
-void parseStat(ParsedToken *p)
+static void parseStat(ParsedToken *p)
 {
     //16: ⟨stat⟩ → ⟨line⟩⟨line_end⟩
     if (startsLine(p->currentToken.type))
@@ -320,7 +373,7 @@ void parseStat(ParsedToken *p)
     }
 }
 
-void parseLine(ParsedToken *p)
+static void parseLine(ParsedToken *p)
 {
     //19: ⟨line⟩ → ⟨expression⟩
     if (startsExpression(p->currentToken.type))
@@ -364,7 +417,7 @@ void parseLine(ParsedToken *p)
     }
 }
 
-void parseLineEnd(ParsedToken *p)
+static void parseLineEnd(ParsedToken *p)
 {
     switch (p->currentToken.type)
     {
@@ -381,7 +434,7 @@ void parseLineEnd(ParsedToken *p)
     }
 }
 
-void parseLineSemi(ParsedToken *p)
+static void parseLineSemi(ParsedToken *p)
 {
     //25: ⟨line_semi⟩ → ⟨stat⟩
     if (startsStat(p->currentToken.type))
@@ -399,7 +452,7 @@ void parseLineSemi(ParsedToken *p)
     }
 }
 
-void parseElseChoice(ParsedToken *p)
+static void parseElseChoice(ParsedToken *p)
 {
     //27: ⟨else_choice⟩ → else ⟨else⟩
     if (p->currentToken.type == TOK_KW_ELSE)
@@ -419,7 +472,7 @@ void parseElseChoice(ParsedToken *p)
     }
 }
 
-void parseElse(ParsedToken *p)
+static void parseElse(ParsedToken *p)
 {
     switch (p->currentToken.type)
     {
@@ -439,7 +492,7 @@ void parseElse(ParsedToken *p)
     }
 }
 
-void parseRetType(ParsedToken *p)
+static void parseRetType(ParsedToken *p)
 {
     switch (p->currentToken.type)
     {
@@ -455,7 +508,7 @@ void parseRetType(ParsedToken *p)
     }
 }
 
-void parseType(ParsedToken *p)
+static void parseType(ParsedToken *p)
 {
     switch (p->currentToken.type)
     {
@@ -480,7 +533,7 @@ void parseType(ParsedToken *p)
     }
 }
 
-void parseReturn(ParsedToken *p)
+static void parseReturn(ParsedToken *p)
 {
     //38: ⟨return⟩ → ⟨expression⟩
     if (startsExpression(p->currentToken.type))
@@ -498,7 +551,7 @@ void parseReturn(ParsedToken *p)
     }
 }
 
-void parseParamList(ParsedToken *p)
+static void parseParamList(ParsedToken *p)
 {
     switch (p->currentToken.type)
     {
@@ -516,7 +569,7 @@ void parseParamList(ParsedToken *p)
     }
 }
 
-void parseParamEnd(ParsedToken *p)
+static void parseParamEnd(ParsedToken *p)
 {
     switch (p->currentToken.type)
     {
@@ -532,7 +585,7 @@ void parseParamEnd(ParsedToken *p)
     }
 }
 
-void parseLop(ParsedToken *p)
+static void parseLop(ParsedToken *p)
 {
     switch(p->currentToken.type)
     {
@@ -551,7 +604,7 @@ void parseLop(ParsedToken *p)
     }
 }
 
-void parseId(ParsedToken *p)
+static void parseId(ParsedToken *p)
 {
     getTokenAhead(p);
     //53: ⟨assign⟩ → id = ⟨expression⟩
