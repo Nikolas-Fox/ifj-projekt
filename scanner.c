@@ -126,7 +126,7 @@ static const KeywordPair keywords[] = {
     {"while", TOK_KW_WHILE}, {"do", TOK_KW_DO},         {"return", TOK_KW_RETURN},
     {"import", TOK_KW_IMPORT}, {"Int", TOK_KW_INT},     {"Double", TOK_KW_DOUBLE},
     {"String", TOK_KW_STRING}, {"Unit", TOK_KW_UNIT},   {"Boolean", TOK_KW_BOOLEAN},
-    {"true", TOK_KW_TRUE},  {"false", TOK_KW_FALSE},    {"extension", TOK_KW_EXTENSION},
+    {"extension", TOK_KW_EXTENSION},
     
 };
 
