@@ -441,6 +441,7 @@ static Token readToken(void) {
                 break;
 
             case ST_PLUS:
+            // error in scala because two operators next to each other, like +- would be joined into one operator
                 if (character == '+' || character == '-') {
                     lexError("'+' and '-' must be separated by a space");
                 }
