@@ -20,6 +20,8 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <stdbool.h>
+
 //temporary
 typedef enum {
     TOK_EOF, TOK_NL, TOK_INDENT, TOK_DEDENT,

@@ -15,11 +15,12 @@
 * @brief Implementation of parser
 * @author xholael00
 */
+#include "parser.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include "parser.h"
 
 //recursive descent functions prototypes
 static void parseProg(ParsedToken *p);
