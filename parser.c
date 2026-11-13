@@ -188,7 +188,6 @@ static bool startsLine(TokenType type)
     }
 }
 
-//TODO: integrate with lexer
 static void parseProg(ParsedToken *p)
 {
     //1: ⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
@@ -215,7 +214,7 @@ static void parseDefinition(ParsedToken *p)
             checkToken(p, TOK_ID);
             parseLop(p);
             parseRetType(p);
-            checkToken(p, TOK_EQ);
+            checkToken(p, TOK_ASSIGN);
             parseDefBody(p);
             parseDefinition(p);
             break;
@@ -224,7 +223,7 @@ static void parseDefinition(ParsedToken *p)
             checkToken(p, TOK_ID);
             parseLop(p);
             parseRetType(p);
-            checkToken(p, TOK_EQ);
+            checkToken(p, TOK_ASSIGN);
             parseDefBody(p);
             parseDefinition(p);
             break;
@@ -282,7 +281,7 @@ static void parseExtensionDef(ParsedToken *p)
             checkToken(p, TOK_ID);
             parseLop(p);
             parseRetType(p);
-            checkToken(p, TOK_EQ);
+            checkToken(p, TOK_ASSIGN);
             parseDefBody(p);
             parseExtensionDef(p);
             break;
@@ -394,7 +393,7 @@ static void parseLine(ParsedToken *p)
         checkToken(p, TOK_KW_VAL);
         checkToken(p, TOK_ID);
         parseRetType(p);
-        checkToken(p, TOK_EQ);
+        checkToken(p, TOK_ASSIGN);
         parseExpression(p);
     }
     //21: ⟨line⟩ → var id ⟨ret_type⟩ = ⟨expression⟩
@@ -403,7 +402,7 @@ static void parseLine(ParsedToken *p)
         checkToken(p, TOK_KW_VAR);
         checkToken(p, TOK_ID);
         parseRetType(p);
-        checkToken(p, TOK_EQ);
+        checkToken(p, TOK_ASSIGN);
         parseExpression(p);
     }
     //22: ⟨line⟩ → return ⟨return⟩
@@ -501,7 +500,7 @@ static void parseRetType(ParsedToken *p)
             checkToken(p, TOK_COLON);
             parseType(p);
             break;
-        case TOK_EQ: //32: ⟨ret_type⟩ → epsilon
+        case TOK_ASSIGN: //32: ⟨ret_type⟩ → epsilon
             return;
         default:
             printError("Unexpected token");
@@ -597,7 +596,7 @@ static void parseLop(ParsedToken *p)
             parseLop(p);
             break;
         case TOK_COLON: //45: ⟨lop⟩ → epsilon
-        case TOK_EQ:
+        case TOK_ASSIGN:
             return;
         default:
             printError("Unexpected token");
@@ -609,10 +608,10 @@ static void parseId(ParsedToken *p)
 {
     getTokenAhead(p);
     //53: ⟨assign⟩ → id = ⟨expression⟩
-    if (p->aheadToken.type == TOK_EQ)
+    if (p->aheadToken.type == TOK_ASSIGN)
     {
         checkToken(p, TOK_ID);
-        checkToken(p, TOK_EQ);
+        checkToken(p, TOK_ASSIGN);
         parseExpression(p);
     }
     else
