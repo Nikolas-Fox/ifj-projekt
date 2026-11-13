@@ -3,8 +3,8 @@
 * Package:		precedence
 * File:			precedence.h
 * Date:			5.11.2026
-* Last change:	9.11.2026
-* Authors: 		xfoxnik00
+* Last change:	13.11.2026
+* Authors: 		Nikolas Fox xfoxnik00
 *
 * Description: Header file for precedence syntactic analysis
 *
@@ -13,7 +13,7 @@
 * @file precedence.h
 *
 * @brief Header file for precedence syntactic analysis
-* @author xfoxnik00
+* @author Nikolas Fox xfoxnik00
 */
 
 #ifndef PRECEDENCE_H

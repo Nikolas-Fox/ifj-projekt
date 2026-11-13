@@ -3,8 +3,8 @@
 * Package:		precedence
 * File:			precedence.c
 * Date:			5.11.2026
-* Last change:	12.11.2026
-* Authors: 		xfoxnik00
+* Last change:	13.11.2026
+* Authors: 		Nikolas Fox xfoxnik00
 *
 * Description: Implementation of precedence syntactic analysis logic
 *
@@ -13,7 +13,7 @@
 * @file precedence.c
 *
 * @brief Implementation of precedence syntactic analysis logic
-* @author xfoxnik00
+* @author Nikolas Fox xfoxnik00
 */
 
 #include "precedence.h"
