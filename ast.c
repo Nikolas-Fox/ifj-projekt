@@ -18,6 +18,13 @@
 
 #include "ast.h"
 
+// TEMP from symtable.c (add this function to utils)
+static char *copyString(const char *src)
+{
+
+}
+
+
 AstNode *createNode(AstClass class)
 {
     AstNode *node = calloc(1, sizeof(AstNode));
@@ -29,6 +36,23 @@ AstNode *createNode(AstClass class)
     node->class = class;
     return node;
 }
+
+AstNode *createNodeLiteral(DataType type, char* value)
+{
+    AstNode *node = createNode(AST_LITERAL);
+    node->type = type;
+    node->data.value = copyString(value);
+    return node;
+}
+
+AstNode *createNodeID(char* name)
+{
+    AstNode *node = createNode(AST_ID);
+    node->data.id.name = copyString(name);
+    node->data.id.scope = -1; // this can't be set yet
+    return node;
+}
+
 
 
 /*** End of file ast.c ***/

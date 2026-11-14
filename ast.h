@@ -101,6 +101,8 @@ typedef struct Symtable Symtable;
 
 SymbolData *symtableSearch(Symtable *sTable, char *name);
 
+static char *copyString(const char *src);
+
 /*********************************************************/
 
 typedef enum
@@ -234,6 +236,14 @@ struct AstNode
  * @return it returns a pointer to the node
  */
 AstNode *createNode(AstClass class);
+
+/**
+ * @brief Creates AST node of class literal
+ * @param type the type of the literal
+ * @param value the value of the literal
+ * @return it returns a pointer to the literal node
+ */
+AstNode *createNodeLiteral(DataType type, char *value);
 
 #endif
 /*** End of file ast.h ***/
