@@ -16,5 +16,19 @@
 * @author Nikolas Fox xfoxnik00
 */
 
+#include "ast.h"
+
+AstNode *createNode(AstClass class)
+{
+    AstNode *node = calloc(1, sizeof(AstNode));
+    if(node == NULL)
+    {
+        exit(99);
+    }
+
+    node->class = class;
+    return node;
+}
+
 
 /*** End of file ast.c ***/

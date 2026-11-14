@@ -227,5 +227,13 @@ struct AstNode
     }data;
 };
 
+
+/**
+ * @brief Creates AST node of certain class
+ * @param class The class of the created node
+ * @return it returns a pointer to the node
+ */
+AstNode *createNode(AstClass class);
+
 #endif
 /*** End of file ast.h ***/
