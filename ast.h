@@ -135,7 +135,13 @@ struct AstNode
 
     union
     {
-        char *value; // AST_LITERAL - value      AST_ID - name
+        char *value; // AST_LITERAL - value
+
+        struct
+        {
+            char *name;
+            int scope;
+        }id;
 
         struct
         {
@@ -170,8 +176,8 @@ struct AstNode
 
         struct
         {
-            AstNode *condition;
-            AstNode *doBody;   // first statement in linked list of statements
+            AstNode *condition;   // expression
+            AstNode *thenBody;   // first statement in linked list of statements
             AstNode *elseBody; // first statement in linked list of statements
         }ifStat;
 
@@ -187,7 +193,7 @@ struct AstNode
 
         struct 
         {
-            char *name;
+            AstNode *destination;
             AstNode *expression;
         }assign;
 
@@ -195,6 +201,7 @@ struct AstNode
         {
             char *name;
             DataType declaredType;
+            int scope;
         }param;
 
         struct
