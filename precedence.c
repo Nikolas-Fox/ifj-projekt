@@ -17,6 +17,7 @@
 */
 
 #include "precedence.h"
+#include <stdlib.h>
 
 #define PREC_TABLE_SIZE 13
 #define RULE_SIZE 5
@@ -244,21 +245,23 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
             return PREC_LPAR;
 
         case TOK_ID:
-            char *name = p->currentToken.str;
             getTokenAhead(p);
 
             if(p->aheadToken.type == TOK_LPAR)
             {
+                AstNode *call = createNodeCall(p->currentToken.str, 0, NULL); // we will free the string
                 getNextToken(p);  // parseLoa expects the first symbol to be '(', not id
+                
                 size_t groupCount = 0;
-                AstNode *groups = parseLoa(p, &groupCount);
+                call->data.call.group = parseLoa(p, &groupCount);
+                call->data.call.groupCount = &groupCount;
 
-                *node = createNodeCall(name, groupCount, groups);
+                node = call;
                 return PREC_ID;   // functions are simplified to ID
             }
             else
             {
-                *node = createNodeID(name);  // this also has true/false, type checker will take care of this
+                *node = createNodeID(p->currentToken.str);  // this also has true/false, type checker will take care of this
                 return PREC_ID;
             }
 
@@ -331,8 +334,8 @@ void precReduce(PrecStack *stack)
     if(popCnt == 2 && poppedElements[0].symbol == PREC_E) // the array is backwards
     {
         // rules sgnE -> E,    !E -> E
-        PrecSymbol operator = poppedElements[1].symbol;
-        if(operator == PREC_SIGN || operator == PREC_NOT)
+        PrecSymbol symbol = poppedElements[1].symbol;
+        if(symbol == PREC_SIGN || symbol == PREC_NOT)
         {
             PrecStackElem element = {0};
             element.symbol = PREC_E;
