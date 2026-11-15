@@ -46,6 +46,7 @@ void generateProgram(AstNode *node)
 {
     printf(".IFJcode26\n");
     //call main
+    printf("DEFVAR GF@%%tmp\n");
     generateWhole(node);
     //vestavene funkce
 }
@@ -130,8 +131,11 @@ static void generateIf(AstNode *node)
 {
     ifCount++;
     printf("LABEL %s$if$%d$start\n", funcName, ifCount);
-    //TODO vyhodnoceni podminky
-    printf("JUMPIFEQ %s$if$%d$else conditionResult bool@false\n", funcName, ifCount); //TODO conditionResult
+    //condition evaluation, leaves result on stack
+    generateExpression(node->data.ifStat.condition);
+    //pops result into tmp
+    printf("POPS GF@%%tmp\n");
+    printf("JUMPIFEQ %s$if$%d$else GF@%%tmp bool@false\n", funcName, ifCount);
     generateBody(node->data.ifStat.thenBody);
     printf("JUMP %s$if$%d$end\n", funcName, ifCount);
     printf("LABEL %s$if$%d$else\n", funcName, ifCount); //if there is no else branch, it will fall through to end
@@ -143,8 +147,11 @@ static void generateWhile(AstNode *node)
 {
     whileCount++;
     printf("LABEL %s$while$%d$start\n", funcName, whileCount);
-    //TODO vyhodnoceni podminky
-    printf("JUMPIFEQ %s$while$%d$end conditionResult bool@false\n", funcName, whileCount); //TODO conditionResult
+    //condition evaluation, leaves result on stack
+    generateExpression(node->data.whileStat.condition);
+    //pops result into tmp
+    printf("POPS GF@%%tmp\n");
+    printf("JUMPIFEQ %s$while$%d$end GF@%%tmp bool@false\n", funcName, whileCount);
     generateBody(node->data.whileStat.body);
     printf("JUMP %s$while$%d$start\n", funcName, whileCount);
     printf("LABEL %s$while$%d$end\n", funcName, whileCount);
@@ -215,13 +222,16 @@ static void generateBinary(AstNode *node)
             printf("NOTS\n");
             break;
         case TOK_LESS_EQ:
-            //TODO
+            printf("GTS\n");
+            printf("NOTS\n");
             break;
         case TOK_GREATER_EQ:
-            //TODO
+            printf("LTS\n");
+            printf("NOTS\n");
             break;
         case TOK_NEQ:
-            //TODO
+            printf("EQS\n");
+            printf("NOTS\n");
             break;
         case TOK_AND:
             //TODO
