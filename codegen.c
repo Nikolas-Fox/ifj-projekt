@@ -40,7 +40,7 @@ static void generateExpression(AstNode *node);
 
 //temporary
 char *funcName;
-int ifCount, whileCount;
+int ifCount, whileCount, evalCount;
 
 void generateProgram(AstNode *node)
 {
@@ -234,10 +234,10 @@ static void generateBinary(AstNode *node)
             printf("NOTS\n");
             break;
         case TOK_AND:
-            //TODO
+            generateAnd();
             break;
         case TOK_OR:
-            //TODO
+            generateOr();
             break;
     }
 }
@@ -293,4 +293,51 @@ static void generateLiteral(AstNode *node)
     }
 }
 
+//x && y - if x is false, y is not evaluated and result is false
+static void generateAnd()
+{
+    printf("DEFVAR LF@%%eval1$%d\n", evalCount);
+    printf("DEFVAR LF@%%eval2$%d\n", evalCount);
+    printf("POPS LF@%%eval2$%d\n", evalCount); //right
+    printf("POPS LF@%%eval1$%d\n", evalCount); //left
+
+    //jump if x is false
+    printf("JUMPIFEQ %s$%d$$eval$decided LF@%%eval1$%d bool@false\n", funcName, evalCount, evalCount);
+
+    //x is not false -> undecided
+    printf("PUSHS LF@%%eval1$%d\n", evalCount);
+    printf("PUSHS LF@%%eval2$%d\n", evalCount);
+    printf("ANDS\n");
+    printf("JUMP %s$%d$$eval$end\n", funcName, evalCount);
+
+    //x is false -> false
+    printf("LABEL %s$%d$$eval$decided\n", funcName, evalCount);
+    printf("PUSHS bool@false\n");
+
+    printf("LABEL %s$%d$$eval$end\n", funcName, evalCount);
+}
+
+//x || y - if x is true, y is not evaluated and result is true
+static void generateOr()
+{
+    printf("DEFVAR LF@%%eval1$%d\n", evalCount);
+    printf("DEFVAR LF@%%eval2$%d\n", evalCount);
+    printf("POPS LF@%%eval2$%d\n", evalCount); //right
+    printf("POPS LF@%%eval1$%d\n", evalCount); //left
+
+    //jump if x is true
+    printf("JUMPIFEQ %s$%d$$eval$decided LF@%%eval1$%d bool@true\n", funcName, evalCount, evalCount);
+
+    //x is not true -> undecided
+    printf("PUSHS LF@%%eval1$%d\n", evalCount);
+    printf("PUSHS LF@%%eval2$%d\n", evalCount);
+    printf("ORS\n");
+    printf("JUMP %s$%d$$eval$end\n", funcName, evalCount);
+
+    //x is true -> true
+    printf("LABEL %s$%d$$eval$decided\n", funcName, evalCount);
+    printf("PUSHS bool@true\n");
+
+    printf("LABEL %s$%d$$eval$end\n", funcName, evalCount);
+}
 /*** End of file codegen.c ***/
