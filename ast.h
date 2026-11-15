@@ -233,17 +233,121 @@ struct AstNode
 /**
  * @brief Creates AST node of certain class
  * @param class The class of the created node
- * @return it returns a pointer to the node
+ * @return it returns a pointer to the new node
  */
 AstNode *createNode(AstClass class);
 
 /**
- * @brief Creates AST node of class literal
+ * @brief Creates a literal node
  * @param type the type of the literal
  * @param value the value of the literal
- * @return it returns a pointer to the literal node
+ * @return Pointer to the new node
  */
 AstNode *createNodeLiteral(DataType type, char *value);
+
+/**
+ * @brief Creates an identifier node, a use of a variable or a function without parameters
+ * @param name Name of the identifier (copied)
+ * @return Pointer to the new node
+ */
+AstNode *createNodeID(char *name);
+
+/**
+ * @brief Creates a unary operator node
+ * @param op Operator token type
+ * @param operand Subtree of the operand
+ * @return Pointer to the new node
+ */
+AstNode *createNodeUnary(TokenType op, AstNode *operand);
+
+/**
+ * @brief Creates a binary operator node
+ * @param op Operator token type
+ * @param left Subtree of the left operand
+ * @param right Subtree of the right operand
+ * @return Pointer to the new node
+ */
+AstNode *createNodeBinary(TokenType op, AstNode *left, AstNode *right);
+
+/**
+ * @brief Creates a function call node
+ * @param name Name of the called function
+ * @param group First AST_GROUP of arguments (groups form a linked list)
+ * @param groupCount Number of argument groups
+ * @return Pointer to the new node
+ */
+AstNode *createNodeCall(char *name, size_t groupCount, AstNode *group);
+
+/**
+ * @brief Creates a return statement node
+ * @param expression Returned expression
+ * @return Pointer to the new node
+ */
+AstNode *createNodeReturn(AstNode *expression);
+
+/**
+ * @brief Creates a while loop node
+ * @param condition Subtree of the loop condition
+ * @param body First statement of the loop body (statements form a linked list)
+ * @return Pointer to the new node
+ */
+AstNode *createNodeWhile(AstNode *condition, AstNode *body);
+
+/**
+ * @brief Creates a conditional statement node
+ * @param condition Subtree of the condition
+ * @param thenBody First statement of the then branch (statements form a linked list)
+ * @param elseBody First statement of the else branch
+ * @return Pointer to the new node
+ */
+AstNode *createNodeIf(AstNode *condition, AstNode *thenBody, AstNode *elseBody);
+
+/**
+ * @brief Creates a variable declaration node
+ * @param name Name of the variable
+ * @param isVar True for var, false for val
+ * @param hasType True if the type was stated
+ * @param declaredType Stated type (only valid if hasType is true)
+ * @param expression Subtree of the initialiser
+ * @return Pointer to the new node
+ */
+AstNode *createNodeDeclaration(char *name, bool isVar, bool hasType, DataType declaredType, AstNode *expression);
+
+/**
+ * @brief Creates an assignment node
+ * @param destination AST_ID node of the assigned variable
+ * @param expression Subtree of the assigned value
+ * @return Pointer to the new node
+ */
+AstNode *createNodeAssign(AstNode *destination, AstNode *expression);
+
+/**
+ * @brief Creates a formal parameter node
+ * @param name Name of the parameter
+ * @param declaredType Type of the parameter
+ * @return Pointer to the new node
+ */
+AstNode *createNodeParam(char *name, DataType declaredType);
+
+/**
+ * @brief Creates a group node
+ * @param items First item of the list (items create a linked list)
+ * @param count Number of items in the list
+ * @return Pointer to the new node
+ */
+AstNode *createNodeGroup(AstNode *items, size_t count);
+
+/**
+ * @brief Creates a function definition node
+ * @param name Name of the function
+ * @param groupCount Number of parameter groups
+ * @param group First AST_GROUP of parameters
+ * @param body First statement of the body (statements create a linked list)
+ * @param hasRetType True if the return type was written explicitly
+ * @param retType Written return type (only valid if hasRetType is true)
+ * @return Pointer to the new node
+ */
+AstNode *createNodeFunc(char *name, size_t groupCount, AstNode *group, AstNode *body, bool hasRetType, DataType retType);
 
 #endif
 /*** End of file ast.h ***/
