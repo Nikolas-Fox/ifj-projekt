@@ -80,8 +80,8 @@ void precStackPush(PrecStack *stack, PrecStackElem *element)
     newElem->symbol = element->symbol;
     newElem->operator = element->operator;
     newElem->node = element->node;
-
     newElem->next = stack->top;
+
     stack->top = newElem;
 
     if(element->symbol == PREC_LPAR)
@@ -254,9 +254,9 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
                 
                 size_t groupCount = 0;
                 call->data.call.group = parseLoa(p, &groupCount);
-                call->data.call.groupCount = &groupCount;
+                call->data.call.groupCount = groupCount;
 
-                node = call;
+                *node = call;
                 return PREC_ID;   // functions are simplified to ID
             }
             else
