@@ -18,6 +18,8 @@
 
 #include "codegen.h"
 
+#include <stdlib.h>
+
 //generate functions protypes
 static void generateWhole(AstNode *node);
 static void generateFunc(AstNode *node);
@@ -219,7 +221,7 @@ static void generateUnary(AstNode *node)
 
 static void generateId(AstNode *node)
 {
-    
+    printf("PUSHS LF@%s$%d\n", node->data.id.name, node->data.id.scope);
 }
 
 static void generateExpression(AstNode *node) //leaves the result on stack
@@ -240,6 +242,25 @@ static void generateExpression(AstNode *node) //leaves the result on stack
             break;
         case AST_LITERAL:
             generateLiteral(node);
+            break;
+    }
+}
+
+static void generateLiteral(AstNode *node)
+{
+    switch (node->type)
+    {
+        case TYPE_INT:
+            printf("PUSHS int@%s\n",node->data.value);
+            break;
+        case TYPE_STRING:
+            //TODO escape sekvence
+        case TYPE_BOOL:
+            printf("PUSHS bool@%s\n",node->data.value);
+            break;
+        case TYPE_DOUBLE:
+            double value = strtod(node->data.value, NULL);
+            printf("PUSHS float@%a\n", value);
             break;
     }
 }
