@@ -24,8 +24,9 @@
 
 //recursive descent functions prototypes
 static AstNode *parseProg(ParsedToken *p);
-static void parseDefinition(ParsedToken *p);
-static void parseDefBody(ParsedToken *p);
+static AstNode *parseFunction(ParsedToken *p);
+static AstNode *parseDefinition(ParsedToken *p);
+static AstNode *parseDefBody(ParsedToken *p);
 static void parseDefBlock(ParsedToken *p);
 static void parseExtensionDef(ParsedToken *p);
 static void parseOptNL(ParsedToken *p);
@@ -191,8 +192,10 @@ static bool startsLine(TokenType type)
     }
 }
 
-static void parseProg(ParsedToken *p)
+static AstNode *parseProg(ParsedToken *p)
 {
+    AstNode *functions;
+
     //1: ⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
     checkToken(p, TOK_KW_IMPORT);
     parseOptNL(p);
@@ -202,34 +205,49 @@ static void parseProg(ParsedToken *p)
     parseOptNL(p);
     checkToken(p, TOK_MUL);
     checkToken(p, TOK_NL);
-    parseDefinition(p);
+    functions = parseDefinition(p);
     checkToken(p, TOK_EOF);
+
+    return functions;
+}
+static AstNode *parseFunction(ParsedToken *p)
+{
+    char *name = p->currentToken.str;
+    checkToken(p, TOK_ID);
+    size_t groupCount = 0;
+    AstNode *groups = parseLop(p, &groupCount);
+
+    bool hasType = false;
+    DataType type;
+    parseRetType(p, &hasType, &type);
+
+    checkToken(p, TOK_ASSIGN);
+    AstNode *body = parseDefBody(p);
+
+    return createNodeFunc(name, groupCount, groups, hasType, type);
 }
 
-static void parseDefinition(ParsedToken *p)
+static AstNode *parseDefinition(ParsedToken *p)
 {
+    AstNode *function;
     switch (p->currentToken.type)
     {
         case TOK_AT_MAIN: //2: ⟨definition⟩ → @main⟨opt_NL⟩def id⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨definition⟩
             checkToken(p, TOK_AT_MAIN);
             parseOptNL(p);
             checkToken(p, TOK_KW_DEF);
-            checkToken(p, TOK_ID);
-            parseLop(p);
-            parseRetType(p);
-            checkToken(p, TOK_ASSIGN);
-            parseDefBody(p);
-            parseDefinition(p);
-            break;
+
+            AstNode *function = parseFunction(p);
+            function->data.func.isMain = true;
+            function->next = parseDefinition(p);
+            return function;
+
         case TOK_KW_DEF: //3: ⟨definition⟩ → def id⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨definition⟩
             checkToken(p, TOK_KW_DEF);
-            checkToken(p, TOK_ID);
-            parseLop(p);
-            parseRetType(p);
-            checkToken(p, TOK_ASSIGN);
-            parseDefBody(p);
-            parseDefinition(p);
-            break;
+            AstNode *function = parseFunction(p);
+            function->next = parseDefinition(p);
+            return function;
+
         case TOK_KW_EXTENSION: //4: ⟨definition⟩ → extension(id : ⟨type⟩)⟨def_block⟩⟨definition⟩
             checkToken(p, TOK_KW_EXTENSION);
             checkToken(p, TOK_LPAR);
@@ -241,10 +259,10 @@ static void parseDefinition(ParsedToken *p)
             parseDefinition(p);
             break;
         case TOK_EOF: //5: ⟨definition⟩ → epsilon
-            return;
+            return NULL;
         default:
             printError("Unexpected token, expected @main/def/extension/EOF.");
-            break;
+            return NULL;
     }
 }
 
