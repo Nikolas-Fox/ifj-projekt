@@ -33,6 +33,7 @@ static void generateBinary(AstNode *node);
 static void generateUnary(AstNode *node);
 static void generateLiteral(AstNode *node);
 static void generateId(AstNode *node);
+static void generateExpression(AstNode *node);
 
 //temporary
 char *funcName;
@@ -102,17 +103,18 @@ static void generateBody(AstNode *node)
             generateReturn(node);
             break;
         case AST_CALL:
-            generateCall(node);
-            break;
         case AST_BINARY:
-            generateBinary(node);
-            break;
         case AST_UNARY:
-            generateUnary(node);
-            break;
         case AST_ID:
-            generateId(node);
-            break;
+            generateExpression(node);
+            if (node->next == NULL)
+            {
+                //TODO uklidit hodnotu ze zasobniku
+            }
+            else
+            {
+                //TODO navratova hodnota
+            }
     }
 }
 
@@ -162,7 +164,52 @@ static void generateCall(AstNode *node)
 
 static void generateBinary(AstNode *node)
 {
+    //TODO implicitni konverze Int->Double
+    generateBody(node->data.binary.left);
+    generateBody(node->data.binary.right);
 
+    switch (node->data.binary.op)
+    {
+        case TOK_PLUS:
+            printf("ADDS\n");
+            break;
+        case TOK_MINUS:
+            printf("SUBS\n");
+            break;
+        case TOK_MUL:
+            printf("MULS\n");
+            break;
+        case TOK_DIV:
+            //TODO
+            break;
+        case TOK_LESS:
+            printf("LTS\n");
+            break;
+        case TOK_GREATER:
+            printf("GTS\n");
+            break;
+        case TOK_EQ:
+            printf("EQS\n");
+            break;
+        case TOK_NOT:
+            printf("NOTS\n");
+            break;
+        case TOK_LESS_EQ:
+            //TODO
+            break;
+        case TOK_GREATER_EQ:
+            //TODO
+            break;
+        case TOK_NEQ:
+            //TODO
+            break;
+        case TOK_AND:
+            //TODO
+            break;
+        case TOK_OR:
+            //TODO
+            break;
+    }
 }
 
 static void generateUnary(AstNode *node)
@@ -172,7 +219,29 @@ static void generateUnary(AstNode *node)
 
 static void generateId(AstNode *node)
 {
+    
+}
 
+static void generateExpression(AstNode *node) //leaves the result on stack
+{
+    switch (node->class)
+    {
+        case AST_CALL:
+            generateCall(node);
+            break;
+        case AST_BINARY:
+            generateBinary(node);
+            break;
+        case AST_UNARY:
+            generateUnary(node);
+            break;
+        case AST_ID:
+            generateId(node);
+            break;
+        case AST_LITERAL:
+            generateLiteral(node);
+            break;
+    }
 }
 
 /*** End of file codegen.c ***/
