@@ -34,11 +34,16 @@ static void generateUnary(AstNode *node);
 static void generateLiteral(AstNode *node);
 static void generateId(AstNode *node);
 
+//temporary
+char *funcName;
+int ifCount, whileCount;
+
 void generateProgram(AstNode *node)
 {
     printf(".IFJcode26\n");
     //call main
     generateWhole(node);
+    //vestavene funkce
 }
 
 static void generateWhole(AstNode *node)
@@ -74,6 +79,11 @@ static void generateFunc(AstNode *node)
 
 static void generateBody(AstNode *node)
 {
+    if (node == NULL)
+    {
+        return;
+    }
+
     switch (node->class)
     {
         case AST_ASSIGN:
@@ -104,6 +114,65 @@ static void generateBody(AstNode *node)
             generateId(node);
             break;
     }
+}
+
+static void generateAssign(AstNode *node)
+{
+
+}
+
+static void generateDeclaration(AstNode *node)
+{
+    printf("DEFVAR LF@%s$%d\n", node->data.declaration.name, node->data.declaration.scope);
+}
+
+static void generateIf(AstNode *node)
+{
+    ifCount++;
+    printf("LABEL %s$if$%d$start\n", funcName, ifCount);
+    //TODO vyhodnoceni podminky
+    printf("JUMPIFEQ %s$if$%d$else conditionResult bool@false\n", funcName, ifCount); //TODO conditionResult
+    generateBody(node->data.ifStat.thenBody);
+    printf("JUMP %s$if$%d$end\n", funcName, ifCount);
+    printf("LABEL %s$if$%d$else\n", funcName, ifCount); //if there is no else branch, it will fall through to end
+    generateBody(node->data.ifStat.elseBody);
+    printf("LABEL %s$if$%d$end\n", funcName, ifCount);
+}
+
+static void generateWhile(AstNode *node)
+{
+    whileCount++;
+    printf("LABEL %s$while$%d$start\n", funcName, whileCount);
+    //TODO vyhodnoceni podminky
+    printf("JUMPIFEQ %s$while$%d$end conditionResult bool@false\n", funcName, whileCount); //TODO conditionResult
+    generateBody(node->data.whileStat.body);
+    printf("JUMP %s$while$%d$start\n", funcName, whileCount);
+    printf("LABEL %s$while$%d$end\n", funcName, whileCount);
+}
+
+static void generateReturn(AstNode *node)
+{
+
+}
+
+static void generateCall(AstNode *node)
+{
+
+}
+
+static void generateBinary(AstNode *node)
+{
+
+}
+
+static void generateUnary(AstNode *node)
+{
+
+}
+
+static void generateId(AstNode *node)
+{
+
 }
 
 /*** End of file codegen.c ***/
