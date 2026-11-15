@@ -77,8 +77,8 @@ void precStackPush(PrecStack *stack, PrecStackElem *element)
     }
 
     newElem->symbol = element->symbol;
-    newElem->str = element->str;
-    newElem->type = element->type;
+    newElem->operator = element->operator;
+    newElem->node = element->node;
 
     newElem->next = stack->top;
     stack->top = newElem;
@@ -131,11 +131,6 @@ void precStackFree(PrecStack *stack)
     {
         tmp = stack->top;
         stack->top = (stack->top->next);
-
-        if(tmp->str != NULL)
-        {
-            free(tmp->str);
-        }
         free(tmp);
     }
 }
@@ -159,17 +154,14 @@ PrecSymbol precStackGetFirstTerm(PrecStack *stack)
 
 void precStackShiftAfterFirstTerm(PrecStack *stack)
 {
-    PrecStackElem *newElem = (PrecStackElem *)malloc(sizeof(PrecStackElem));
+    PrecStackElem *newElem = (PrecStackElem *)calloc(1,sizeof(PrecStackElem));
     if(newElem == NULL)
     {
-        // ERROR (malloc failure) (internal error)
+        // ERROR (calloc failure) (internal error)
         exit(99);
     }
 
     newElem->symbol = PREC_SHIFT;
-    newElem->str = NULL;
-    newElem->next = NULL;
-    newElem->type = -1;
 
     if(stack->top == NULL)
     {
@@ -208,6 +200,7 @@ void precStackShiftAfterFirstTerm(PrecStack *stack)
 
 PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack, AstNode **node)
 {
+    *node = NULL;
     switch(p->currentToken.type)
     {
         case TOK_DOT:
@@ -251,16 +244,23 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
             return PREC_LPAR;
 
         case TOK_ID:
+            char *name = p->currentToken.str;
             getTokenAhead(p);
+
             if(p->aheadToken.type == TOK_LPAR)
             {
                 getNextToken(p);  // parseLoa expects the first symbol to be '(', not id
                 size_t groupCount = 0;
                 AstNode *groups = parseLoa(p, &groupCount);
+
+                *node = createNodeCall(name, groupCount, groups);
                 return PREC_ID;   // functions are simplified to ID
             }
-
-            *node = createNodeID(p->currentToken.str);
+            else
+            {
+                *node = createNodeID(name);  // this also has true/false, type checker will take care of this
+                return PREC_ID;
+            }
 
             // all other identifier tokens are valid
             // true and false are soft keywords, 
@@ -276,6 +276,7 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
         case TOK_DOUBLE:
             *node = createNodeLiteral(TYPE_DOUBLE, p->currentToken.str);
             return PREC_ID;
+            
         case TOK_STRING:
             *node = createNodeLiteral(TYPE_STRING, p->currentToken.str);
             return PREC_ID;

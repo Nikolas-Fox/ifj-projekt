@@ -432,8 +432,6 @@ typedef struct PrecStackElem
     AstNode *node;
     TokenType operator;
     struct PrecStackElem *next;
-    char *str;
-    DataType type;
 }PrecStackElem;
 
 
