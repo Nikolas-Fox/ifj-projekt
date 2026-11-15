@@ -19,6 +19,12 @@
 #ifndef CODEGEN_H
 #define CODEGEN_H
 
+/**
+ * @brief Generates program
+ * @param node Whole program - root of the AST
+ */
+void generateProgram(AstNode *node);
+
 //temporary scanner.h
 typedef enum {
     TOK_EOF, TOK_NL, TOK_INDENT, TOK_DEDENT,
