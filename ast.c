@@ -176,4 +176,74 @@ AstNode *insertStat(AstNode *head, AstNode *newStat)
     return head;
 }
 
+AstNode *insertFunc(AstNode *head, AstNode *newFunc)
+{
+    if(newFunc == NULL)
+    {
+        return head;
+    }
+
+    if(head == NULL)
+    {
+        return newFunc;
+    }
+
+    AstNode *node = head;
+    while(node->next != NULL)
+    {
+        node = node->next;
+    }
+
+    node->next = newFunc;
+    return head;
+}
+
+AstNode *insertGroup(AstNode *head, AstNode *newGroup, size_t *groupCount)
+{
+    if(newGroup == NULL)
+    {
+        return head;
+    }
+
+    if(head == NULL)
+    {
+        return newGroup;
+    }
+
+    (*groupCount)++;
+
+    AstNode *node = head;
+    while(node->next != NULL)
+    {
+        node = node->next;
+    }
+
+    node->next = newGroup;
+    head->data.func.groupCount++;
+    return head;
+}
+
+AstNode *insertParam(AstNode *head, AstNode *newParam)
+{
+    if(newParam == NULL)
+    {
+        return head;
+    }
+
+    if(head == NULL)
+    {
+        return newParam;
+    }
+
+    AstNode *node = head;
+    while(node->next != NULL)
+    {
+        node = node->next;
+    }
+
+    node->next = newParam;
+    head->data.group.count++;
+    return head;
+}
+
 /*** End of file ast.c ***/

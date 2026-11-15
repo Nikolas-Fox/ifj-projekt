@@ -356,5 +356,33 @@ AstNode *createNodeFunc(char *name, size_t groupCount, AstNode *group, AstNode *
  * @return head during normal insertion and if newStat is null; newStat if the list was empty
  */
 AstNode *insertStat(AstNode *head, AstNode *newStat);
+
+/**
+ * @brief Inserts a function to the end of a statement list
+ * @param head Pointer to the first statement of the list
+ * @param newFunc Pointer to the statement we want to add to the end
+ * @return head during normal insertion and if newFunc is null; newFunc if the list was empty
+ */
+AstNode *insertFunc(AstNode *head, AstNode *newFunc);
+
+/**
+ * @brief Inserts a group to the end of a statement list, increments the group count
+ * @param head Pointer to the first statement of the list
+ * @param newGroup Pointer to the statement we want to add to the end
+ * @param groupCount Pointer to groupCount so I can increment
+ * @return head during normal insertion and if newStat is null; newGroup if the list was empty
+ */
+AstNode *insertGroup(AstNode *head, AstNode *newGroup, size_t *groupCount);
+
+/**
+ * @brief Inserts a parameter to the end of a statement list
+ * @param head Pointer to the first statement of the list
+ * @param newParam Pointer to the statement we want to add to the end
+ * @return head during normal insertion and if newParam is null; newStat if the list was empty
+ */
+AstNode *insertParam(AstNode *head, AstNode *newParam);
+
+
+
 #endif
 /*** End of file ast.h ***/
