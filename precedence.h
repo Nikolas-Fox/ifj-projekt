@@ -550,7 +550,7 @@ AstNode *parseArgEnd(ParsedToken *p, size_t *count);
  * @brief Uses precedence analysis to validate expression
  * @param p Pointer to the parsed token
  */
-void parseExpression(ParsedToken *p);
+AstNode *parseExpression(ParsedToken *p);
 
 
 #endif   // PRECEDENCE_H

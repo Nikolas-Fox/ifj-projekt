@@ -456,7 +456,7 @@ AstNode *parseArgEnd(ParsedToken *p, size_t *count)
 }
 
 
-void parseExpression(ParsedToken *p)
+AstNode *parseExpression(ParsedToken *p)
 {
     bool previousWasOperand = false;
     PrecStack stack;
@@ -468,7 +468,9 @@ void parseExpression(ParsedToken *p)
 
     precStackPush(&stack, &endSymbol);
 
-    PrecSymbol input = tokenToPrec(p, previousWasOperand, &stack);
+    AstNode *node;
+    PrecSymbol input = tokenToPrec(p, previousWasOperand, &stack, &node);
+    // the node will change to either AST_LITERAL or AST_ID
     
 
     while (!(input == PREC_END && precStackTop(&stack) == PREC_E && precStackGetFirstTerm(&stack) == PREC_END))
@@ -493,10 +495,12 @@ void parseExpression(ParsedToken *p)
             {
                 PrecStackElem element = {0};
                 element.symbol = input;
+                element.node = node;
+                element.operator = p->currentToken.type;
                 precStackPush(&stack, &element);
                 
                 getNextToken(p);
-                input = tokenToPrec(p, previousWasOperand, &stack);
+                input = tokenToPrec(p, previousWasOperand, &stack, &node);
                 break;
             }
             
@@ -508,7 +512,11 @@ void parseExpression(ParsedToken *p)
                 exit(2);
         }
     }
+
+    // Now the only thing left on the stack should be E
+    PrecStackElem E = precStackPop(&stack);
     precStackFree(&stack);
+    return E.node;  // returning the node with the built expression
 }
 
 
