@@ -252,7 +252,7 @@ void astFreeList(AstNode *head)
     {
         AstNode *next = head->next;
         astFree(head);
-        free(head);
+        head = next;
     }
 }
 
