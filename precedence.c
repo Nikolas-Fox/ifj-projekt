@@ -206,7 +206,7 @@ void precStackShiftAfterFirstTerm(PrecStack *stack)
 }
 
 
-PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack)
+PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack, AstNode **node)
 {
     switch(p->currentToken.type)
     {
@@ -255,9 +255,12 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
             if(p->aheadToken.type == TOK_LPAR)
             {
                 getNextToken(p);  // parseLoa expects the first symbol to be '(', not id
-                parseLoa(p);
+                size_t groupCount = 0;
+                AstNode *groups = parseLoa(p, &groupCount);
                 return PREC_ID;   // functions are simplified to ID
             }
+
+            *node = createNodeID(p->currentToken.str);
 
             // all other identifier tokens are valid
             // true and false are soft keywords, 
@@ -267,8 +270,14 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
             
         // FALLTHROUGH
         case TOK_INT:
+            *node = createNodeLiteral(TYPE_INT, p->currentToken.str);
+            return PREC_ID;
+
         case TOK_DOUBLE:
+            *node = createNodeLiteral(TYPE_DOUBLE, p->currentToken.str);
+            return PREC_ID;
         case TOK_STRING:
+            *node = createNodeLiteral(TYPE_STRING, p->currentToken.str);
             return PREC_ID;
 
         case TOK_RPAR:
@@ -371,62 +380,74 @@ void precReduce(PrecStack *stack)
 }
 
 
-void parseLoa(ParsedToken *p)
+AstNode *parseLoa(ParsedToken *p, size_t *groupCount)
 {
+    AstNode *groups = NULL;
+    *groupCount = 0;
+
     //46: ⟨loa⟩ → (⟨arg_list⟩)⟨loa⟩
     if (p->currentToken.type == TOK_LPAR)
     {
         checkToken(p, TOK_LPAR);
-        parseArgList(p);
-        
+
+        size_t count = 0; // keeps track of number of arguments
+
+        AstNode *items = parseArgList(p, &count);
+
         if(p->currentToken.type != TOK_RPAR)
         {
             //ERROR (syntax error)
             exit(2);
         }
 
+        AstNode *group = createNodeGroup(items, count);
+        (*groupCount)++;
+        
         getTokenAhead(p);
         if(p->aheadToken.type == TOK_LPAR)
         {
-            getNextToken(p);   // we need to go to the next token
-            parseLoa(p);
+            getNextToken(p);   // if the next token is another '(' we have a new group that we add to the list of groups
+            group->next = parseLoa(p, groupCount);
         }
+        return group;
     }
-    return;
+    return NULL;
 }
 
 
-void parseArgList(ParsedToken *p)
+AstNode *parseArgList(ParsedToken *p, size_t *count)
 {
+    AstNode *items = NULL;
+    *count = 0;
     //48: ⟨arg_list⟩ → ⟨expression⟩⟨arg_end⟩
     if (startsExpression(p->currentToken.type))
     {
-        parseExpression(p);
-        parseArgEnd(p);
+        AstNode *arg = parseExpression(p);
+        (*count)++;
+        arg->next = parseArgEnd(p,count);
+        return arg;
     }
     //49: ⟨arg_list⟩ → epsilon
     else if (p->currentToken.type == TOK_RPAR)
     {
-        return;
+        return NULL; // we are at the end of the list
     }
-    else
-    {
-        // ERROR (syntax error)
-        exit(2);
-    }
+
+    // ERROR (syntax error)
+    exit(2);
 }
 
 
-void parseArgEnd(ParsedToken *p)
+AstNode *parseArgEnd(ParsedToken *p, size_t *count)
 {
     switch (p->currentToken.type)
     {
         case TOK_COMMA: //50: ⟨arg_end⟩ →,⟨arg_list⟩
             checkToken(p, TOK_COMMA);
-            parseArgList(p);
+            return parseArgList(p, count);
             break;
         case TOK_RPAR: //51: ⟨arg_end⟩ → epsilon
-            return;
+            return NULL;
         default:
             // ERROR (syntax error)
             exit(2);
