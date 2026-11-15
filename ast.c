@@ -246,4 +246,90 @@ AstNode *insertParam(AstNode *head, AstNode *newParam)
     return head;
 }
 
+void astFreeList(AstNode *head)
+{
+    while(head != NULL)
+    {
+        AstNode *next = head->next;
+        astFree(head);
+        free(head);
+    }
+}
+
+
+void astFree(AstNode *node)
+{
+    if(node == NULL)
+    {
+        return;
+    }
+    switch(node->class)
+    {
+        case AST_LITERAL:
+            free(node->data.value);
+            break;
+        
+        case AST_ID:
+            free(node->data.id.name);
+            break;
+
+        case AST_UNARY:
+            astFree(node->data.unary.operand);
+            break;
+
+        case AST_BINARY:
+            astFree(node->data.binary.left);
+            astFree(node->data.binary.right);
+            break;
+
+        case AST_CALL:
+            free(node->data.call.name);
+            astFreeList(node->data.call.group);
+            break;
+
+        case AST_RETURN:
+            astFree(node->data.returnStat.expression);
+            break;
+
+        case AST_WHILE:
+            astFree(node->data.whileStat.condition);
+            astFreeList(node->data.whileStat.body);
+            break;
+
+        case AST_IF:
+            astFree(node->data.ifStat.condition);
+            astFreeList(node->data.ifStat.thenBody);
+            astFreeList(node->data.ifStat.elseBody);
+            break;
+
+        case AST_DECLARATION:
+            free(node->data.declaration.name);
+            astFree(node->data.declaration.expression);
+            break;
+
+        case AST_ASSIGN:
+            astFree(node->data.assign.destination);
+            astFree(node->data.assign.expression);
+            break;
+
+        case AST_PARAM:
+            free(node->data.param.name);
+            break;
+        
+        case AST_GROUP:
+            astFreeList(node->data.group.items);
+            break;
+
+        case AST_FUNC:
+            free(node->data.func.name);
+            astFreeList(node->data.func.group);
+            astFreeList(node->data.func.body);
+            break;
+            
+        case AST_WHOLE:
+            astFreeList(node->data.whole.func);
+            break;
+    }
+    free(node);
+}
 /*** End of file ast.c ***/

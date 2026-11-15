@@ -382,7 +382,17 @@ AstNode *insertGroup(AstNode *head, AstNode *newGroup, size_t *groupCount);
  */
 AstNode *insertParam(AstNode *head, AstNode *newParam);
 
+/**
+ * @brief Free ast tree using recursion
+ * @param node Pointer to the node which should be freed
+ */
+void astFree(AstNode *node);
 
+/**
+ * @brief Free a linked list
+ * @param node Pointer to the first element of a linked list (head)
+ */
+void astFreeList(AstNode *node);
 
 #endif
 /*** End of file ast.h ***/
