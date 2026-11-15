@@ -19,6 +19,7 @@
 #include "codegen.h"
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 //generate functions protypes
 static void generateWhole(AstNode *node);
@@ -82,11 +83,6 @@ static void generateFunc(AstNode *node)
 
 static void generateBody(AstNode *node)
 {
-    if (node == NULL)
-    {
-        return;
-    }
-
     switch (node->class)
     {
         case AST_ASSIGN:
@@ -166,9 +162,24 @@ static void generateCall(AstNode *node)
 
 static void generateBinary(AstNode *node)
 {
-    //TODO implicitni konverze Int->Double
-    generateBody(node->data.binary.left);
-    generateBody(node->data.binary.right);
+    //implicit conversion Int->Double
+    bool isDouble = false;
+    if (node->data.binary.left->type == TYPE_DOUBLE || node->data.binary.right->type == TYPE_DOUBLE)
+    {
+        isDouble = true;
+    }
+
+    generateExpression(node->data.binary.left);
+    if (node->data.binary.left->type == TYPE_INT)
+    {
+        printf("INT2FLOATS\n");
+    }
+
+    generateExpression(node->data.binary.right);
+    if (node->data.binary.right->type == TYPE_INT)
+    {
+        printf("INT2FLOATS\n");
+    }
 
     switch (node->data.binary.op)
     {
@@ -182,7 +193,14 @@ static void generateBinary(AstNode *node)
             printf("MULS\n");
             break;
         case TOK_DIV:
-            //TODO
+            if (isDouble)
+            {
+                printf("DIVS\n");
+            }
+            else
+            {
+                printf("IDIVS\n");
+            }
             break;
         case TOK_LESS:
             printf("LTS\n");
