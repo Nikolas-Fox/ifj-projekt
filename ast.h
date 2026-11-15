@@ -3,7 +3,7 @@
 * Package:		ast
 * File:			ast.h
 * Date:			12.11.2026
-* Last change:	13.11.2026
+* Last change:	15.11.2026
 * Authors: 		Nikolas Fox xfoxnik00
 *
 * Description: Header file containing abstract syntactic tree logic
@@ -349,5 +349,12 @@ AstNode *createNodeGroup(AstNode *items, size_t count);
  */
 AstNode *createNodeFunc(char *name, size_t groupCount, AstNode *group, AstNode *body, bool hasRetType, DataType retType);
 
+/**
+ * @brief Inserts a statement to the end of a statement list
+ * @param head Pointer to the first statement of the list
+ * @param newStat Pointer to the statement we want to add to the end
+ * @return head during normal insertion and if newStat is null; newStat if the list was empty
+ */
+AstNode *insertStat(AstNode *head, AstNode *newStat);
 #endif
 /*** End of file ast.h ***/

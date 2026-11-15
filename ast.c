@@ -3,7 +3,7 @@
 * Package:		ast
 * File:			ast.c
 * Date:			12.11.2026
-* Last change:	13.11.2026
+* Last change:	15.11.2026
 * Authors: 		Nikolas Fox xfoxnik00
 *
 * Description: Implementation of abstract syntactic tree logic
@@ -153,5 +153,27 @@ AstNode *createNodeFunc(char *name, size_t groupCount,AstNode *group, AstNode *b
 }
 
 // there is no need to define createNodeWhole as it is empty at first
+
+AstNode *insertStat(AstNode *head, AstNode *newStat)
+{
+    if(newStat == NULL)
+    {
+        return head;
+    }
+
+    if(head == NULL)
+    {
+        return newStat;
+    }
+
+    AstNode *node = head;
+    while(node->next != NULL)
+    {
+        node = node->next;
+    }
+
+    node->next = newStat;
+    return head;
+}
 
 /*** End of file ast.c ***/
