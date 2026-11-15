@@ -3,7 +3,7 @@
 * Package:		parser
 * File:			parser.c
 * Date:			1.11.2026
-* Last change:	13.11.2026
+* Last change:	15.11.2026
 * Authors: 		Eliška Holá xholael00
 *
 * Description: Implementation of parser - recursive descent
@@ -23,7 +23,7 @@
 #include <stdbool.h>
 
 //recursive descent functions prototypes
-static void parseProg(ParsedToken *p);
+static AstNode *parseProg(ParsedToken *p);
 static void parseDefinition(ParsedToken *p);
 static void parseDefBody(ParsedToken *p);
 static void parseDefBlock(ParsedToken *p);
@@ -55,12 +55,15 @@ static void printError(char *message)
     exit(2);
 }
 
-void parseProgram()
+AstNode *parseProgram()
 {
     ParsedToken token;
     token.lookAhead = false;
     getNextToken(&token);
-    parseProg(&token);
+
+    AstNode *whole = createNode(AST_WHOLE);
+    whole->data.whole.func = parseProg(&token);
+    return whole;
 }
 
 void getNextToken(ParsedToken *p)
