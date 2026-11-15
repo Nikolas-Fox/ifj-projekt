@@ -276,7 +276,7 @@ PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack *stack
         case TOK_DOUBLE:
             *node = createNodeLiteral(TYPE_DOUBLE, p->currentToken.str);
             return PREC_ID;
-            
+
         case TOK_STRING:
             *node = createNodeLiteral(TYPE_STRING, p->currentToken.str);
             return PREC_ID;
@@ -315,33 +315,40 @@ void precReduce(PrecStack *stack)
     }
     while(popped.symbol != PREC_SHIFT && stack->top != NULL);
 
+
+    // ID or LITERAL
     if(popCnt == 1 && poppedElements[0].symbol == PREC_ID)
     {
         // rule i -> E
         PrecStackElem element = {0};
         element.symbol = PREC_E;
+        element.node = poppedElements[0].node;
         precStackPush(stack, &element);
         return;
     }
 
+    // UNARY EXPRESSION
     if(popCnt == 2 && poppedElements[0].symbol == PREC_E) // the array is backwards
     {
         // rules sgnE -> E,    !E -> E
-        PrecSymbol op = poppedElements[1].symbol;
-        if(op == PREC_SIGN || op == PREC_NOT)
+        PrecSymbol operator = poppedElements[1].symbol;
+        if(operator == PREC_SIGN || operator == PREC_NOT)
         {
             PrecStackElem element = {0};
             element.symbol = PREC_E;
+            element.node = createNodeUnary(poppedElements[1].operator, poppedElements[0].node);
             precStackPush(stack, &element);
             return;
         }
     }
 
+    // UNIT
     if(popCnt == 2 && poppedElements[1].symbol == PREC_LPAR && poppedElements[0].symbol == PREC_RPAR)
     {
         // rule () -> E
         PrecStackElem element = {0};
         element.symbol = PREC_E;
+        element.node = createNodeLiteral(TYPE_UNIT, NULL);
         precStackPush(stack, &element);
         return;
     }
@@ -361,6 +368,8 @@ void precReduce(PrecStack *stack)
             {
                 PrecStackElem element = {0};
                 element.symbol = PREC_E;
+                element.operator = poppedElements[1].symbol;
+                element.node = createNodeBinary(poppedElements[1].operator, poppedElements[2].node, poppedElements[0].node);
                 precStackPush(stack, &element);
                 return;
             }
@@ -371,6 +380,7 @@ void precReduce(PrecStack *stack)
             // rule (E) -> E
             PrecStackElem element = {0};
             element.symbol = PREC_E;
+            element.node = poppedElements[1].node;
             precStackPush(stack, &element);
             return;
         }
@@ -384,7 +394,6 @@ void precReduce(PrecStack *stack)
 AstNode *parseLoa(ParsedToken *p, size_t *groupCount)
 {
     AstNode *groups = NULL;
-    *groupCount = 0;
 
     //46: ⟨loa⟩ → (⟨arg_list⟩)⟨loa⟩
     if (p->currentToken.type == TOK_LPAR)
@@ -418,8 +427,6 @@ AstNode *parseLoa(ParsedToken *p, size_t *groupCount)
 
 AstNode *parseArgList(ParsedToken *p, size_t *count)
 {
-    AstNode *items = NULL;
-    *count = 0;
     //48: ⟨arg_list⟩ → ⟨expression⟩⟨arg_end⟩
     if (startsExpression(p->currentToken.type))
     {
