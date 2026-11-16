@@ -3,7 +3,7 @@
 * Package:		codegen
 * File:			codegen.c
 * Date:			15.11.2026
-* Last change:	15.11.2026
+* Last change:	16.11.2026
 * Authors: 		Eliška Holá xholael00
 *
 * Description:  Implementation of code generation
@@ -212,13 +212,13 @@ static void generateBinary(AstNode *node)
     }
 
     generateExpression(node->data.binary.left);
-    if (node->data.binary.left->type == TYPE_INT)
+    if (node->data.binary.left->type == TYPE_INT && isDouble)
     {
         printf("INT2FLOATS\n");
     }
 
     generateExpression(node->data.binary.right);
-    if (node->data.binary.right->type == TYPE_INT)
+    if (node->data.binary.right->type == TYPE_INT && isDouble)
     {
         printf("INT2FLOATS\n");
     }
@@ -253,9 +253,6 @@ static void generateBinary(AstNode *node)
         case TOK_EQ:
             printf("EQS\n");
             break;
-        case TOK_NOT:
-            printf("NOTS\n");
-            break;
         case TOK_LESS_EQ:
             printf("GTS\n");
             printf("NOTS\n");
@@ -279,7 +276,21 @@ static void generateBinary(AstNode *node)
 
 static void generateUnary(AstNode *node)
 {
-
+    generateExpression(node->data.unary.operand);
+    switch (node->data.unary.op)
+    {
+        case TOK_NOT:
+            printf("NOTS\n");
+            break;
+        case TOK_PLUS:
+            break;
+        case TOK_MINUS:
+            printf("POPS GF@%%tmp\n"); //pops x into temporary
+            printf("PUSHS int@0\n");
+            printf("PUSHS GF@%%tmp\n");
+            printf("SUBS\n"); //0-x => -x
+            break;
+    }
 }
 
 static void generateId(AstNode *node)
