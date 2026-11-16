@@ -371,7 +371,6 @@ void precReduce(PrecStack *stack)
             {
                 PrecStackElem element = {0};
                 element.symbol = PREC_E;
-                element.operator = poppedElements[1].symbol;
                 element.node = createNodeBinary(poppedElements[1].operator, poppedElements[2].node, poppedElements[0].node);
                 precStackPush(stack, &element);
                 return;
