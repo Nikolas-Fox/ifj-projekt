@@ -43,6 +43,7 @@ static void generateAnd(CurrentFunc *cFunc);
 static void generateOr(CurrentFunc *cFunc);
 
 static AstNode *findMain(AstNode *node);
+static void defvarLocalVariables(AstNode *node);
 
 void generateProgram(AstNode *node)
 {
@@ -77,9 +78,11 @@ static void generateFunc(AstNode *node, CurrentFunc *cFunc)
     printf("LABEL %s\n", node->data.func.name);
     printf("CREATEFRAME\n");
     printf("PUSHFRAME\n");
-    //DEFVAR parametru
-    //DEFVAR lokalnich promennych
-    //hodnoty parametru v opacnem poradi
+
+    //TODO defvar parametru
+    defvarLocalVariables(node->data.func.body);
+    //TODO popnout hodnoty argumentu v opacnem poradi
+
     AstNode *body = node->data.func.body;
     while (body != NULL)
     {
@@ -477,5 +480,28 @@ static AstNode *findMain(AstNode *node)
         node = node->next;
     }
     return NULL;
+}
+
+static void defvarLocalVariables(AstNode *node)
+{
+    while (node != NULL)
+    {
+        switch (node->class)
+        {
+            case AST_DECLARATION:
+                printf("DEFVAR LF@%s$%d\n", node->data.declaration.name, node->data.declaration.scope);
+                break;
+            case AST_IF:
+                findLocalVariables(node->data.ifStat.thenBody);
+                findLocalVariables(node->data.ifStat.elseBody);
+                break;
+            case AST_WHILE:
+                findLocalVariables(node->data.whileStat.body);
+                break;
+            default:
+                break;
+        }
+        node = node->next;
+    }
 }
 /*** End of file codegen.c ***/
