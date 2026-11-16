@@ -18,51 +18,59 @@
 
 #include "codegen.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
 //generate functions protypes
-static void generateWhole(AstNode *node);
-static void generateFunc(AstNode *node);
-static void generateGroup(AstNode *node);
-static void generateParam(AstNode *node);
-static void generateAssign(AstNode *node);
-static void generateDeclaration(AstNode *node);
-static void generateIf(AstNode *node);
-static void generateWhile(AstNode *node);
-static void generateReturn(AstNode *node);
-static void generateCall(AstNode *node);
-static void generateBinary(AstNode *node);
-static void generateUnary(AstNode *node);
-static void generateLiteral(AstNode *node);
-static void generateId(AstNode *node);
-static void generateExpression(AstNode *node);
+static void generateWhole(AstNode *node, CurrentFunc *cFunc);
+static void generateFunc(AstNode *node, CurrentFunc *cFunc);
+static void generateGroup(AstNode *node, CurrentFunc *cFunc);
+static void generateParam(AstNode *node, CurrentFunc *cFunc);
+static void generateBody(AstNode *node, CurrentFunc *cFunc);
+static void generateAssign(AstNode *node, CurrentFunc *cFunc);
+static void generateDeclaration(AstNode *node, CurrentFunc *cFunc);
+static void generateIf(AstNode *node, CurrentFunc *cFunc);
+static void generateWhile(AstNode *node, CurrentFunc *cFunc);
+static void generateReturn(AstNode *node, CurrentFunc *cFunc);
+static void generateCall(AstNode *node, CurrentFunc *cFunc);
+static void generateBinary(AstNode *node, CurrentFunc *cFunc);
+static void generateUnary(AstNode *node, CurrentFunc *cFunc);
+static void generateLiteral(AstNode *node, CurrentFunc *cFunc);
+static void generateId(AstNode *node, CurrentFunc *cFunc);
+static void generateExpression(AstNode *node, CurrentFunc *cFunc);
+static void generateBlock(AstNode *node, CurrentFunc *cFunc);
 
-//temporary
-char *funcName;
-int ifCount, whileCount, evalCount;
+static void generateAnd(CurrentFunc *cFunc);
+static void generateOr(CurrentFunc *cFunc);
 
 void generateProgram(AstNode *node)
 {
+    CurrentFunc cFunc;
     printf(".IFJcode26\n");
     //call main
     printf("DEFVAR GF@%%tmp\n");
-    generateWhole(node);
+    generateWhole(node, &cFunc);
     //vestavene funkce
 }
 
-static void generateWhole(AstNode *node)
+static void generateWhole(AstNode *node, CurrentFunc *cFunc)
 {
     AstNode *func = node->data.whole.func;
     while (func != NULL)
     {
-        generateFunc(func);
+        generateFunc(func, cFunc);
         func = func->next; //the whole program is a linked list of functions
     }  
 }
 
-static void generateFunc(AstNode *node)
+static void generateFunc(AstNode *node, CurrentFunc *cFunc)
 {
+    cFunc->funcName = node->data.func.name;
+    cFunc->evalCount = 0;
+    cFunc->ifCount = 0;
+    cFunc->whileCount = 0;
+
     printf("LABEL %s\n", node->data.func.name);
     printf("CREATEFRAME\n");
     printf("PUSHFRAME\n");
@@ -72,7 +80,7 @@ static void generateFunc(AstNode *node)
     AstNode *body = node->data.func.body;
     while (body != NULL)
     {
-        generateBody(body);
+        generateBody(body, cFunc);
         body = body->next; //body is a linked list of statements
     }
     printf("LABEL %s$end\n", node->data.func.name);
@@ -86,14 +94,12 @@ static void generateFunc(AstNode *node)
     printf("RETURN\n");
 }
 
-//TODO: funcName, ifCount, whileCount
-
-static void generateBody(AstNode *node)
+static void generateBody(AstNode *node, CurrentFunc *cFunc)
 {
     switch (node->class)
     {
         case AST_ASSIGN:
-            generateAssign(node);
+            generateAssign(node, cFunc);
             //body ending with assignment returns ()
             if (node->next == NULL) //last statement in function body
             {
@@ -101,7 +107,7 @@ static void generateBody(AstNode *node)
             }
             break;
         case AST_DECLARATION:
-            generateDeclaration(node);
+            generateDeclaration(node, cFunc);
             //body ending with declaration returns ()
             if (node->next == NULL) //last statement in function body
             {
@@ -109,7 +115,7 @@ static void generateBody(AstNode *node)
             }
             break;
         case AST_IF:
-            generateIf(node);
+            generateIf(node, cFunc);
             //body ending with a cycle returns ()
             if (node->next == NULL) //last statement in function body
             {
@@ -117,7 +123,7 @@ static void generateBody(AstNode *node)
             }
             break;
         case AST_WHILE:
-            generateWhile(node);
+            generateWhile(node, cFunc);
             //body ending with a cycle returns ()
             if (node->next == NULL) //last statement in function body
             {
@@ -125,14 +131,14 @@ static void generateBody(AstNode *node)
             }
             break;
         case AST_RETURN:
-            generateReturn(node);
+            generateReturn(node, cFunc);
             break;
         case AST_CALL:
         case AST_BINARY:
         case AST_UNARY:
         case AST_ID:
         case AST_LITERAL:
-            generateExpression(node);
+            generateExpression(node, cFunc);
             if (node->next == NULL) //last statement in function body
             {
                 //keep the return value on stack
@@ -144,70 +150,72 @@ static void generateBody(AstNode *node)
     }
 }
 
-static void generateAssign(AstNode *node)
+static void generateAssign(AstNode *node, CurrentFunc *cFunc)
 {
 
 }
 
-static void generateDeclaration(AstNode *node)
+static void generateDeclaration(AstNode *node, CurrentFunc *cFunc)
 {
     printf("DEFVAR LF@%s$%d\n", node->data.declaration.name, node->data.declaration.scope);
 }
 
-static void generateIf(AstNode *node)
+static void generateIf(AstNode *node, CurrentFunc *cFunc)
 {
-    int currentIf = ifCount;
-    ifCount++;
-    printf("LABEL %s$if$%d$start\n", funcName, currentIf);
+    int currentIf = cFunc->ifCount;
+    cFunc->ifCount++;
+
+    printf("LABEL %s$if$%d$start\n", cFunc->funcName, currentIf);
     //condition evaluation, leaves result on stack
-    generateExpression(node->data.ifStat.condition);
+    generateExpression(node->data.ifStat.condition, cFunc);
     //pops result into tmp
     printf("POPS GF@%%tmp\n");
-    printf("JUMPIFEQ %s$if$%d$else GF@%%tmp bool@false\n", funcName, currentIf);
+    printf("JUMPIFEQ %s$if$%d$else GF@%%tmp bool@false\n", cFunc->funcName, currentIf);
 
     AstNode *block = node->data.ifStat.thenBody;
     while (block != NULL)
     {
-        generateBlock(block);
+        generateBlock(block, cFunc);
         block = block->next;
     }
 
-    printf("JUMP %s$if$%d$end\n", funcName, currentIf);
-    printf("LABEL %s$if$%d$else\n", funcName, currentIf); //if there is no else branch, it will fall through to end
+    printf("JUMP %s$if$%d$end\n", cFunc->funcName, currentIf);
+    printf("LABEL %s$if$%d$else\n", cFunc->funcName, currentIf); //if there is no else branch, it will fall through to end
 
     block = node->data.ifStat.elseBody;
     while (block != NULL)
     {
-        generateBlock(block);
+        generateBlock(block, cFunc);
         block = block->next;
     }
     
-    printf("LABEL %s$if$%d$end\n", funcName, currentIf);
+    printf("LABEL %s$if$%d$end\n", cFunc->funcName, currentIf);
 }
 
-static void generateWhile(AstNode *node)
+static void generateWhile(AstNode *node, CurrentFunc *cFunc)
 {
-    int currentWhile = whileCount;
-    whileCount++;
-    printf("LABEL %s$while$%d$start\n", funcName, currentWhile);
+    int currentWhile = cFunc->whileCount;
+    cFunc->whileCount++;
+
+    printf("LABEL %s$while$%d$start\n", cFunc->funcName, currentWhile);
     //condition evaluation, leaves result on stack
-    generateExpression(node->data.whileStat.condition);
+    generateExpression(node->data.whileStat.condition, cFunc);
     //pops result into tmp
     printf("POPS GF@%%tmp\n");
-    printf("JUMPIFEQ %s$while$%d$end GF@%%tmp bool@false\n", funcName, currentWhile);
+    printf("JUMPIFEQ %s$while$%d$end GF@%%tmp bool@false\n", cFunc->funcName, currentWhile);
 
     AstNode *block = node->data.whileStat.body;
     while (block != NULL)
     {
-        generateBlock(block);
+        generateBlock(block, cFunc);
         block = block->next;
     }
 
-    printf("JUMP %s$while$%d$start\n", funcName, currentWhile);
-    printf("LABEL %s$while$%d$end\n", funcName, currentWhile);
+    printf("JUMP %s$while$%d$start\n", cFunc->funcName, currentWhile);
+    printf("LABEL %s$while$%d$end\n", cFunc->funcName, currentWhile);
 }
 
-static void generateReturn(AstNode *node)
+static void generateReturn(AstNode *node, CurrentFunc *cFunc)
 {
     if (node->data.returnStat.expression == NULL) //standalone return returns ()
     {
@@ -215,17 +223,17 @@ static void generateReturn(AstNode *node)
     }
     else
     {
-        generateExpression(node->data.returnStat.expression); //leaves result on stack
+        generateExpression(node->data.returnStat.expression, cFunc); //leaves result on stack
     }
-    printf("JUMP %s$end\n", funcName); //the rest of the function is dead code
+    printf("JUMP %s$end\n", cFunc->funcName); //the rest of the function is dead code
 }
 
-static void generateCall(AstNode *node)
+static void generateCall(AstNode *node, CurrentFunc *cFunc)
 {
 
 }
 
-static void generateBinary(AstNode *node)
+static void generateBinary(AstNode *node, CurrentFunc *cFunc)
 {
     //implicit conversion Int->Double
     bool isDouble = false;
@@ -234,13 +242,13 @@ static void generateBinary(AstNode *node)
         isDouble = true;
     }
 
-    generateExpression(node->data.binary.left);
+    generateExpression(node->data.binary.left, cFunc);
     if (node->data.binary.left->type == TYPE_INT && isDouble)
     {
         printf("INT2FLOATS\n");
     }
 
-    generateExpression(node->data.binary.right);
+    generateExpression(node->data.binary.right, cFunc);
     if (node->data.binary.right->type == TYPE_INT && isDouble)
     {
         printf("INT2FLOATS\n");
@@ -289,17 +297,17 @@ static void generateBinary(AstNode *node)
             printf("NOTS\n");
             break;
         case TOK_AND:
-            generateAnd();
+            generateAnd(cFunc);
             break;
         case TOK_OR:
-            generateOr();
+            generateOr(cFunc);
             break;
     }
 }
 
-static void generateUnary(AstNode *node)
+static void generateUnary(AstNode *node, CurrentFunc *cFunc)
 {
-    generateExpression(node->data.unary.operand);
+    generateExpression(node->data.unary.operand, cFunc);
     switch (node->data.unary.op)
     {
         case TOK_NOT:
@@ -316,65 +324,7 @@ static void generateUnary(AstNode *node)
     }
 }
 
-static void generateId(AstNode *node)
-{
-    printf("PUSHS LF@%s$%d\n", node->data.id.name, node->data.id.scope);
-}
-
-static void generateExpression(AstNode *node) //leaves the result on stack
-{
-    switch (node->class)
-    {
-        case AST_CALL:
-            generateCall(node);
-            break;
-        case AST_BINARY:
-            generateBinary(node);
-            break;
-        case AST_UNARY:
-            generateUnary(node);
-            break;
-        case AST_ID:
-            generateId(node);
-            break;
-        case AST_LITERAL:
-            generateLiteral(node);
-            break;
-    }
-}
-
-//if, while blocks, return values are thrown out
-static void generateBlock(AstNode *node)
-{
-    switch (node->class)
-    {
-        case AST_ASSIGN:
-            generateAssign(node);
-            break;
-        case AST_DECLARATION:
-            generateDeclaration(node);
-            break;
-        case AST_IF:
-            generateIf(node);
-            break;
-        case AST_WHILE:
-            generateWhile(node);
-            break;
-        case AST_RETURN:
-            generateReturn(node);
-            break;
-        case AST_CALL:
-        case AST_BINARY:
-        case AST_UNARY:
-        case AST_ID:
-        case AST_LITERAL:
-            generateExpression(node);
-            printf("POPS GF@%%tmp\n"); //get rid of the return value
-            break;
-    }
-}
-
-static void generateLiteral(AstNode *node)
+static void generateLiteral(AstNode *node, CurrentFunc *cFunc)
 {
     switch (node->type)
     {
@@ -393,51 +343,109 @@ static void generateLiteral(AstNode *node)
     }
 }
 
-//x && y - if x is false, y is not evaluated and result is false
-static void generateAnd()
+static void generateId(AstNode *node, CurrentFunc *cFunc)
 {
-    printf("DEFVAR LF@%%eval1$%d\n", evalCount);
-    printf("DEFVAR LF@%%eval2$%d\n", evalCount);
-    printf("POPS LF@%%eval2$%d\n", evalCount); //right
-    printf("POPS LF@%%eval1$%d\n", evalCount); //left
+    printf("PUSHS LF@%s$%d\n", node->data.id.name, node->data.id.scope);
+}
+
+static void generateExpression(AstNode *node, CurrentFunc *cFunc) //leaves the result on stack
+{
+    switch (node->class)
+    {
+        case AST_CALL:
+            generateCall(node, cFunc);
+            break;
+        case AST_BINARY:
+            generateBinary(node, cFunc);
+            break;
+        case AST_UNARY:
+            generateUnary(node, cFunc);
+            break;
+        case AST_ID:
+            generateId(node, cFunc);
+            break;
+        case AST_LITERAL:
+            generateLiteral(node, cFunc);
+            break;
+    }
+}
+
+//if, while blocks, return values are thrown out
+static void generateBlock(AstNode *node, CurrentFunc *cFunc)
+{
+    switch (node->class)
+    {
+        case AST_ASSIGN:
+            generateAssign(node, cFunc);
+            break;
+        case AST_DECLARATION:
+            generateDeclaration(node, cFunc);
+            break;
+        case AST_IF:
+            generateIf(node, cFunc);
+            break;
+        case AST_WHILE:
+            generateWhile(node, cFunc);
+            break;
+        case AST_RETURN:
+            generateReturn(node, cFunc);
+            break;
+        case AST_CALL:
+        case AST_BINARY:
+        case AST_UNARY:
+        case AST_ID:
+        case AST_LITERAL:
+            generateExpression(node, cFunc);
+            printf("POPS GF@%%tmp\n"); //get rid of the return value
+            break;
+    }
+}
+
+//x && y - if x is false, y is not evaluated and result is false
+static void generateAnd(CurrentFunc *cFunc)
+{
+    printf("DEFVAR LF@%%eval1$%d\n", cFunc->evalCount);
+    printf("DEFVAR LF@%%eval2$%d\n", cFunc->evalCount);
+    printf("POPS LF@%%eval2$%d\n", cFunc->evalCount); //right
+    printf("POPS LF@%%eval1$%d\n", cFunc->evalCount); //left
 
     //jump if x is false
-    printf("JUMPIFEQ %s$%d$$eval$decided LF@%%eval1$%d bool@false\n", funcName, evalCount, evalCount);
+    printf("JUMPIFEQ %s$%d$$eval$decided LF@%%eval1$%d bool@false\n", cFunc->funcName, cFunc->evalCount, cFunc->evalCount);
 
     //x is not false -> undecided
-    printf("PUSHS LF@%%eval1$%d\n", evalCount);
-    printf("PUSHS LF@%%eval2$%d\n", evalCount);
+    printf("PUSHS LF@%%eval1$%d\n", cFunc->evalCount);
+    printf("PUSHS LF@%%eval2$%d\n", cFunc->evalCount);
     printf("ANDS\n");
-    printf("JUMP %s$%d$$eval$end\n", funcName, evalCount);
+    printf("JUMP %s$%d$$eval$end\n", cFunc->funcName, cFunc->evalCount);
 
     //x is false -> false
-    printf("LABEL %s$%d$$eval$decided\n", funcName, evalCount);
+    printf("LABEL %s$%d$$eval$decided\n", cFunc->funcName, cFunc->evalCount);
     printf("PUSHS bool@false\n");
 
-    printf("LABEL %s$%d$$eval$end\n", funcName, evalCount);
+    printf("LABEL %s$%d$$eval$end\n", cFunc->funcName, cFunc->evalCount);
 }
 
 //x || y - if x is true, y is not evaluated and result is true
-static void generateOr()
+static void generateOr(CurrentFunc *cFunc)
 {
-    printf("DEFVAR LF@%%eval1$%d\n", evalCount);
-    printf("DEFVAR LF@%%eval2$%d\n", evalCount);
-    printf("POPS LF@%%eval2$%d\n", evalCount); //right
-    printf("POPS LF@%%eval1$%d\n", evalCount); //left
+    printf("DEFVAR LF@%%eval1$%d\n", cFunc->evalCount);
+    printf("DEFVAR LF@%%eval2$%d\n", cFunc->evalCount);
+    printf("POPS LF@%%eval2$%d\n", cFunc->evalCount); //right
+    printf("POPS LF@%%eval1$%d\n", cFunc->evalCount); //left
 
     //jump if x is true
-    printf("JUMPIFEQ %s$%d$$eval$decided LF@%%eval1$%d bool@true\n", funcName, evalCount, evalCount);
+    printf("JUMPIFEQ %s$%d$$eval$decided LF@%%eval1$%d bool@true\n", cFunc->funcName, cFunc->evalCount, cFunc->evalCount);
 
     //x is not true -> undecided
-    printf("PUSHS LF@%%eval1$%d\n", evalCount);
-    printf("PUSHS LF@%%eval2$%d\n", evalCount);
+    printf("PUSHS LF@%%eval1$%d\n", cFunc->evalCount);
+    printf("PUSHS LF@%%eval2$%d\n", cFunc->evalCount);
     printf("ORS\n");
-    printf("JUMP %s$%d$$eval$end\n", funcName, evalCount);
+    printf("JUMP %s$%d$$eval$end\n", cFunc->funcName, cFunc->evalCount);
 
     //x is true -> true
-    printf("LABEL %s$%d$$eval$decided\n", funcName, evalCount);
+    printf("LABEL %s$%d$$eval$decided\n", cFunc->funcName, cFunc->evalCount);
     printf("PUSHS bool@true\n");
 
-    printf("LABEL %s$%d$$eval$end\n", funcName, evalCount);
+    printf("LABEL %s$%d$$eval$end\n", cFunc->funcName, cFunc->evalCount);
 }
 /*** End of file codegen.c ***/

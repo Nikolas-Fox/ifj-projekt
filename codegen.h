@@ -3,7 +3,7 @@
 * Package:		codegen
 * File:			codegen.h
 * Date:			15.11.2026
-* Last change:	15.11.2026
+* Last change:	16.11.2026
 * Authors: 		Eliška Holá xholael00
 *
 * Description:  Header file of code generation
@@ -18,12 +18,6 @@
 
 #ifndef CODEGEN_H
 #define CODEGEN_H
-
-/**
- * @brief Generates program
- * @param node Whole program - root of the AST
- */
-void generateProgram(AstNode *node);
 
 //temporary scanner.h
 typedef enum {
@@ -184,6 +178,17 @@ struct AstNode
         }whole;        
     }data;
 };
+
+typedef struct {
+    char *funcName;
+    int ifCount, whileCount, evalCount;
+} CurrentFunc;
+
+/**
+ * @brief Generates program
+ * @param node Whole program - root of the AST
+ */
+void generateProgram(AstNode *node);
 
 #endif
 /*** End of file codegen.h ***/
