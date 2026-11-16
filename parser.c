@@ -3,7 +3,7 @@
 * Package:		parser
 * File:			parser.c
 * Date:			1.11.2026
-* Last change:	15.11.2026
+* Last change:	16.11.2026
 * Authors: 		Eliška Holá xholael00
 *
 * Description: Implementation of parser - recursive descent
@@ -227,10 +227,10 @@ static AstNode *parseFunction(ParsedToken *p)
 
 static AstNode *parseDefinition(ParsedToken *p)
 {
-    AstNode *function;
     switch (p->currentToken.type)
     {
         case TOK_AT_MAIN: //2: ⟨definition⟩ → @main⟨opt_NL⟩def id⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨definition⟩
+        {
             checkToken(p, TOK_AT_MAIN);
             parseOptNL(p);
             checkToken(p, TOK_KW_DEF);
@@ -239,14 +239,18 @@ static AstNode *parseDefinition(ParsedToken *p)
             function->data.func.isMain = true;
             insertFunc(function, parseDefinition(p));
             return function;
+        }
 
         case TOK_KW_DEF: //3: ⟨definition⟩ → def id⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨definition⟩
+        {
             checkToken(p, TOK_KW_DEF);
             AstNode *function = parseFunction(p);
             insertFunc(function, parseDefinition(p));
             return function;
+        }
 
         case TOK_KW_EXTENSION: //4: ⟨definition⟩ → extension(id : ⟨type⟩)⟨def_block⟩⟨definition⟩
+        {   
             checkToken(p, TOK_KW_EXTENSION);
             checkToken(p, TOK_LPAR);
             checkToken(p, TOK_ID);
@@ -256,6 +260,8 @@ static AstNode *parseDefinition(ParsedToken *p)
             parseDefBlock(p);
             parseDefinition(p);
             break;
+        }
+
         case TOK_EOF: //5: ⟨definition⟩ → epsilon
             return NULL;
         default:
@@ -297,6 +303,7 @@ static void parseExtensionDef(ParsedToken *p)
     switch (p->currentToken.type)
     {
         case TOK_KW_DEF: //9: ⟨extension_def⟩ → def id ⟨lop⟩⟨ret_type⟩ = ⟨def_body⟩⟨extension_def⟩
+        {
            checkToken(p, TOK_KW_DEF);
             checkToken(p, TOK_ID);
             parseLop(p);
@@ -305,6 +312,8 @@ static void parseExtensionDef(ParsedToken *p)
             parseDefBody(p);
             parseExtensionDef(p);
             break;
+        }
+
         case TOK_DEDENT: //10: ⟨extension_def⟩ → epsilon
             return;
         default:
@@ -379,19 +388,23 @@ static AstNode *parseStat(ParsedToken *p)
         switch (p->currentToken.type)
         {
             case TOK_KW_IF: //17: ⟨stat⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
+            {
                 checkToken(p, TOK_KW_IF);
                 AstNode *condition = parseExpression(p);
                 checkToken(p, TOK_KW_THEN);
                 AstNode *thenBody = parseBlock(p);
                 AstNode *elseBody = parseElseChoice(p);
                 return createNodeIf(condition, thenBody, elseBody);
+            }
 
             case TOK_KW_WHILE: //18: ⟨stat⟩ → while ⟨expression⟩ do ⟨block⟩
+            {
                 checkToken(p, TOK_KW_WHILE);
                 AstNode *condition = parseExpression(p);
                 checkToken(p, TOK_KW_DO);
                 AstNode *body = parseBlock(p);
                 return createNodeWhile(condition, body);
+            }
 
             default:
                 printError("Unexpected token");
@@ -513,16 +526,20 @@ static AstNode *parseElse(ParsedToken *p)
     switch (p->currentToken.type)
     {
         case TOK_NL: //29: ⟨else⟩ → ⟨block⟩
+        {
             AstNode *block = parseBlock(p); // block is a pointer to the first statement of the list of statements
             return block;
+        }
 
         case TOK_KW_IF: //30: ⟨else⟩ → if ⟨expression⟩ then ⟨block⟩⟨else_choice⟩
+        {
             checkToken(p, TOK_KW_IF);
             AstNode *condition = parseExpression(p);
             checkToken(p, TOK_KW_THEN);
             AstNode *thenBody = parseBlock(p);
             AstNode *elseBody = parseElseChoice(p);
             return createNodeIf(condition, thenBody, elseBody);
+        }
 
         default:
             printError("Unexpected token");
@@ -536,11 +553,11 @@ static DataType parseRetType(ParsedToken *p)
     {
         case TOK_COLON: //31: ⟨ret_type⟩ →: ⟨type⟩
             checkToken(p, TOK_COLON);
-
             return parseType(p);
 
         case TOK_ASSIGN: //32: ⟨ret_type⟩ → epsilon
             return TYPE_NONE;
+            
         default:
             printError("Unexpected token");
             return TYPE_NONE;
@@ -596,6 +613,7 @@ static AstNode *parseParamList(ParsedToken *p, size_t *count)
     switch (p->currentToken.type)
     {
         case TOK_ID: //40: ⟨param_list⟩ → id : ⟨type⟩⟨param_end⟩
+        {
             AstNode *param = createNodeParam(p->currentToken.str, TYPE_NONE);
             (*count)++;
             checkToken(p, TOK_ID);
@@ -603,6 +621,7 @@ static AstNode *parseParamList(ParsedToken *p, size_t *count)
             param->type = parseType(p);
             param->next = parseParamEnd(p, count);
             return param;
+        }
         
         case TOK_RPAR: //41: ⟨param_list⟩ → epsilon
             return NULL;
@@ -632,6 +651,7 @@ static AstNode *parseLop(ParsedToken *p, size_t *groupCount)
     switch(p->currentToken.type)
     {
         case TOK_LPAR: //44: ⟨lop⟩ → (⟨param_list⟩)⟨lop⟩
+        {
             checkToken(p, TOK_LPAR);
             size_t count = 0;
             AstNode *params = parseParamList(p, &count);
@@ -642,7 +662,7 @@ static AstNode *parseLop(ParsedToken *p, size_t *groupCount)
                 
             group->next = parseLop(p, groupCount);
             return group;
-
+        }
         case TOK_COLON: //45: ⟨lop⟩ → epsilon
         case TOK_ASSIGN:
             return NULL;
