@@ -84,7 +84,7 @@ static void generateFunc(AstNode *node, CurrentFunc *cFunc)
         body = body->next; //body is a linked list of statements
     }
     printf("LABEL %s$end\n", node->data.func.name);
-    if (node->data.func.retType == TYPE_UNIT) //return type Unit, return value is evaluated and thrown out
+    if (node->type == TYPE_UNIT) //return type Unit, return value is evaluated and thrown out
     {
         printf("POPS GF@%%tmp\n");
         printf("PUSHS nil@nil\n");
