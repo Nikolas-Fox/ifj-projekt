@@ -13,7 +13,7 @@
  * @file symtable.h
  *
  * @brief Header file of the symbol table
- * @author xpovala00
+ * @author Alexandra Povalová xpovala00
  */
 
 #ifndef SYMTABLE_H
@@ -26,6 +26,7 @@
 #define INITIAL_CAPACITY 16
 
 typedef enum {
+    TYPE_NONE,
     TYPE_INT,
     TYPE_STRING,
     TYPE_BOOL,
@@ -43,12 +44,14 @@ typedef enum {
 typedef struct FunctionParam {
     char *paramName;
     DataType dType;
+    size_t listIndex; // which parameter list it belongs to (0-based)
     struct FunctionParam *next;
 } FunctionParam;
 
 typedef struct {
     FunctionParam *params;
-    size_t paramCount;
+    size_t paramCount; //total number of params
+    size_t listCount; //0 = no list, number of lists
 } FunctionData;
 
 typedef struct {
@@ -152,6 +155,10 @@ SymbolData *symtableInsertFunction(Symtable *sTable, char *name,
  */
 bool symtableAddParam(Symtable *sTable, SymbolData *funcSymbol, char *paramName,
                       DataType paramType);
+
+bool symtableStartParamList(SymbolData *funcSymbol);
+size_t symtableParamListSize(const SymbolData *funcSymbol, size_t list);
+const FunctionParam *symtableGetParam(const SymbolData *funcSymbol, size_t list, size_t index);
 
 /**
  * @brief Search through all scopes

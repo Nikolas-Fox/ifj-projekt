@@ -13,7 +13,7 @@
  * @file symtable.c
  *
  * @brief Implementation of the symbol table
- * @author xpovala00
+ * @author Alexandra Povalová ++xpovala00
  */
 
 #include "symtable.h"
@@ -175,6 +175,50 @@ static char *copyString(const char *src) {
     return copy;
 }
 
+//before first added parameter of the function, and then before every group/list
+bool symtableStartParamList(SymbolData *funcSymbol) {
+    if (funcSymbol == NULL || funcSymbol->sType != FUNCTION) {
+        return false; // if it is not the function return false
+    }
+    funcSymbol->value.funcData.listCount++; // increase count of lists +1
+    return true;
+}
+
+//call this function to find out  the count of parameters in list with given index 
+size_t symtableParamListSize(const SymbolData *funcSymbol, size_t list) {
+    if (funcSymbol == NULL || funcSymbol->sType != FUNCTION) {
+        return 0; // if it is not the function
+    }
+    size_t size = 0;
+    // go through whole list of parameters of function from start to end
+    for (const FunctionParam *p = funcSymbol->value.funcData.params; p != NULL;
+         p = p->next) {
+        if (p->listIndex == list) { // if the parameter has the index of the list i am looking for
+            size++;                  // count him
+        }
+    }
+    return size;
+}
+
+
+const FunctionParam *symtableGetParam(const SymbolData *funcSymbol,
+                                      size_t list, size_t index) {
+    if (funcSymbol == NULL || funcSymbol->sType != FUNCTION) {
+        return NULL;
+    }
+    size_t seen = 0; // Counter -> how many parameters has been seen from this list
+    for (const FunctionParam *p = funcSymbol->value.funcData.params; p != NULL;
+         p = p->next) {
+        if (p->listIndex == list) {     // is it the right parenthesis?
+            if (seen == index) {        // is it the right parameter? 
+                return p;               // if yes return him
+            }
+            seen++;                     // no, so we go on
+        }
+    }
+    return NULL; //we did not find it at all
+}
+
 static SymbolData *insertSymbol(Symtable *sTable, char *name, SymbolType sType,
                                 DataType dType, bool isDefined) {
     if (sTable == NULL || name == NULL) {
@@ -210,6 +254,7 @@ static SymbolData *insertSymbol(Symtable *sTable, char *name, SymbolType sType,
     newData->isDefined = isDefined;
     newData->value.funcData.paramCount = 0;
     newData->value.funcData.params = NULL;
+    newData->value.funcData.listCount = 0;
 
     // The key is the copy owned by the symbol, not the token's string
     if (htInsert(current, newData->symbolName, newData) == NULL) {
@@ -245,6 +290,11 @@ bool symtableAddParam(Symtable *sTable, SymbolData *funcSymbol, char *paramName,
         return false;
     }
 
+    //for expansion - open at least one list of parameters
+    if (funcSymbol->value.funcData.listCount == 0) {
+        return false;
+    }
+
     // Go through the list to search if there is not the same param already
 
     FunctionParam **top = &funcSymbol->value.funcData.params;
@@ -272,7 +322,9 @@ bool symtableAddParam(Symtable *sTable, SymbolData *funcSymbol, char *paramName,
         exit(99);
     }
 
+
     param->dType = paramType;
+    param->listIndex = funcSymbol->value.funcData.listCount - 1;
     param->next = NULL;
 
     *top = param;
