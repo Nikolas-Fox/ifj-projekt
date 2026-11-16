@@ -53,65 +53,39 @@ typedef enum {
     
 }States;
 
-static int line = 1;
-
-static int atLineStart = 1;     // 1 = starts a new logical line
-static int parenDepth = 0;   
-static int lineIndent = 0;    // number of spaces at the beginning of the current logical line
-static int lineTab = 0;       // 1 = indentation contains a tab
-
-static int dotAfterNumber = 0;
-
-#define MAX_INTERP 32
-static int interpDepth = 0;              // how many interpolated strings are open
-static int interpKind[MAX_INTERP];       // 0 = s"...", 1 = s"""..."""
-static int interpInExpr[MAX_INTERP];    // 1 = inside ${ ... }
-static Token interpQueued;               // token waiting for the next call
-static int hasInterpQueued = 0;
-static int resumeId = 0;              // 1 = continue reading the identifier after $
-
-static int comma = 0;  // 1 = the last token was a comma
-static int commaNL = 0;  // 1 = a newline has appeared since that comma
-
-// Buffer for the lexeme text
 // AI (Claude): vygeneruj mi funkce pro dynamickou práci s buffrem
-// functions slightly after generated
-static char *buf = NULL;
-static size_t bufLen = 0;
-static size_t bufCap = 0;
-
-// AI (Claude): same prompt
-static void bufReset(void) {
-    if (buf == NULL) {
-        bufCap = 64;
-        buf = malloc(bufCap);
-        if (buf == NULL) {
+// functions slightly edited after generated
+static void bufReset(Scanner *sc) {
+    if (sc -> buf == NULL) {
+        sc -> bufCap = 64;
+        sc -> buf = malloc(sc -> bufCap);
+        if (sc -> buf == NULL) {
             exit(99);    
         }
     }
-    bufLen = 0;
-    buf[0] = '\0';
+    sc -> bufLen = 0;
+    sc -> buf[0] = '\0';
 }
 
 //AI (Claude): same prompt
-static void bufAdd(int c) {
-    if (bufLen + 2 > bufCap) {
-        size_t newCap = bufCap * 2;
-        char *newBuf = realloc(buf, newCap);
+static void bufAdd(Scanner *sc, int c) {
+    if (sc -> bufLen + 2 > sc -> bufCap) {
+        size_t newCap = sc -> bufCap * 2;
+        char *newBuf = realloc(sc -> buf, newCap);
         if (newBuf == NULL) exit(99);
-        buf = newBuf;
-        bufCap = newCap;
+        sc -> buf = newBuf;
+        sc -> bufCap = newCap;
     }
-    buf[bufLen++] = (char)c;
-    buf[bufLen] = '\0';
+    sc -> buf[sc -> bufLen++] = (char)c;
+    sc ->buf[sc -> bufLen] = '\0';
 }
  
 //copy of the buffer for the token (the token owns its text)
 //AI (Claude): same prompt
-static char *bufCopy(void) {
-    char *copy = malloc(bufLen + 1);
+static char *bufCopy(Scanner *sc) {
+    char *copy = malloc(sc -> bufLen + 1);
     if (!copy) exit(99);
-    memcpy(copy, buf, bufLen + 1);
+    memcpy(copy, sc -> buf, sc -> bufLen + 1);
     return copy;
 }
 
@@ -142,26 +116,26 @@ static TokenType findKeyword(const char *word) {
     return TOK_ID;
 }
 
-static Token makeToken(TokenType type, char *str) {
+static Token makeToken(Scanner *sc, TokenType type, char *str) {
     Token tok = {0};
     tok.type = type;
     tok.str = str;
-    tok.line = line;
+    tok.line = sc -> line;
     return tok;
 }
 
-static void lexError(const char *message) {
-       fprintf(stderr, "Lexical error on line %d: %s\n", line, message);
+static void lexError(Scanner *sc, const char *message) {
+       fprintf(stderr, "Lexical error on line %d: %s\n", sc -> line, message);
        exit(1);
    }
 
 // checks the character after a numeric literal, pushes back the excess character, and creates the token
-static Token endNumber(TokenType type, int character) {
+static Token endNumber(Scanner *sc, TokenType type, int character) {
     if (isalnum(character) || character == '_') {
-        lexError("invalid character after numeric literal");
+        lexError(sc, "invalid character after numeric literal");
     }
     ungetc(character, stdin);
-    return makeToken(type, bufCopy());
+    return makeToken(sc, type, bufCopy(sc));
 }
 
 // opens an interpolated string (kind 0 = one line, 1 = multi-line)
@@ -169,69 +143,69 @@ static Token endNumber(TokenType type, int character) {
 // prompts:
 // vysvětli mi jak funguje rozšíření INTERPOLATEDS
 // navrni mi kostru, jak by to zhruba mělo vypadat
-static void pushInterp(int kind) {
-    if (interpDepth + 1 >= MAX_INTERP) {
+static void pushInterp(Scanner *sc, int kind) {
+    if (sc -> interpDepth + 1 >= MAX_INTERP) {
         exit(99);
     }
-    interpKind[interpDepth] = kind;
-    interpInExpr[interpDepth] = 0;
-    interpDepth++;
+    sc -> interpKind[sc -> interpDepth] = kind;
+    sc -> interpInExpr[sc -> interpDepth] = 0;
+    sc -> interpDepth++;
 }
 
 // closes an interpolated string: returns the pending text (if any) and then TOK_INTERP_END
-static Token endInterpolation(void) {
-    interpDepth--;
-    Token end = makeToken(TOK_INTERP_END, NULL);
-    if (bufLen == 0) {
+static Token endInterpolation(Scanner *sc) {
+    sc -> interpDepth--;
+    Token end = makeToken(sc, TOK_INTERP_END, NULL);
+    if (sc -> bufLen == 0) {
         return end;
     }
-    interpQueued = end;
-    hasInterpQueued = 1;
-    return makeToken(TOK_STRING, bufCopy());
+    sc -> interpQueued = end;
+    sc -> hasInterpQueued = 1;
+    return makeToken(sc, TOK_STRING, bufCopy(sc));
 }
 
 // starts ${ ... }: returns the pending text (if any) and then TOK_INTERP_EXPR_START
-static Token startExpression(void) {
-    interpInExpr[interpDepth - 1] = 1;
-    parenDepth++;  // a line break inside ${ } is only whitespace
-    Token start = makeToken(TOK_INTERP_EXPR_START, NULL);
-    if (bufLen == 0) {
+static Token startExpression(Scanner *sc) {
+    sc -> interpInExpr[sc -> interpDepth - 1] = 1;
+    sc -> parenDepth++;  // a line break inside ${ } is only whitespace
+    Token start = makeToken(sc, TOK_INTERP_EXPR_START, NULL);
+    if (sc -> bufLen == 0) {
         return start;
     }
-    interpQueued = start;
-    hasInterpQueued = 1;
-    return makeToken(TOK_STRING, bufCopy());
+    sc -> interpQueued = start;
+    sc -> hasInterpQueued = 1;
+    return makeToken(sc, TOK_STRING, bufCopy(sc));
 }
 
 // reads the next token from the input stream using a finite state machine
-static Token readToken(void) {
+static Token readToken(Scanner *sc) {
     States state = ST_START;
     int commentDepth = 0;
     int commentNL = 0;
     int indentCount = 0;
 
     // handle any pre-queued interpolation tokens
-    if (hasInterpQueued == 1) {
-        hasInterpQueued = 0;
-        return interpQueued;
+    if (sc -> hasInterpQueued == 1) {
+        sc -> hasInterpQueued = 0;
+        return sc -> interpQueued;
     }
 
     // handle a pending dot token that follows a numeric literal
-    if (dotAfterNumber == 1) {
-        dotAfterNumber = 0;
-        return makeToken(TOK_DOT, NULL);
+    if (sc -> dotAfterNumber == 1) {
+        sc -> dotAfterNumber = 0;
+        return makeToken(sc, TOK_DOT, NULL);
     }
 
     // handle resumption states for identifiers, interpolation text, or line starts
-    if (resumeId == 1) {
-        resumeId = 0;
+    if (sc -> resumeId == 1) {
+        sc -> resumeId = 0;
         state = ST_INTERP_ID;
-    } else if (interpDepth > 0 && interpInExpr[interpDepth - 1] == 0) {
-        bufReset();
+    } else if (sc -> interpDepth > 0 && sc -> interpInExpr[sc -> interpDepth - 1] == 0) {
+        bufReset(sc);
         state = ST_INTERP_TEXT;
-    } else if (atLineStart == 1) {
-        atLineStart = 0;
-        lineTab = 0;
+    } else if (sc -> atLineStart == 1) {
+        sc -> atLineStart = 0;
+        sc -> lineTab = 0;
         state = ST_LINE_START;
     }
 
@@ -242,55 +216,55 @@ static Token readToken(void) {
             case ST_START:
 
                 if(character == EOF) {
-                    if (interpDepth > 0) {
-                        lexError("unterminated interpolated string");
+                    if (sc -> interpDepth > 0) {
+                        lexError(sc, "unterminated interpolated string");
                     }
-                    return makeToken(TOK_EOF, NULL);
+                    return makeToken(sc, TOK_EOF, NULL);
                 }  
 
                 if (character == ' ' || character == '\t' || character == '\r') break;
 
                 // handle NL, indentation checks, and line breaks inside parentheses
                 if (character == '\n') {
-                    if (interpDepth > 0 && interpKind[interpDepth - 1] == 0) {
-                        lexError("unterminated interpolated string");
+                    if (sc -> interpDepth > 0 && sc -> interpKind[sc -> interpDepth - 1] == 0) {
+                        lexError(sc, "unterminated interpolated string");
                     }
-                    if (parenDepth > 0) {
-                        if (comma == 1) {
-                            commaNL = 1;
+                    if (sc -> parenDepth > 0) {
+                        if (sc -> comma == 1) {
+                            sc -> commaNL = 1;
                         }
-                        line++;
+                        sc -> line++;
                         indentCount = 0;
                         state = ST_PAREN_LINE;
                         break;
                     }
-                    Token token = makeToken(TOK_NL, NULL);
-                    line++;
-                    atLineStart = 1;
+                    Token token = makeToken(sc, TOK_NL, NULL);
+                    sc ->line++;
+                    sc -> atLineStart = 1;
                     return token;
                 }
 
                 // check for invalid trailing commas before a closing parenthesis
-                if (character == ')' && comma == 1 && commaNL == 0) {
+                if (character == ')' && sc -> comma == 1 && sc -> commaNL == 0) {
                     fprintf(stderr, "trailing comma must be followed by a newline before ')'");
                     exit(2);
                 }
                 if (character != '/') {
-                    comma = 0;
-                    commaNL = 0;
+                    sc -> comma = 0;
+                    sc -> commaNL = 0;
 }
 
                 // identifier starting with a letter
                 if (isalpha(character)) {
-                    bufReset();
-                    bufAdd(character);
+                    bufReset(sc);
+                    bufAdd(sc, character);
                     state = ST_ID;
                     break;
                 }
                 // identifier starting with a underscore
                 if (character == '_') {
-                    bufReset();
-                    bufAdd(character);
+                    bufReset(sc);
+                    bufAdd(sc, character);
                     state = ST_UNDERSCORE;
                     break;
                 }
@@ -304,14 +278,14 @@ static Token readToken(void) {
                 if (character == '.') { state = ST_START_DOT; break; }
                 if (character == '&') { state = ST_AMP; break; }
                 if (character == '|') { state = ST_PIPE; break; }
-                if (character == '@') { bufReset(); state = ST_AT; break; }
+                if (character == '@') { bufReset(sc); state = ST_AT; break; }
                 if (character == '+') { state = ST_PLUS; break; }
                 if (character == '-') { state = ST_MINUS; break; }
 
                 // numeric literal
                 if (isdigit(character)) {
-                    bufReset();
-                    bufAdd(character);
+                    bufReset(sc);
+                    bufAdd(sc, character);
                     if (character == '0') {
                         state = ST_ZERO;
                     } else {
@@ -322,43 +296,43 @@ static Token readToken(void) {
 
                 // string literal
                 if (character == '"') {
-                    bufReset();
+                    bufReset(sc);
                     state = ST_STRING_START;
                     break;
                 }
 
                 // end of an interpolated expression block inside a string
-                if (character == '}' && interpDepth > 0 && interpInExpr[interpDepth - 1] == 1) {
-                    interpInExpr[interpDepth - 1] = 0;
-                    if (parenDepth > 0) { 
-                        parenDepth--;
+                if (character == '}' && sc -> interpDepth > 0 && sc -> interpInExpr[sc -> interpDepth - 1] == 1) {
+                    sc -> interpInExpr[sc -> interpDepth - 1] = 0;
+                    if (sc -> parenDepth > 0) { 
+                        sc -> parenDepth--;
                     }
-                    return makeToken(TOK_INTERP_EXPR_END, NULL);
+                    return makeToken(sc, TOK_INTERP_EXPR_END, NULL);
                 }
 
                 //one character tokens
                 switch (character) {
                     case '(':
-                        parenDepth++;
-                        return makeToken(TOK_LPAR, NULL);
+                        sc -> parenDepth++;
+                        return makeToken(sc, TOK_LPAR, NULL);
 
                     case ')': 
-                         if (parenDepth > 0) {
-                            parenDepth--;
+                         if (sc -> parenDepth > 0) {
+                            sc -> parenDepth--;
                         }
-                        return makeToken(TOK_RPAR, NULL);
+                        return makeToken(sc, TOK_RPAR, NULL);
 
                     case ',': {
-                        comma = 1;
-                        commaNL = 0;
-                        return makeToken(TOK_COMMA, NULL);
+                        sc -> comma = 1;
+                        sc -> commaNL = 0;
+                        return makeToken(sc, TOK_COMMA, NULL);
                     } 
-                    case ';': return makeToken(TOK_SEMICOL, NULL);
-                    case ':': return makeToken(TOK_COLON, NULL);
-                    case '*': return makeToken(TOK_MUL, NULL);
+                    case ';': return makeToken(sc, TOK_SEMICOL, NULL);
+                    case ':': return makeToken(sc, TOK_COLON, NULL);
+                    case '*': return makeToken(sc, TOK_MUL, NULL);
                 }
                 
-                lexError("lexical error");
+                lexError(sc, "lexical error");
 
                 break;
 
@@ -366,74 +340,74 @@ static Token readToken(void) {
             case ST_UNDERSCORE:
             // check if the standalone underscore is followed by valid identifier characters
                 if (isalnum(character) || character == '_') {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                     state = ST_ID;
                 } 
                 else {
-                    lexError("A standalone underscore is not an identifier");
+                    lexError(sc, "A standalone underscore is not an identifier");
                 }
                 break;
 
             case ST_ID:
                 // accumulate identifier characters or check for interpolated string prefix 's"'
                 if (isalnum(character) || character == '_') {
-                    bufAdd(character);
-                } else if (bufLen == 1 && buf[0] == 's' && character == '"') {
+                    bufAdd(sc, character);
+                } else if (sc -> bufLen == 1 && sc -> buf[0] == 's' && character == '"') {
                     state = ST_INTERP_OPEN; 
                 }else {
                     ungetc(character, stdin);  // Push back non-identifier character
 
-                    TokenType type = findKeyword(buf);
+                    TokenType type = findKeyword(sc -> buf);
                     if (type == TOK_ID) {
-                        return makeToken(TOK_ID, bufCopy());
+                        return makeToken(sc, TOK_ID, bufCopy(sc));
                     }
-                    return makeToken(type, NULL);
+                    return makeToken(sc, type, NULL);
                 }
                 break;
             
             case ST_LESS:
                 if (character == '=') {
-                    return makeToken(TOK_LESS_EQ, NULL);
+                    return makeToken(sc, TOK_LESS_EQ, NULL);
                 }
                 ungetc(character, stdin);
-                return makeToken(TOK_LESS, NULL);
+                return makeToken(sc, TOK_LESS, NULL);
 
             case ST_GREATER:
                 if (character == '=') {
-                    return makeToken(TOK_GREATER_EQ, NULL);
+                    return makeToken(sc, TOK_GREATER_EQ, NULL);
                 }
                 ungetc(character, stdin);
-                return makeToken(TOK_GREATER, NULL);
+                return makeToken(sc, TOK_GREATER, NULL);
 
             case ST_ASSIGN:
                 if (character == '=') {
-                    return makeToken(TOK_EQ, NULL);
+                    return makeToken(sc, TOK_EQ, NULL);
                 }
                 ungetc(character, stdin);
-                return makeToken(TOK_ASSIGN, NULL);
+                return makeToken(sc, TOK_ASSIGN, NULL);
 
             case ST_NEQ:
                  if (character == '=') {
-                    return makeToken(TOK_NEQ, NULL);
+                    return makeToken(sc, TOK_NEQ, NULL);
                 }
                 ungetc(character, stdin);
-                return makeToken(TOK_NOT, NULL);
+                return makeToken(sc, TOK_NOT, NULL);
 
             case ST_AMP:
                 if (character == '&') {
-                    return makeToken(TOK_AND, NULL);
+                    return makeToken(sc, TOK_AND, NULL);
                 }
-                lexError("A standalone '&' character is not supported (expected '&&')");
+                lexError(sc, "A standalone '&' character is not supported (expected '&&')");
                 break;
 
             case ST_AT:
             // validate main function annotation (@main)
                 if (isalnum(character) || character == '_') {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                 } else {
                     ungetc(character, stdin);
-                    if (strcmp(buf, "main") == 0) {
-                        return makeToken(TOK_AT_MAIN, NULL);
+                    if (strcmp(sc -> buf, "main") == 0) {
+                        return makeToken(sc, TOK_AT_MAIN, NULL);
                     }
                     fprintf(stderr, "@ must be immediately followed by main");
                     exit(2);
@@ -443,17 +417,17 @@ static Token readToken(void) {
             case ST_PLUS:
             // error in scala because two operators next to each other, like +- would be joined into one operator
                 if (character == '+' || character == '-') {
-                    lexError("'+' and '-' must be separated by a space");
+                    lexError(sc, "'+' and '-' must be separated by a space");
                 }
                 ungetc(character, stdin);
-                return makeToken(TOK_PLUS, NULL);
+                return makeToken(sc, TOK_PLUS, NULL);
 
             case ST_MINUS:
                 if (character == '+' || character == '-') {
-                    lexError("'+' and '-' must be separated by a space");
+                    lexError(sc, "'+' and '-' must be separated by a space");
                 }
                 ungetc(character, stdin);
-                return makeToken(TOK_MINUS, NULL);
+                return makeToken(sc, TOK_MINUS, NULL);
             
             // cases for comment states
             case ST_SLASH:
@@ -465,15 +439,15 @@ static Token readToken(void) {
                     state = ST_BLOCK_COMMENT;
                 } else {
                     ungetc(character, stdin);
-                    return makeToken(TOK_DIV, NULL);
+                    return makeToken(sc, TOK_DIV, NULL);
                 }
                 break;
 
             case ST_PIPE:
                 if (character == '|') {
-                    return makeToken(TOK_OR, NULL);
+                    return makeToken(sc, TOK_OR, NULL);
                 }
-                lexError("A standalone '|' character is not supported (expected '||')");
+                lexError(sc, "A standalone '|' character is not supported (expected '||')");
                 break;
 
             case ST_LINE_COMMENT:
@@ -488,9 +462,9 @@ static Token readToken(void) {
 
             case ST_BLOCK_COMMENT:
                 if (character == EOF) {
-                    lexError("unterminated block comment");
+                    lexError(sc, "unterminated block comment");
                 } else if (character == '\n') {
-                    line++;
+                    sc -> line++;
                     commentNL = 1;
                 } else if (character == '/') {
                     state = ST_BLOCK_SLASH;
@@ -513,7 +487,7 @@ static Token readToken(void) {
                 if (character == '/') {
                     commentDepth--;
                     if (commentDepth == 0) {
-                        if (commentNL == 1 && parenDepth == 0) {
+                        if (commentNL == 1 && sc -> parenDepth == 0) {
                             state = ST_AFTER_BLOCK;
                         } else {
                             state = ST_START;
@@ -536,146 +510,146 @@ static Token readToken(void) {
                     state = ST_START;
                     break;
                 }
-                lexError("A token cannot follow a multi-line comment.");
+                lexError(sc, "A token cannot follow a multi-line comment.");
                 break;
 
             // cases for numeric literal states
             case ST_START_DOT:
                 if (isdigit(character)) {
-                    bufReset();
-                    bufAdd('.');
-                    bufAdd(character);
+                    bufReset(sc);
+                    bufAdd(sc, '.');
+                    bufAdd(sc, character);
                     state = ST_DECIMAL;
                 } else {
                     ungetc(character, stdin);
-                    return makeToken(TOK_DOT, NULL);
+                    return makeToken(sc, TOK_DOT, NULL);
                 }
                 break;
 
             case ST_ZERO:
                 if (isdigit(character)) {
-                    lexError("A non-zero literal must not begin with a zero.");
+                    lexError(sc, "A non-zero literal must not begin with a zero.");
                 } else if (character == '.') {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                     state = ST_DOT;
                 } else if (character == 'e' || character == 'E') {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                     state = ST_EXP;
                 } else if (character == 'd' || character == 'D') {
                     state = ST_SUFFIX;
                 } else {
-                    return endNumber(TOK_INT, character);
+                    return endNumber(sc, TOK_INT, character);
                 }
                 break;
 
             case ST_INT:
                 if (isdigit(character)) {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                 } else if (character == '_') {
                     state = ST_INT_US;
                 } else if (character == '.') {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                     state = ST_DOT;
                 } else if (character == 'e' || character == 'E') {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                     state = ST_EXP;
                 } else if (character == 'd' || character == 'D') {
                     state = ST_SUFFIX;
                 } else {
-                    return endNumber(TOK_INT, character);
+                    return endNumber(sc, TOK_INT, character);
                 }
                 break;
 
             case ST_INT_US:
                 if (isdigit(character)) {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                     state = ST_INT;
                 } else if (character != '_') {
-                    lexError("the underscore must be between figures");
+                    lexError(sc, "the underscore must be between figures");
                 }
                 break;
 
             case ST_DOT:
                 if (isdigit(character)) {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                     state = ST_DECIMAL;
                 } else {
                     ungetc(character, stdin);
-                bufLen--;
-                buf[bufLen] = '\0';
-                dotAfterNumber = 1;
-                return makeToken(TOK_INT, bufCopy());
+                sc -> bufLen--;
+                sc -> buf[sc -> bufLen] = '\0';
+                sc -> dotAfterNumber = 1;
+                return makeToken(sc, TOK_INT, bufCopy(sc));
                 }
                 break;
 
             case ST_DECIMAL:
                 if (isdigit(character)) {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                 } else if (character == '_') {
                     state = ST_DECIMAL_US;
                 } else if (character == 'e' || character == 'E') {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                     state = ST_EXP;
                 } else if (character == 'd' || character == 'D') {
                     state = ST_SUFFIX;
                 } else {
-                    return endNumber(TOK_DOUBLE, character);
+                    return endNumber(sc, TOK_DOUBLE, character);
                 }
                 break;
 
             case ST_DECIMAL_US:
                 if (isdigit(character)) {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                     state = ST_DECIMAL;
                 } else if (character != '_') {
-                    lexError("the underscore must be between figures");
+                    lexError(sc, "the underscore must be between figures");
                 }
                 break;
 
             case ST_EXP:
                 if (character == '+' || character == '-') {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                     state = ST_EXP_SIGN;
                 } else if (isdigit(character)) {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                     state = ST_EXP_DIGITS;
                 } else {
-                    lexError("The exponent must contain a digit");
+                    lexError(sc, "The exponent must contain a digit");
                 }
                 break;
 
             case ST_EXP_SIGN:
                 if (isdigit(character)) {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                     state = ST_EXP_DIGITS;
                 } else {
-                    lexError("The exponent must contain a digit");
+                    lexError(sc, "The exponent must contain a digit");
                 }
                 break;
 
             case ST_EXP_DIGITS:
                 if (isdigit(character)) {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                 } else if (character == '_') {
                     state = ST_EXP_US;
                 } else if (character == 'd' || character == 'D') {
                     state = ST_SUFFIX;
                 } else {
-                    return endNumber(TOK_DOUBLE, character);
+                    return endNumber(sc, TOK_DOUBLE, character);
                 }
                 break;
 
             case ST_EXP_US:
                 if (isdigit(character)) {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                     state = ST_EXP_DIGITS;
                 } else if (character != '_') {
-                    lexError("the underscore must be between figures");
+                    lexError(sc, "the underscore must be between figures");
                 }
                 break;
 
             case ST_SUFFIX:
-                return endNumber(TOK_DOUBLE, character);
+                return endNumber(sc, TOK_DOUBLE, character);
 
             // cases for string states
             case ST_STRING_START:
@@ -689,29 +663,29 @@ static Token readToken(void) {
 
             case ST_STRING:
                 if (character == '"') {
-                    return makeToken(TOK_STRING, bufCopy());
+                    return makeToken(sc, TOK_STRING, bufCopy(sc));
                 } else if (character == '\\') {
                     state = ST_ESCAPE;
                 } else if (character == '\n' || character == EOF) {
-                    lexError("unfinished string");
+                    lexError(sc, "unfinished string");
                 } else {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                 }
                 break;
 
             case ST_ESCAPE:
                 if (character == 'n') {
-                    bufAdd('\n');
+                    bufAdd(sc, '\n');
                 } else if (character == 'r') {
-                    bufAdd('\r');
+                    bufAdd(sc, '\r');
                 } else if (character == 't') {
-                    bufAdd('\t');
+                    bufAdd(sc, '\t');
                 } else if (character == '\\') {
-                    bufAdd('\\');
+                    bufAdd(sc, '\\');
                 } else if (character == '"') {
-                    bufAdd('"');
+                    bufAdd(sc, '"');
                 } else {
-                    lexError("invalid escape sequence");
+                    lexError(sc, "invalid escape sequence");
                 }
                 state = ST_STRING;
                 break;
@@ -721,7 +695,7 @@ static Token readToken(void) {
                     state = ST_MUL_LINE_STRING;
                 } else {
                     ungetc(character, stdin);
-                    return makeToken(TOK_STRING, bufCopy());
+                    return makeToken(sc, TOK_STRING, bufCopy(sc));
                 }
                 break;
 
@@ -730,12 +704,12 @@ static Token readToken(void) {
                 if (character == '"') {
                     state = ST_MUL_LINE_QUOTE1;
                 } else if (character == EOF) {
-                    lexError("unterminated multi-row string");
+                    lexError(sc, "unterminated multi-row string");
                 } else {
                     if (character == '\n') {
-                        line++;
+                        sc -> line++;
                     }
-                    bufAdd(character);
+                    bufAdd(sc, character);
                 }
                 break;
 
@@ -743,7 +717,7 @@ static Token readToken(void) {
                 if (character == '"') {
                     state = ST_MUL_LINE_QUOTE2;
                 } else {
-                    bufAdd('"');
+                    bufAdd(sc, '"');
                     ungetc(character, stdin);
                     state = ST_MUL_LINE_STRING;
                 }
@@ -753,8 +727,8 @@ static Token readToken(void) {
                 if (character == '"') {
                     state = ST_MUL_LINE_QUOTE3;
                 } else {
-                    bufAdd('"');
-                    bufAdd('"');
+                    bufAdd(sc, '"');
+                    bufAdd(sc, '"');
                     ungetc(character, stdin);
                     state = ST_MUL_LINE_STRING;
                 }
@@ -762,10 +736,10 @@ static Token readToken(void) {
 
             case ST_MUL_LINE_QUOTE3:
                 if (character == '"') {
-                    bufAdd('"');
+                    bufAdd(sc, '"');
                 } else {
                     ungetc(character, stdin);
-                    return makeToken(TOK_STRING, bufCopy());
+                    return makeToken(sc, TOK_STRING, bufCopy(sc));
                 }
                 break;
 
@@ -774,12 +748,12 @@ static Token readToken(void) {
                 if (character == ' ') {
                     indentCount++;
                 } else if (character == '\t') {
-                    lineTab = 1;
+                    sc -> lineTab = 1;
                 } else if (character == '\r') {
 
                 } else {
                     ungetc(character, stdin);
-                    lineIndent = indentCount;
+                    sc -> lineIndent = indentCount;
                     state = ST_START;
                 }
                 break;
@@ -791,11 +765,11 @@ static Token readToken(void) {
                 } else if (character == '\t' || character == '\r') {
                     // bílý znak
                 } else if (character == '\n') {
-                    line++;
+                    sc -> line++;
                     indentCount = 0;
                 } else {
-                    if (character != EOF && indentCount <= lineIndent) {
-                        lexError("The code inside the parentheses must be indented further than the start of the command.");
+                    if (character != EOF && indentCount <= sc -> lineIndent) {
+                        lexError(sc, "The code inside the parentheses must be indented further than the start of the command.");
                     }
                     ungetc(character, stdin);
                     state = ST_START;
@@ -808,37 +782,37 @@ static Token readToken(void) {
                     state = ST_INTERP_OPEN2;
                 } else {
                     ungetc(character, stdin);
-                    pushInterp(0);
-                    return makeToken(TOK_INTERP_START, NULL);
+                    pushInterp(sc, 0);
+                    return makeToken(sc, TOK_INTERP_START, NULL);
                 }
                 break;
 
             case ST_INTERP_OPEN2:
                 if (character == '"') {
-                    pushInterp(1);
-                    return makeToken(TOK_INTERP_START, NULL);
+                    pushInterp(sc, 1);
+                    return makeToken(sc, TOK_INTERP_START, NULL);
                 }
                 ungetc(character, stdin);
-                interpQueued = makeToken(TOK_INTERP_END, NULL);
-                hasInterpQueued = 1;
-                return makeToken(TOK_INTERP_START, NULL);
+                sc -> interpQueued = makeToken(sc, TOK_INTERP_END, NULL);
+                sc -> hasInterpQueued = 1;
+                return makeToken(sc, TOK_INTERP_START, NULL);
  
             case ST_INTERP_TEXT:
             // parse text segments and handle variable interpolations within strings
                 if (character == EOF) {
-                    lexError("unterminated interpolated string");
+                    lexError(sc, "unterminated interpolated string");
                 } else if (character == '$') {
                     state = ST_INTERP_DOLLAR;
-                } else if (interpKind[interpDepth - 1] == 0) {
+                } else if (sc -> interpKind[sc -> interpDepth - 1] == 0) {
                     // one-line string
                     if (character == '"') {
-                        return endInterpolation();
+                        return endInterpolation(sc);
                     } else if (character == '\\') {
                         state = ST_INTERP_ESCAPE;
                     } else if (character == '\n') {
-                        lexError("unterminated interpolated string");
+                        lexError(sc, "unterminated interpolated string");
                     } else {
-                        bufAdd(character);
+                        bufAdd(sc, character);
                     }
                 } else {
                     // multi-line string, everything is literal
@@ -846,26 +820,26 @@ static Token readToken(void) {
                         state = ST_INTERP_QUOTE1;
                     } else {
                         if (character == '\n') {
-                            line++;
+                            sc -> line++;
                         }
-                        bufAdd(character);
+                        bufAdd(sc, character);
                     }
                 }
                 break;
 
             case ST_INTERP_ESCAPE:
                 if (character == 'n') {
-                    bufAdd('\n');
+                    bufAdd(sc, '\n');
                 } else if (character == 'r') {
-                    bufAdd('\r');
+                    bufAdd(sc, '\r');
                 } else if (character == 't') {
-                    bufAdd('\t');
+                    bufAdd(sc, '\t');
                 } else if (character == '\\') {
-                    bufAdd('\\');
+                    bufAdd(sc, '\\');
                 } else if (character == '"') {
-                    bufAdd('"');
+                    bufAdd(sc, '"');
                 } else {
-                    lexError("invalid escape sequence");
+                    lexError(sc, "invalid escape sequence");
                 }
                 state = ST_INTERP_TEXT;
                 break;
@@ -873,33 +847,33 @@ static Token readToken(void) {
             case ST_INTERP_DOLLAR:
             // handle escaped dollar signs ($$) or expression interpolations (${...})
                 if (character == '$') {
-                    bufAdd('$');
+                    bufAdd(sc, '$');
                     state = ST_INTERP_TEXT;
                 } else if (character == '{') {
-                    return startExpression();
+                    return startExpression(sc);
                 } else if (isalpha(character) || character == '_') {
-                    if (bufLen == 0) {
-                        bufAdd(character);
+                    if (sc -> bufLen == 0) {
+                        bufAdd(sc, character);
                         state = ST_INTERP_ID;
                     } else {
                         // first return the text before $, then continue with the identifier
-                        char *text = bufCopy();
-                        bufReset();
-                        bufAdd(character);
-                        resumeId = 1;
-                        return makeToken(TOK_STRING, text);
+                        char *text = bufCopy(sc);
+                        bufReset(sc);
+                        bufAdd(sc, character);
+                        sc -> resumeId = 1;
+                        return makeToken(sc, TOK_STRING, text);
                     }
                 } else {
-                    lexError("after $ expected $, { or identifier");
+                    lexError(sc, "after $ expected $, { or identifier");
                 }
                 break;
 
             case ST_INTERP_ID:
                 if (isalnum(character) || character == '_') {
-                    bufAdd(character);
+                    bufAdd(sc, character);
                 } else {
                     ungetc(character, stdin);
-                    return makeToken(TOK_ID, bufCopy());
+                    return makeToken(sc, TOK_ID, bufCopy(sc));
                 }
                 break;
  
@@ -907,7 +881,7 @@ static Token readToken(void) {
                 if (character == '"') {
                     state = ST_INTERP_QUOTE2;
                 } else {
-                    bufAdd('"');
+                    bufAdd(sc, '"');
                     ungetc(character, stdin);
                     state = ST_INTERP_TEXT;
                 }
@@ -917,8 +891,8 @@ static Token readToken(void) {
                 if (character == '"') {
                     state = ST_INTERP_QUOTE3;
                 } else {
-                    bufAdd('"');
-                    bufAdd('"');
+                    bufAdd(sc, '"');
+                    bufAdd(sc, '"');
                     ungetc(character, stdin);
                     state = ST_INTERP_TEXT;
                 }
@@ -926,96 +900,109 @@ static Token readToken(void) {
  
             case ST_INTERP_QUOTE3:
                 if (character == '"') {
-                    bufAdd('"');
+                    bufAdd(sc, '"');
                 } else {
                     ungetc(character, stdin);
-                    return endInterpolation();
+                    return endInterpolation(sc);
                 }
                 break;
             }
         }   
 }
 
-#define MAX_INDENT 128
-static int indentStack[MAX_INDENT] = {0};
-static int indentTop = 0;        // index of the stack top (0 = no indentation)
-static int sendDedents = 0;   // how many DEDENT tokens are still to be returned
-static int hasQueued = 0;        // 1 = a token is waiting in the queue
-static Token queued;              // token waiting behind EOL / INDENT / DEDENT
-static int lineHasToken = 0;    // has the current logical line already had a token?
-static int afterSemicolon = 0;    // 1 = the previous token was ';'
+//AI(cloude): generate function for inicialization of scanner 
+Scanner *scannerInit(void) {
+    Scanner *sc = calloc(1, sizeof *sc);
+    if (sc == NULL) {
+        exit(99);
+    }
+    sc -> line = 1;        
+    sc -> atLineStart = 1;
+    bufReset(sc);
+    return sc;
+}
+
+//AI(cloude): generate function for realeasing scanner
+// releases the lexer and its buffer
+void scannerFree(Scanner *sc) {
+    if (sc == NULL) {
+        return;
+    }
+    free(sc -> buf);
+    free(sc);
+}
 
 // Returns the next token, including TOK_INDENT and TOK_DEDENT
-Token getToken(void) {
+Token getToken(Scanner *sc) {
     while (1) {     
-        if (sendDedents > 0) {
-            sendDedents--;
-            return makeToken(TOK_DEDENT, NULL);
+        if (sc -> sendDedents > 0) {
+            sc -> sendDedents--;
+            return makeToken(sc, TOK_DEDENT, NULL);
         }
 
-        if (hasQueued == 1) {
-            hasQueued = 0;
-            return queued;
+        if (sc -> hasQueued == 1) {
+            sc -> hasQueued = 0;
+            return sc -> queued;
         }
 
-        Token token = readToken();
+        Token token = readToken(sc);
 
         if (token.type == TOK_SEMICOL) {
-            if (afterSemicolon == 1) {
+            if (sc -> afterSemicolon == 1) {
                 continue; // repeated ';' is dropped
             }
-            afterSemicolon = 1;
+            sc -> afterSemicolon = 1;
         } else {
-            afterSemicolon = 0;
+            sc -> afterSemicolon = 0;
         }
 
         if (token.type == TOK_NL) {
-            if (lineHasToken == 0) {
+            if (sc -> lineHasToken == 0) {
                 continue;
             }
-            lineHasToken = 0;
+            sc -> lineHasToken = 0;
             return token;
         }
 
         if (token.type == TOK_EOF) {
-            sendDedents = indentTop;
-            indentTop = 0;
-            queued = token;
-            hasQueued = 1;
-            if (lineHasToken == 1) {
+            sc -> sendDedents = sc -> indentTop;
+            sc -> indentTop = 0;
+            sc -> queued = token;
+            sc -> hasQueued = 1;
+            if (sc -> lineHasToken == 1) {
                 // the last line has no LF
-                lineHasToken = 0;
-                return makeToken(TOK_NL, NULL);
+                sc -> lineHasToken = 0;
+                return makeToken(sc, TOK_NL, NULL);
             }
             continue;
         }
 
-        if (lineHasToken == 0) {
+        if (sc -> lineHasToken == 0) {
             // first token of a logical line: compare the indentation
-            lineHasToken = 1;
-            if (lineTab == 1) {
-                lexError("tab character in indentation");
+            sc -> lineHasToken = 1;
+            if (sc -> lineTab == 1) {
+                lexError(sc, "tab character in indentation");
             }
-            if (lineIndent > indentStack[indentTop]) {
-                if (indentTop + 1 >= MAX_INDENT) {
+            if (sc -> lineIndent > sc -> indentStack[sc -> indentTop]) {
+                if (sc -> indentTop + 1 >= MAX_INDENT) {
                     exit(99);
                 }
-                indentTop++;
-                indentStack[indentTop] = lineIndent;
-                queued = token;
-                hasQueued = 1;
-                return makeToken(TOK_INDENT, NULL);
+                sc -> indentTop++;
+                sc -> indentStack[sc -> indentTop] = sc -> lineIndent;
+                sc -> queued = token;
+                sc -> hasQueued = 1;
+                return makeToken(sc, TOK_INDENT, NULL);
             }
-            if (lineIndent < indentStack[indentTop]) {
-                while (indentTop > 0 && indentStack[indentTop] > lineIndent) {
-                    indentTop--;
-                    sendDedents++;
+            if (sc -> lineIndent < sc -> indentStack[sc -> indentTop]) {
+                while (sc -> indentTop > 0 && sc -> indentStack[sc -> indentTop] > sc -> lineIndent) {
+                    sc -> indentTop--;
+                    sc -> sendDedents++;
                 }
-                if (indentStack[indentTop] != lineIndent) {
-                    lexError("inconsistent indentation");
+                if (sc -> indentStack[sc -> indentTop] != sc -> lineIndent) {
+                    lexError(sc, "inconsistent indentation");
                 }
-                queued = token;
-                hasQueued = 1;
+                sc -> queued = token;
+                sc -> hasQueued = 1;
                 continue;
             }
         }

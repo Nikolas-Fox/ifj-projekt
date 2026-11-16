@@ -17,8 +17,11 @@
 * @author Eliška Opršalová xoprsae00
 */
 
+#include <stddef.h>
+
 #ifndef SCANNER_H
 #define SCANNER_H
+
 
 typedef enum {
     TOK_EOF, TOK_NL, TOK_INDENT, TOK_DEDENT,
@@ -51,11 +54,59 @@ typedef struct {
     int line;
 }Token;
 
+#define MAX_INTERP 32
+#define MAX_INDENT 128
+
+typedef struct Scanner{
+int line;
+int atLineStart;
+int parenDepth;   
+int lineIndent;    // number of spaces at the beginning of the current logical line
+int lineTab;       // 1 = indentation contains a tab
+
+int dotAfterNumber;
+
+int interpDepth;              // how many interpolated strings are open
+int interpKind[MAX_INTERP];       // 0 = s"...", 1 = s"""..."""
+int interpInExpr[MAX_INTERP];    // 1 = inside ${ ... }
+Token interpQueued;               // token waiting for the next call
+int hasInterpQueued;
+int resumeId;              // 1 = continue reading the identifier after $
+
+int comma;  // 1 = the last token was a comma
+int commaNL;  // 1 = a newline has appeared since that comma
+
+// Buffer for the lexeme text
+char *buf;
+size_t bufLen;
+size_t bufCap;
+
+int indentStack[MAX_INDENT];
+int indentTop;        // index of the stack top (0 = no indentation)
+int sendDedents;   // how many DEDENT tokens are still to be returned
+int hasQueued;        // 1 = a token is waiting in the queue
+Token queued;              // token waiting behind EOL / INDENT / DEDENT
+int lineHasToken;    // has the current logical line already had a token?
+int afterSemicolon;    // 1 = the previous token was ';'
+}Scanner;
+
+/**
+ * @brief Initializes and returns a new Scanner instance
+ * @return Pointer to the allocated and initialized Scanner structure
+ */
+Scanner *scannerInit(void);
+
+/**
+ * @brief Releases the lexer and its buffer.
+ * @param sc Pointer to the Scanner structure to be freed.
+ */
+void scannerFree(Scanner *sc);
+
 /**
 * @brief Returns the next token from the standard input
 * @return token
 */
-Token getToken(void);
+Token getToken(Scanner *sc);
 
 
 #endif
