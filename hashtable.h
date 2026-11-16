@@ -3,8 +3,8 @@
  * Package:	    Symbol table
  * File:			hashtable.h
  * Date:			1.11.2026
- * Last change:	1.11.026
- * Authors: 		xpovala00
+ * Last change:	    16.11.026
+ * Authors: 		Alexandra Povalová xpovala00
  *
  * Description:  Header file of the hash table - open addressing, linear
  *               probing: item and table structures, function prototypes.

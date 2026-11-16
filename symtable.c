@@ -3,8 +3,8 @@
  * Package:      Symbol table
  * File:         symtable.c
  * Date:         1. 11. 2026
- * Last change:  1. 11. 2026
- * Authors:      xpovala00
+ * Last change:  16. 11. 2026
+ * Authors:      Alexandra Povalová xpovala00
  *
  * Description:  Implementation of the symbol table as a stack of hash tables,
  *               one per scope.

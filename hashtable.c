@@ -3,8 +3,8 @@
  * Package:      Symbol table
  * File:         hashtable.c
  * Date:         1. 11. 2026
- * Last change:  1. 11. 2026
- * Authors:      xpovala00
+ * Last change:  16. 11. 2026
+ * Authors:      Alexandra Povalová xpovala00
  *
  * Description:  Implementation of the hash table with open
  *               addressing and linear probing, including the DJB2 hash

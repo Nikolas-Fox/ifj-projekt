@@ -3,8 +3,8 @@
  * Package:      Symbol table
  * File:         symtable.h
  * Date:         1. 11. 2026
- * Last change:  1. 11. 2026
- * Authors:      xpovala00
+ * Last change:  16. 11. 2026
+ * Authors:      Alexandra Povalová xpovala00
  *
  * Description:  Header file of the symbol table (stack of scopes): symbol
  *               data types and the public interface.
