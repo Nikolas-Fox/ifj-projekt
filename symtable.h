@@ -1,5 +1,5 @@
 /******************************************************************************
- * Project:      Implementace překladače imperativního jazyka IFJ26
+ * Project:      IFJ
  * Package:      Symbol table
  * File:         symtable.h
  * Date:         1. 11. 2026

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Project:      Implementace překladače imperativního jazyka IFJ26
+ * Project:      IFJ
  * Package:      Symbol table
  * File:         hashtable.c
  * Date:         1. 11. 2026
@@ -122,7 +122,7 @@ static HashTable *reHash(HashTable *table) {
     }
 
     HashTItem *newTableHash =
-        calloc(newSize, sizeof(HashTItem)); // nastavy stavy na empty
+        calloc(newSize, sizeof(HashTItem)); // sets the states to empty
     if (newTableHash == NULL) {
         return NULL;
     }

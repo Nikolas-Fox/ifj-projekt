@@ -1,5 +1,5 @@
 /******************************************************************************
- * Project:		Implementace překladače imperativního jazyka IFJ26
+ * Project:		IFJ
  * Package:	    Symbol table
  * File:			hashtable.h
  * Date:			1.11.2026
@@ -25,7 +25,7 @@
 // implicit size of table
 #define HASH_T_SIZE 4093
 
-// 3 states for linear search
+// 3 states for linear probe
 typedef enum {
     EMPTY,
     OCCUPIED,
@@ -74,7 +74,7 @@ HashTItem *htInsert(HashTable *table, const char *key, void *data);
 
 /**
  * @brief Searches for an item with the sgiven key in the hash table.
- * Uses linear searching to resolve collisions. Traverses the table starting
+ * Uses linear probing to resolve collisions. Traverses the table starting
  * from the calculated hash index until the key is found
  * @param table Pointer to the hash table
  * @param key Key string to search for

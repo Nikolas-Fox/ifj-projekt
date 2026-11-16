@@ -1,5 +1,5 @@
 /******************************************************************************
- * Project:      Implementace překladače imperativního jazyka IFJ26
+ * Project:      IFJ
  * Package:      Symbol table
  * File:         symtable.c
  * Date:         1. 11. 2026
@@ -166,7 +166,7 @@ static char *copyString(const char *src) {
     if (src == NULL) {
         return NULL;
     }
-    size_t len = strlen(src) + 1; // vrátane '\0'
+    size_t len = strlen(src) + 1; //including '\0'
     char *copy = malloc(len);
     if (copy == NULL) {
         return NULL;
@@ -298,7 +298,6 @@ SymbolData *symtableSearch(Symtable *sTable, char *name) {
     }
 
     // From the scope on the top till the first match
-    //
     for (size_t i = sTable->top + 1; i > 0; i--) {
         HashTItem *item = htSearch(sTable->htArray[i - 1], name);
         if (item != NULL) {
