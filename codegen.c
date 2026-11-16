@@ -471,7 +471,6 @@ static void generateBinary(AstNode *node, CurrentFunc *cFunc)
  */
 static void generateUnary(AstNode *node, CurrentFunc *cFunc)
 {
-    //TODO: conversion
     generateExpression(node->data.unary.operand, cFunc);
     switch (node->data.unary.op)
     {
@@ -482,7 +481,14 @@ static void generateUnary(AstNode *node, CurrentFunc *cFunc)
             break;
         case TOK_MINUS:
             printf("POPS GF@%%tmp\n"); //pops x into temporary
-            printf("PUSHS int@0\n");
+            if (node->type == TYPE_INT)
+            {
+                printf("PUSHS int@0\n");
+            }
+            else
+            {
+                printf("PUSHS float@%a\n", 0.0);
+            }
             printf("PUSHS GF@%%tmp\n");
             printf("SUBS\n"); //0-x => -x
             break;
@@ -510,6 +516,9 @@ static void generateLiteral(AstNode *node, CurrentFunc *cFunc)
         case TYPE_DOUBLE:
             double value = strtod(node->data.value, NULL);
             printf("PUSHS float@%a\n", value);
+            break;
+        case TYPE_UNIT:
+            printf("PUSHS nil@nil\n");
             break;
     }
 }
