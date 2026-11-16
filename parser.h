@@ -20,7 +20,7 @@
 #define PARSER_H
 
 #include <stdbool.h>
-
+#include <stddef.h>
 //temporary
 typedef enum {
     TOK_EOF, TOK_NL, TOK_INDENT, TOK_DEDENT,
@@ -53,6 +53,7 @@ typedef struct {
 Token getToken();
 
 typedef enum {
+    TYPE_NONE,
     TYPE_INT,
     TYPE_STRING,
     TYPE_BOOL,
@@ -87,13 +88,13 @@ typedef struct AstNode AstNode; // declared so AstNode can keep a pointer to its
 struct AstNode
 {
     AstClass class;
-    DataType type; // expression result type
+    DataType type; // The type of the nodes value (literal, expression, variable, function return type) 0 until it is set
     AstNode *next;  // sibling in linked list (statements, arguments and parameters,
                     // groups in calls and definitions, functions)
 
     union
     {
-        char *value; // AST_LITERAL - value
+        char *value; // AST_LITERAL - value (NULL for unit)
 
         struct
         {
@@ -117,7 +118,7 @@ struct AstNode
         struct
         {
             char *name;
-            AstNode *group; // poitner to group (each group has a pointer to the next group, and a pointer to a list of parameters)
+            AstNode *group; // poitner to group (each group has a pointer to the next group, and a pointer to a list of arguments)
             size_t groupCount;
         }call;
 
@@ -143,8 +144,6 @@ struct AstNode
         {
             char *name;
             bool isVar;     // to tell between variable and value
-            bool hasType;   // some types are implicit
-            DataType declaredType;
             AstNode *expression;
             int scope;      // number of scope we are in (so codegen knows which variable is used); not depth
         }declaration;
@@ -158,7 +157,6 @@ struct AstNode
         struct
         {
             char *name;
-            DataType declaredType;
             int scope;
         }param;
 
@@ -173,9 +171,8 @@ struct AstNode
             char *name;
             AstNode *group; // poitner to group (each group has a pointer to the next group, and a pointer to a list of parameters)
             size_t groupCount;
-            bool hasRetType;
-            DataType retType;
             AstNode *body;  // first statement in a linked list of statements
+            bool isMain;
         } func;
 
         struct
@@ -194,11 +191,11 @@ AstNode *createNodeCall(char *name, size_t groupCount, AstNode *group);
 AstNode *createNodeReturn(AstNode *expression);
 AstNode *createNodeWhile(AstNode *condition, AstNode *body);
 AstNode *createNodeIf(AstNode *condition, AstNode *thenBody, AstNode *elseBody);
-AstNode *createNodeDeclaration(char *name, bool isVar, bool hasType, DataType declaredType, AstNode *expression);
+AstNode *createNodeDeclaration(char *name, bool isVar, DataType declaredType, AstNode *expression);
 AstNode *createNodeAssign(AstNode *destination, AstNode *expression);
 AstNode *createNodeParam(char *name, DataType declaredType);
 AstNode *createNodeGroup(AstNode *items, size_t count);
-AstNode *createNodeFunc(char *name, size_t groupCount, AstNode *group, AstNode *body, bool hasRetType, DataType retType);
+AstNode *createNodeFunc(char *name, size_t groupCount, AstNode *group, AstNode *body, DataType retType);
 AstNode *insertStat(AstNode *head, AstNode *newStat);
 AstNode *insertFunc(AstNode *head, AstNode *newFunc);
 AstNode *insertGroup(AstNode *head, AstNode *newGroup, size_t *groupCount);
@@ -225,7 +222,7 @@ void getNextToken(ParsedToken *p);
 void getTokenAhead(ParsedToken *p);
 
 //temporary precedence
-void parseExpression(ParsedToken *p);
+AstNode *parseExpression(ParsedToken *p);
 
 #endif
 /*** End of file parser.h ***/
