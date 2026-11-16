@@ -181,7 +181,7 @@ typedef struct {
 } CurrentFunc;
 
 /**
- * @brief Generates program
+ * @brief Generates program 0 calls main and then calls generateWhole
  * @param node Whole program - root of the AST
  */
 void generateProgram(AstNode *node);

@@ -23,7 +23,7 @@
 #include <stdbool.h>
 
 //generate functions protypes
-static void generateWhole(AstNode *node, CurrentFunc *cFunc);
+static void generateWhole(AstNode *node);
 static void generateFunc(AstNode *node, CurrentFunc *cFunc);
 static void generateBody(AstNode *node, CurrentFunc *cFunc);
 static void generateAssign(AstNode *node, CurrentFunc *cFunc);
@@ -50,27 +50,43 @@ static void cycleParams(AstNode *node);
 
 void generateProgram(AstNode *node)
 {
-    CurrentFunc cFunc;
     printf(".IFJcode26\n");
     AstNode *mainFunc = findMain(node->data.whole.func);
     printf("DEFVAR GF@%%tmp\n");
     printf("CALL %s\n", mainFunc->data.func.name);
     printf("POPS GF@%%tmp\n");
     printf("EXIT int@0\n");
-    generateWhole(node, &cFunc);
-    //vestavene funkce
+    generateWhole(node);
+
+    //TODO: vestavene funkce
 }
 
-static void generateWhole(AstNode *node, CurrentFunc *cFunc)
+/**
+ * @brief Goes through the program, which is a linked list of functions, and generates for each one.
+ * @param node Whole program - root of the AST
+ */
+static void generateWhole(AstNode *node)
 {
+    CurrentFunc cFunc;
     AstNode *func = node->data.whole.func;
     while (func != NULL)
     {
-        generateFunc(func, cFunc);
-        func = func->next; //the whole program is a linked list of functions
+        generateFunc(func, &cFunc);
+        func = func->next;
     }  
 }
 
+/**
+ * @brief Generates function.
+ * 
+ * Updates current function information.
+ * Declares all local variables used in the function and all parameters, then pops arguments from stack last to first.
+ * Goes through the body, which is a linked list of statements, and generates for each one.
+ * Returns the return value on stack.
+ * 
+ * @param node AST node of the function
+ * @param cFunc Current function information
+ */
 static void generateFunc(AstNode *node, CurrentFunc *cFunc)
 {
     cFunc->funcName = node->data.func.name;
@@ -105,6 +121,10 @@ static void generateFunc(AstNode *node, CurrentFunc *cFunc)
     printf("RETURN\n");
 }
 
+/**
+ * @brief Recursively goes through all groups of parameters.
+ * @param node group
+ */
 static void cycleGroups(AstNode *node)
 {
     if (node == NULL)
@@ -115,6 +135,14 @@ static void cycleGroups(AstNode *node)
     cycleParams(node->data.group.items);
 }
 
+/**
+ * @brief Recursively goes through all parameters.
+ * 
+ * Declares parameters and pops their value from stack from last to first.
+ * (Arguments are pushed onto stack first to last.)
+ * 
+ * @param node param
+ */
 static void cycleParams(AstNode *node)
 {
     if (node == NULL)
@@ -127,6 +155,15 @@ static void cycleParams(AstNode *node)
     printf("POPS LF@%s$%d\n", node->data.param.name, node->data.param.scope);
 }
 
+/**
+ * @brief Generates body, which is a linked list of statements
+ * 
+ * Generates based on the class of node.
+ * If the statement is the last in the function body and it has not returned explicitly, it leaves the return value on stack.
+ * 
+ * @param node 
+ * @param cFunc Current function information
+ */
 static void generateBody(AstNode *node, CurrentFunc *cFunc)
 {
     switch (node->class)
@@ -183,12 +220,28 @@ static void generateBody(AstNode *node, CurrentFunc *cFunc)
     }
 }
 
+/**
+ * @brief Generates code for assignment.
+ * 
+ * Generates right-hand side expression which is left on stack and pops it into the destination variable.
+ * 
+ * @param node AST_ASSIGN
+ * @param cFunc Current function information
+ */
 static void generateAssign(AstNode *node, CurrentFunc *cFunc)
 {
     generateExpression(node->data.assign.expression, cFunc);
     printf("POPS LF@%s$%d\n", node->data.assign.destination->data.id.name, node->data.assign.destination->data.id.scope);
 }
 
+/**
+ * @brief Generates code for declaration.
+ * 
+ * Generates right-hand side expression which is left on stack and pops it into the at the start of the function declared variable.
+ * 
+ * @param node AST_DECLARATION
+ * @param cFunc Current function information
+ */
 static void generateDeclaration(AstNode *node, CurrentFunc *cFunc)
 {
     //DEFVAR is done at the beginning of the function
@@ -196,6 +249,16 @@ static void generateDeclaration(AstNode *node, CurrentFunc *cFunc)
     printf("POPS LF@%s$%d\n", node->data.declaration.name, node->data.declaration.scope);
 }
 
+/**
+ * @brief Generates code for an if statement.
+ * 
+ * Prints custom start, else and end labels.
+ * Evaluates the condition.
+ * Generates code for the then and else blocks, which are linked lists of statements.
+ * 
+ * @param node AST_IF
+ * @param cFunc Current function information - this function uses name and count of if cycles for custom labels
+ */
 static void generateIf(AstNode *node, CurrentFunc *cFunc)
 {
     int currentIf = cFunc->ifCount;
@@ -228,6 +291,16 @@ static void generateIf(AstNode *node, CurrentFunc *cFunc)
     printf("LABEL %s$if$%d$end\n", cFunc->funcName, currentIf);
 }
 
+/**
+ * @brief Generates code for a while statement.
+ * 
+ * Prints custom start and end labels.
+ * Evaluates the condition.
+ * Generates code for the while block, which is a linked list of statements.
+ * 
+ * @param node AST_WHILE
+ * @param cFunc Current function information - this function uses name and count of while cycles for custom labels
+ */
 static void generateWhile(AstNode *node, CurrentFunc *cFunc)
 {
     int currentWhile = cFunc->whileCount;
@@ -251,6 +324,14 @@ static void generateWhile(AstNode *node, CurrentFunc *cFunc)
     printf("LABEL %s$while$%d$end\n", cFunc->funcName, currentWhile);
 }
 
+/**
+ * @brief Generates code for a return statement.
+ * 
+ * Pushes the result value onto stack and jumps to the end of the function.
+ * 
+ * @param node AST_RETURN
+ * @param cFunc Current function information - this function uses name for a label to jump to over dead code
+ */
 static void generateReturn(AstNode *node, CurrentFunc *cFunc)
 {
     if (node->data.returnStat.expression == NULL) //standalone return returns ()
@@ -264,9 +345,17 @@ static void generateReturn(AstNode *node, CurrentFunc *cFunc)
     printf("JUMP %s$end\n", cFunc->funcName); //the rest of the function is dead code
 }
 
+/**
+ * @brief Generates code for a function call.
+ * 
+ * Pushes arguments onto stack left to right and prints CALL.
+ * 
+ * @param node AST_CALL
+ * @param cFunc Current function information
+ */
 static void generateCall(AstNode *node, CurrentFunc *cFunc)
 {
-    //TODO vestavene funkce
+    //TODO: vestavene funkce
     //push arguments on stack
     AstNode *group = node->data.call.group;
     while (group != NULL)
@@ -283,6 +372,16 @@ static void generateCall(AstNode *node, CurrentFunc *cFunc)
     printf("CALL %s\n", node->data.call.name);
 }
 
+/**
+ * @brief Generates code for a binary operator.
+ * 
+ * Performs implicit conversion Int->Double if needed.
+ * Evaluates both expressions, results are left on stack.
+ * Generates based on the operator.
+ * 
+ * @param node AST_BINARY
+ * @param cFunc Current function information
+ */
 static void generateBinary(AstNode *node, CurrentFunc *cFunc)
 {
     //implicit conversion Int->Double
@@ -355,8 +454,18 @@ static void generateBinary(AstNode *node, CurrentFunc *cFunc)
     }
 }
 
+/**
+ * @brief Generates code for a unary operator.
+ * 
+ * Evaluates the expression, result is left on stack.
+ * Generates based on the operator.
+ * 
+ * @param node AST_UNARY
+ * @param cFunc Current function information
+ */
 static void generateUnary(AstNode *node, CurrentFunc *cFunc)
 {
+    //TODO: conversion
     generateExpression(node->data.unary.operand, cFunc);
     switch (node->data.unary.op)
     {
@@ -374,6 +483,12 @@ static void generateUnary(AstNode *node, CurrentFunc *cFunc)
     }
 }
 
+/**
+ * @brief Generates code for a literal based on its type.
+ * 
+ * @param node AST_LITERAL
+ * @param cFunc Current function information
+ */
 static void generateLiteral(AstNode *node, CurrentFunc *cFunc)
 {
     switch (node->type)
@@ -393,12 +508,27 @@ static void generateLiteral(AstNode *node, CurrentFunc *cFunc)
     }
 }
 
+/**
+ * @brief Generates code for an ID.
+ * 
+ * @param node AST_ID
+ * @param cFunc Current function information
+ */
 static void generateId(AstNode *node, CurrentFunc *cFunc)
 {
     printf("PUSHS LF@%s$%d\n", node->data.id.name, node->data.id.scope);
 }
 
-static void generateExpression(AstNode *node, CurrentFunc *cFunc) //leaves the result on stack
+/**
+ * @brief Evaluates an expression
+ * 
+ * Calls a generate function based on the class of the node.
+ * Leaves the evaluation result on stack.
+ * 
+ * @param node Evaluated node
+ * @param cFunc Current function information
+ */
+static void generateExpression(AstNode *node, CurrentFunc *cFunc)
 {
     switch (node->class)
     {
@@ -420,7 +550,14 @@ static void generateExpression(AstNode *node, CurrentFunc *cFunc) //leaves the r
     }
 }
 
-//if, while blocks, return values are thrown out
+/**
+ * @brief Generates code for statements in a block.
+ * 
+ * Calls a generate function based on the class of the node, pops the return value from stack.
+ * 
+ * @param node Evaluated node
+ * @param cFunc Current function information
+ */
 static void generateBlock(AstNode *node, CurrentFunc *cFunc)
 {
     switch (node->class)
@@ -451,7 +588,14 @@ static void generateBlock(AstNode *node, CurrentFunc *cFunc)
     }
 }
 
-//x && y - if x is false, y is not evaluated and result is false
+/**
+ * @brief Generates && short-circuit evaluation.
+ * 
+ * Evaluates x first, if x is false, y is not evaluated and the result is false.
+ * If x is true, the result is undecided and y has to be evaluated.
+ * 
+ * @param cFunc Current function information - this function uses name and count of evaluations for custom labels
+ */
 static void generateAnd(CurrentFunc *cFunc)
 {
     printf("DEFVAR LF@%%eval1$%d\n", cFunc->evalCount);
@@ -475,7 +619,14 @@ static void generateAnd(CurrentFunc *cFunc)
     printf("LABEL %s$%d$$eval$end\n", cFunc->funcName, cFunc->evalCount);
 }
 
-//x || y - if x is true, y is not evaluated and result is true
+/**
+ * @brief Generates || short-circuit evaluation.
+ * 
+ * Evaluates x first, if x is true, y is not evaluated and the result is true.
+ * If x is false, the result is undecided and y has to be evaluated.
+ * 
+ * @param cFunc Current function information - this function uses name and count of evaluations for custom labels
+ */
 static void generateOr(CurrentFunc *cFunc)
 {
     printf("DEFVAR LF@%%eval1$%d\n", cFunc->evalCount);
@@ -499,6 +650,12 @@ static void generateOr(CurrentFunc *cFunc)
     printf("LABEL %s$%d$$eval$end\n", cFunc->funcName, cFunc->evalCount);
 }
 
+/**
+ * @brief Goes through the linked list of functions of the program and finds main.
+ * 
+ * @param node Starting point
+ * @return Main function
+ */
 static AstNode *findMain(AstNode *node)
 {
     while (node != NULL)
@@ -512,6 +669,13 @@ static AstNode *findMain(AstNode *node)
     return NULL;
 }
 
+/**
+ * @brief Goes through the function subtree and declares all local variables.
+ * 
+ * Called recursively on blocks in if and while statements.
+ * 
+ * @param node Starting point
+ */
 static void defvarLocalVariables(AstNode *node)
 {
     while (node != NULL)
