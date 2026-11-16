@@ -75,7 +75,13 @@ static void generateFunc(AstNode *node)
         generateBody(body);
         body = body->next; //body is a linked list of statements
     }
-    //return
+    printf("LABEL %s$end\n", node->data.func.name);
+    if (node->data.func.retType == TYPE_UNIT) //return type Unit, return value is evaluated and thrown out
+    {
+        printf("POPS GF@%%tmp\n");
+        printf("PUSHS nil@nil\n");
+    }
+    //return value is on stack
     printf("POPFRAME\n");
     printf("RETURN\n");
 }
@@ -88,15 +94,35 @@ static void generateBody(AstNode *node)
     {
         case AST_ASSIGN:
             generateAssign(node);
+            //body ending with assignment returns ()
+            if (node->next == NULL) //last statement in function body
+            {
+                printf("PUSHS nil@nil\n");
+            }
             break;
         case AST_DECLARATION:
             generateDeclaration(node);
+            //body ending with declaration returns ()
+            if (node->next == NULL) //last statement in function body
+            {
+                printf("PUSHS nil@nil\n");
+            }
             break;
         case AST_IF:
             generateIf(node);
+            //body ending with a cycle returns ()
+            if (node->next == NULL) //last statement in function body
+            {
+                printf("PUSHS nil@nil\n");
+            }
             break;
         case AST_WHILE:
             generateWhile(node);
+            //body ending with a cycle returns ()
+            if (node->next == NULL) //last statement in function body
+            {
+                printf("PUSHS nil@nil\n");
+            }
             break;
         case AST_RETURN:
             generateReturn(node);
@@ -105,14 +131,15 @@ static void generateBody(AstNode *node)
         case AST_BINARY:
         case AST_UNARY:
         case AST_ID:
+        case AST_LITERAL:
             generateExpression(node);
-            if (node->next == NULL)
+            if (node->next == NULL) //last statement in function body
             {
-                //TODO uklidit hodnotu ze zasobniku
+                //keep the return value on stack
             }
             else
             {
-                //TODO navratova hodnota
+                printf("POPS GF@%%tmp\n"); //get rid of the return value
             }
     }
 }
@@ -159,7 +186,15 @@ static void generateWhile(AstNode *node)
 
 static void generateReturn(AstNode *node)
 {
-
+    if (node->data.returnStat.expression == NULL) //standalone return returns ()
+    {
+        printf("PUSHS nil@nil\n");
+    }
+    else
+    {
+        generateExpression(node->data.returnStat.expression); //leaves result on stack
+    }
+    printf("JUMP %s$end\n", funcName); //the rest of the function is dead code
 }
 
 static void generateCall(AstNode *node)
