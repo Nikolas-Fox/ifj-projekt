@@ -165,6 +165,7 @@ struct AstNode
             AstNode *group; // poitner to group (each group has a pointer to the next group, and a pointer to a list of parameters)
             size_t groupCount;
             AstNode *body;  // first statement in a linked list of statements
+            bool isMain;
         } func;
 
         struct

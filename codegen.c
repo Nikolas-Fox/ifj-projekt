@@ -42,12 +42,17 @@ static void generateBlock(AstNode *node, CurrentFunc *cFunc);
 static void generateAnd(CurrentFunc *cFunc);
 static void generateOr(CurrentFunc *cFunc);
 
+static AstNode *findMain(AstNode *node);
+
 void generateProgram(AstNode *node)
 {
     CurrentFunc cFunc;
     printf(".IFJcode26\n");
-    //call main
+    AstNode *mainFunc = findMain(node->data.whole.func);
     printf("DEFVAR GF@%%tmp\n");
+    printf("CALL %s\n", mainFunc->data.func.name);
+    printf("POPS GF@%%tmp\n");
+    printf("EXIT int@0\n");
     generateWhole(node, &cFunc);
     //vestavene funkce
 }
@@ -459,5 +464,18 @@ static void generateOr(CurrentFunc *cFunc)
     printf("PUSHS bool@true\n");
 
     printf("LABEL %s$%d$$eval$end\n", cFunc->funcName, cFunc->evalCount);
+}
+
+static AstNode *findMain(AstNode *node)
+{
+    while (node != NULL)
+    {
+        if (node->data.func.isMain)
+        {
+            return node;
+        }
+        node = node->next;
+    }
+    return NULL;
 }
 /*** End of file codegen.c ***/
