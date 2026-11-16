@@ -74,8 +74,8 @@ Symtable *symtableInit(void) {
     for (size_t i = 0; i < sizeof BUILTINS / sizeof BUILTINS[0];
          i++) { // i < size of whole builtins / one line
         const BuiltinDef *b = &BUILTINS[i];
-        SymbolData *f =
-            symtableInsertFunction(symTable, (char *)b->name, b->ret, true);
+        SymbolData *f = symtableInsertFunction(symTable, (char *)b->name, b->ret, true);
+        symtableStartParamList(f);
         for (int j = 0; j < b->paramCount; j++) {
             symtableAddParam(symTable, f, (char *)b->paramNames[j], b->params[j]);
         }
