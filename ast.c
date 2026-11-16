@@ -103,14 +103,13 @@ AstNode *createNodeIf(AstNode *condition, AstNode *thenBody, AstNode *elseBody)
     return node;
 }
 
-AstNode *createNodeDeclaration(char *name, bool isVar, bool hasType, DataType declaredType, AstNode *expression)
+AstNode *createNodeDeclaration(char *name, bool isVar, DataType type, AstNode *expression)
 {
     AstNode *node = createNode(AST_DECLARATION);
     node->data.declaration.scope = -1;
     node->data.declaration.name = copyString(name);
     node->data.declaration.isVar = isVar;
-    node->data.declaration.hasType = hasType; // this will be ahead, so I need to keep a copy of the name (or the pointer)
-    node->data.declaration.declaredType = declaredType;
+    node->type = type;
     node->data.declaration.expression = expression;
     return node;
 }
@@ -123,10 +122,10 @@ AstNode *createNodeAssign(AstNode *destination, AstNode *expression)
     return node;
 }
 
-AstNode *createNodeParam(char *name, DataType declaredType)
+AstNode *createNodeParam(char *name, DataType type)
 {
     AstNode *node = createNode(AST_PARAM);
-    node->data.param.declaredType = declaredType;
+    node->type = type;
     node->data.param.name = copyString(name);
     node->data.param.scope = -1;
     return node;
@@ -140,14 +139,13 @@ AstNode *createNodeGroup(AstNode *items, size_t count)
     return node;
 }
 
-AstNode *createNodeFunc(char *name, size_t groupCount,AstNode *group, AstNode *body, bool hasRetType, DataType retType)
+AstNode *createNodeFunc(char *name, size_t groupCount,AstNode *group, AstNode *body, DataType retType)
 {
     AstNode *node = createNode(AST_FUNC);
     node->data.func.name = copyString(name);
     node->data.func.groupCount = groupCount;
     node->data.func.group = group;
-    node->data.func.hasRetType = hasRetType;
-    node->data.func.retType = retType;
+    node->type = retType;
     node->data.func.body = body;
     return node;
 }
@@ -198,53 +196,6 @@ AstNode *insertFunc(AstNode *head, AstNode *newFunc)
     return head;
 }
 
-AstNode *insertGroup(AstNode *head, AstNode *newGroup, size_t *groupCount)
-{
-    if(newGroup == NULL)
-    {
-        return head;
-    }
-
-    if(head == NULL)
-    {
-        return newGroup;
-    }
-
-    (*groupCount)++;
-
-    AstNode *node = head;
-    while(node->next != NULL)
-    {
-        node = node->next;
-    }
-
-    node->next = newGroup;
-    head->data.func.groupCount++;
-    return head;
-}
-
-AstNode *insertParam(AstNode *head, AstNode *newParam)
-{
-    if(newParam == NULL)
-    {
-        return head;
-    }
-
-    if(head == NULL)
-    {
-        return newParam;
-    }
-
-    AstNode *node = head;
-    while(node->next != NULL)
-    {
-        node = node->next;
-    }
-
-    node->next = newParam;
-    head->data.group.count++;
-    return head;
-}
 
 void astFreeList(AstNode *head)
 {

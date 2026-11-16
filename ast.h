@@ -61,6 +61,7 @@ typedef struct {
 #include <stdbool.h>
 #include <stddef.h> // for size_t
 typedef enum {
+    TYPE_NONE,
     TYPE_INT,
     TYPE_STRING,
     TYPE_BOOL,
@@ -216,6 +217,7 @@ struct AstNode
             AstNode *group; // poitner to group (each group has a pointer to the next group, and a pointer to a list of parameters)
             size_t groupCount;
             AstNode *body;  // first statement in a linked list of statements
+            bool isMain;
         } func;
 
         struct
@@ -302,12 +304,11 @@ AstNode *createNodeIf(AstNode *condition, AstNode *thenBody, AstNode *elseBody);
  * @brief Creates a variable declaration node
  * @param name Name of the variable
  * @param isVar True for var, false for val
- * @param hasType True if the type was stated
- * @param declaredType Stated type (only valid if hasType is true)
+ * @param type Declared type (0 if it's not declared)
  * @param expression Subtree of the initialiser
  * @return Pointer to the new node
  */
-AstNode *createNodeDeclaration(char *name, bool isVar, bool hasType, DataType declaredType, AstNode *expression);
+AstNode *createNodeDeclaration(char *name, bool isVar, DataType type, AstNode *expression);
 
 /**
  * @brief Creates an assignment node
@@ -323,7 +324,7 @@ AstNode *createNodeAssign(AstNode *destination, AstNode *expression);
  * @param declaredType Type of the parameter
  * @return Pointer to the new node
  */
-AstNode *createNodeParam(char *name, DataType declaredType);
+AstNode *createNodeParam(char *name, DataType type);
 
 /**
  * @brief Creates a group node
@@ -339,11 +340,10 @@ AstNode *createNodeGroup(AstNode *items, size_t count);
  * @param groupCount Number of parameter groups
  * @param group First AST_GROUP of parameters
  * @param body First statement of the body (statements create a linked list)
- * @param hasRetType True if the return type was written explicitly
- * @param retType Written return type (only valid if hasRetType is true)
+ * @param retType Written return type (0 if it is not stated)
  * @return Pointer to the new node
  */
-AstNode *createNodeFunc(char *name, size_t groupCount, AstNode *group, AstNode *body, bool hasRetType, DataType retType);
+AstNode *createNodeFunc(char *name, size_t groupCount, AstNode *group, AstNode *body, DataType retType);
 
 /**
  * @brief Inserts a statement to the end of a statement list
@@ -360,23 +360,6 @@ AstNode *insertStat(AstNode *head, AstNode *newStat);
  * @return head during normal insertion and if newFunc is null; newFunc if the list was empty
  */
 AstNode *insertFunc(AstNode *head, AstNode *newFunc);
-
-/**
- * @brief Inserts a group to the end of a statement list, increments the group count
- * @param head Pointer to the first statement of the list
- * @param newGroup Pointer to the statement we want to add to the end
- * @param groupCount Pointer to groupCount so I can increment
- * @return head during normal insertion and if newStat is null; newGroup if the list was empty
- */
-AstNode *insertGroup(AstNode *head, AstNode *newGroup, size_t *groupCount);
-
-/**
- * @brief Inserts a parameter to the end of a statement list
- * @param head Pointer to the first statement of the list
- * @param newParam Pointer to the statement we want to add to the end
- * @return head during normal insertion and if newParam is null; newStat if the list was empty
- */
-AstNode *insertParam(AstNode *head, AstNode *newParam);
 
 /**
  * @brief Free ast tree using recursion
