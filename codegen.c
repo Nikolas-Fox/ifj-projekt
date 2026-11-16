@@ -156,32 +156,55 @@ static void generateDeclaration(AstNode *node)
 
 static void generateIf(AstNode *node)
 {
+    int currentIf = ifCount;
     ifCount++;
-    printf("LABEL %s$if$%d$start\n", funcName, ifCount);
+    printf("LABEL %s$if$%d$start\n", funcName, currentIf);
     //condition evaluation, leaves result on stack
     generateExpression(node->data.ifStat.condition);
     //pops result into tmp
     printf("POPS GF@%%tmp\n");
-    printf("JUMPIFEQ %s$if$%d$else GF@%%tmp bool@false\n", funcName, ifCount);
-    generateBody(node->data.ifStat.thenBody);
-    printf("JUMP %s$if$%d$end\n", funcName, ifCount);
-    printf("LABEL %s$if$%d$else\n", funcName, ifCount); //if there is no else branch, it will fall through to end
-    generateBody(node->data.ifStat.elseBody);
-    printf("LABEL %s$if$%d$end\n", funcName, ifCount);
+    printf("JUMPIFEQ %s$if$%d$else GF@%%tmp bool@false\n", funcName, currentIf);
+
+    AstNode *block = node->data.ifStat.thenBody;
+    while (block != NULL)
+    {
+        generateBlock(block);
+        block = block->next;
+    }
+
+    printf("JUMP %s$if$%d$end\n", funcName, currentIf);
+    printf("LABEL %s$if$%d$else\n", funcName, currentIf); //if there is no else branch, it will fall through to end
+
+    block = node->data.ifStat.elseBody;
+    while (block != NULL)
+    {
+        generateBlock(block);
+        block = block->next;
+    }
+    
+    printf("LABEL %s$if$%d$end\n", funcName, currentIf);
 }
 
 static void generateWhile(AstNode *node)
 {
+    int currentWhile = whileCount;
     whileCount++;
-    printf("LABEL %s$while$%d$start\n", funcName, whileCount);
+    printf("LABEL %s$while$%d$start\n", funcName, currentWhile);
     //condition evaluation, leaves result on stack
     generateExpression(node->data.whileStat.condition);
     //pops result into tmp
     printf("POPS GF@%%tmp\n");
-    printf("JUMPIFEQ %s$while$%d$end GF@%%tmp bool@false\n", funcName, whileCount);
-    generateBody(node->data.whileStat.body);
-    printf("JUMP %s$while$%d$start\n", funcName, whileCount);
-    printf("LABEL %s$while$%d$end\n", funcName, whileCount);
+    printf("JUMPIFEQ %s$while$%d$end GF@%%tmp bool@false\n", funcName, currentWhile);
+
+    AstNode *block = node->data.whileStat.body;
+    while (block != NULL)
+    {
+        generateBlock(block);
+        block = block->next;
+    }
+
+    printf("JUMP %s$while$%d$start\n", funcName, currentWhile);
+    printf("LABEL %s$while$%d$end\n", funcName, currentWhile);
 }
 
 static void generateReturn(AstNode *node)
@@ -316,6 +339,37 @@ static void generateExpression(AstNode *node) //leaves the result on stack
             break;
         case AST_LITERAL:
             generateLiteral(node);
+            break;
+    }
+}
+
+//if, while blocks, return values are thrown out
+static void generateBlock(AstNode *node)
+{
+    switch (node->class)
+    {
+        case AST_ASSIGN:
+            generateAssign(node);
+            break;
+        case AST_DECLARATION:
+            generateDeclaration(node);
+            break;
+        case AST_IF:
+            generateIf(node);
+            break;
+        case AST_WHILE:
+            generateWhile(node);
+            break;
+        case AST_RETURN:
+            generateReturn(node);
+            break;
+        case AST_CALL:
+        case AST_BINARY:
+        case AST_UNARY:
+        case AST_ID:
+        case AST_LITERAL:
+            generateExpression(node);
+            printf("POPS GF@%%tmp\n"); //get rid of the return value
             break;
     }
 }
