@@ -45,6 +45,9 @@ static void generateOr(CurrentFunc *cFunc);
 static AstNode *findMain(AstNode *node);
 static void defvarLocalVariables(AstNode *node);
 
+static void cycleGroups(AstNode *node);
+static void cycleParams(AstNode *node);
+
 void generateProgram(AstNode *node)
 {
     CurrentFunc cFunc;
@@ -79,9 +82,11 @@ static void generateFunc(AstNode *node, CurrentFunc *cFunc)
     printf("CREATEFRAME\n");
     printf("PUSHFRAME\n");
 
-    //TODO defvar parametru
     defvarLocalVariables(node->data.func.body);
-    //TODO popnout hodnoty argumentu v opacnem poradi
+
+    //DEFVAR params, POP values from last to first
+    AstNode *group = node->data.func.group;
+    cycleGroups(group);
 
     AstNode *body = node->data.func.body;
     while (body != NULL)
@@ -98,6 +103,28 @@ static void generateFunc(AstNode *node, CurrentFunc *cFunc)
     //return value is on stack
     printf("POPFRAME\n");
     printf("RETURN\n");
+}
+
+static void cycleGroups(AstNode *node)
+{
+    if (node == NULL)
+    {
+        return;
+    }
+    cycleGroups(node->next);
+    cycleParams(node->data.group.items);
+}
+
+static void cycleParams(AstNode *node)
+{
+    if (node == NULL)
+    {
+        return;
+    }
+    cycleParams(node->next);
+
+    printf("DEFVAR LF@%s$%d\n", node->data.param.name, node->data.param.scope);
+    printf("POPS LF@%s$%d\n", node->data.param.name, node->data.param.scope);
 }
 
 static void generateBody(AstNode *node, CurrentFunc *cFunc)
@@ -158,12 +185,15 @@ static void generateBody(AstNode *node, CurrentFunc *cFunc)
 
 static void generateAssign(AstNode *node, CurrentFunc *cFunc)
 {
-
+    generateExpression(node->data.assign.expression, cFunc);
+    printf("POPS LF@%s$%d\n", node->data.assign.destination->data.id.name, node->data.assign.destination->data.id.scope);
 }
 
 static void generateDeclaration(AstNode *node, CurrentFunc *cFunc)
 {
-    printf("DEFVAR LF@%s$%d\n", node->data.declaration.name, node->data.declaration.scope);
+    //DEFVAR is done at the beginning of the function
+    generateExpression(node->data.declaration.expression, cFunc);
+    printf("POPS LF@%s$%d\n", node->data.declaration.name, node->data.declaration.scope);
 }
 
 static void generateIf(AstNode *node, CurrentFunc *cFunc)
