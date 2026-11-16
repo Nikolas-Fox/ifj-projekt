@@ -25,8 +25,6 @@
 //generate functions protypes
 static void generateWhole(AstNode *node, CurrentFunc *cFunc);
 static void generateFunc(AstNode *node, CurrentFunc *cFunc);
-static void generateGroup(AstNode *node, CurrentFunc *cFunc);
-static void generateParam(AstNode *node, CurrentFunc *cFunc);
 static void generateBody(AstNode *node, CurrentFunc *cFunc);
 static void generateAssign(AstNode *node, CurrentFunc *cFunc);
 static void generateDeclaration(AstNode *node, CurrentFunc *cFunc);
@@ -230,7 +228,21 @@ static void generateReturn(AstNode *node, CurrentFunc *cFunc)
 
 static void generateCall(AstNode *node, CurrentFunc *cFunc)
 {
+    //TODO vestavene funkce
+    //push arguments on stack
+    AstNode *group = node->data.call.group;
+    while (group != NULL)
+    {
+        AstNode *item = group->data.group.items;
+        while (item != NULL)
+        {
+            generateExpression(item, cFunc);
+            item = item->next;
+        }
+        group = group->next;
+    }
 
+    printf("CALL %s\n", node->data.call.name);
 }
 
 static void generateBinary(AstNode *node, CurrentFunc *cFunc)
