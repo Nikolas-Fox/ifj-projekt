@@ -39,8 +39,8 @@ static void generateId(AstNode *node, CurrentFunc *cFunc);
 static void generateExpression(AstNode *node, CurrentFunc *cFunc);
 static void generateBlock(AstNode *node, CurrentFunc *cFunc);
 
-static void generateAnd(CurrentFunc *cFunc);
-static void generateOr(CurrentFunc *cFunc);
+static void generateAnd(AstNode *node, CurrentFunc *cFunc);
+static void generateOr(AstNode *node, CurrentFunc *cFunc);
 
 static AstNode *findMain(AstNode *node);
 static void defvarLocalVariables(AstNode *node);
@@ -384,6 +384,18 @@ static void generateCall(AstNode *node, CurrentFunc *cFunc)
  */
 static void generateBinary(AstNode *node, CurrentFunc *cFunc)
 {
+    if (node->data.binary.op == TOK_AND)
+    {
+        generateAnd(node, cFunc);
+        return;
+    }
+
+    if (node->data.binary.op == TOK_OR)
+    {
+        generateOr(node, cFunc);
+        return;
+    }
+
     //implicit conversion Int->Double
     bool isDouble = false;
     if (node->data.binary.left->type == TYPE_DOUBLE || node->data.binary.right->type == TYPE_DOUBLE)
@@ -444,12 +456,6 @@ static void generateBinary(AstNode *node, CurrentFunc *cFunc)
         case TOK_NEQ:
             printf("EQS\n");
             printf("NOTS\n");
-            break;
-        case TOK_AND:
-            generateAnd(cFunc);
-            break;
-        case TOK_OR:
-            generateOr(cFunc);
             break;
     }
 }
@@ -596,27 +602,26 @@ static void generateBlock(AstNode *node, CurrentFunc *cFunc)
  * 
  * @param cFunc Current function information - this function uses name and count of evaluations for custom labels
  */
-static void generateAnd(CurrentFunc *cFunc)
+static void generateAnd(AstNode *node, CurrentFunc *cFunc)
 {
-    printf("DEFVAR LF@%%eval1$%d\n", cFunc->evalCount);
-    printf("DEFVAR LF@%%eval2$%d\n", cFunc->evalCount);
-    printf("POPS LF@%%eval2$%d\n", cFunc->evalCount); //right
-    printf("POPS LF@%%eval1$%d\n", cFunc->evalCount); //left
+    int currentEval = cFunc->evalCount;
+    cFunc->evalCount++;
+
+    generateExpression(node->data.binary.left, cFunc);
+    printf("POPS GF@%%tmp\n");
 
     //jump if x is false
-    printf("JUMPIFEQ %s$%d$$eval$decided LF@%%eval1$%d bool@false\n", cFunc->funcName, cFunc->evalCount, cFunc->evalCount);
+    printf("JUMPIFEQ %s$%d$$eval$decided GF@%%tmp bool@false\n", cFunc->funcName, currentEval);
 
-    //x is not false -> undecided
-    printf("PUSHS LF@%%eval1$%d\n", cFunc->evalCount);
-    printf("PUSHS LF@%%eval2$%d\n", cFunc->evalCount);
-    printf("ANDS\n");
-    printf("JUMP %s$%d$$eval$end\n", cFunc->funcName, cFunc->evalCount);
+    //x is not false -> the result is y
+    generateExpression(node->data.binary.right, cFunc); //leaves result on stack
+    printf("JUMP %s$%d$$eval$end\n", cFunc->funcName, currentEval);
 
     //x is false -> false
-    printf("LABEL %s$%d$$eval$decided\n", cFunc->funcName, cFunc->evalCount);
+    printf("LABEL %s$%d$$eval$decided\n", cFunc->funcName, currentEval);
     printf("PUSHS bool@false\n");
 
-    printf("LABEL %s$%d$$eval$end\n", cFunc->funcName, cFunc->evalCount);
+    printf("LABEL %s$%d$$eval$end\n", cFunc->funcName, currentEval);
 }
 
 /**
@@ -627,27 +632,26 @@ static void generateAnd(CurrentFunc *cFunc)
  * 
  * @param cFunc Current function information - this function uses name and count of evaluations for custom labels
  */
-static void generateOr(CurrentFunc *cFunc)
+static void generateOr(AstNode *node, CurrentFunc *cFunc)
 {
-    printf("DEFVAR LF@%%eval1$%d\n", cFunc->evalCount);
-    printf("DEFVAR LF@%%eval2$%d\n", cFunc->evalCount);
-    printf("POPS LF@%%eval2$%d\n", cFunc->evalCount); //right
-    printf("POPS LF@%%eval1$%d\n", cFunc->evalCount); //left
+    int currentEval = cFunc->evalCount;
+    cFunc->evalCount++;
+
+    generateExpression(node->data.binary.left, cFunc);
+    printf("POPS GF@%%tmp\n");
 
     //jump if x is true
-    printf("JUMPIFEQ %s$%d$$eval$decided LF@%%eval1$%d bool@true\n", cFunc->funcName, cFunc->evalCount, cFunc->evalCount);
+    printf("JUMPIFEQ %s$%d$$eval$decided GF@%%tmp bool@true\n", cFunc->funcName, currentEval);
 
-    //x is not true -> undecided
-    printf("PUSHS LF@%%eval1$%d\n", cFunc->evalCount);
-    printf("PUSHS LF@%%eval2$%d\n", cFunc->evalCount);
-    printf("ORS\n");
-    printf("JUMP %s$%d$$eval$end\n", cFunc->funcName, cFunc->evalCount);
+    //x is not true -> the result is y
+    generateExpression(node->data.binary.right, cFunc); //leaves result on stack
+    printf("JUMP %s$%d$$eval$end\n", cFunc->funcName, currentEval);
 
     //x is true -> true
-    printf("LABEL %s$%d$$eval$decided\n", cFunc->funcName, cFunc->evalCount);
+    printf("LABEL %s$%d$$eval$decided\n", cFunc->funcName, currentEval);
     printf("PUSHS bool@true\n");
 
-    printf("LABEL %s$%d$$eval$end\n", cFunc->funcName, cFunc->evalCount);
+    printf("LABEL %s$%d$$eval$end\n", cFunc->funcName, currentEval);
 }
 
 /**
