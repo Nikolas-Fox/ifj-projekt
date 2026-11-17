@@ -335,6 +335,14 @@ bool areCompatible(DataType destination, DataType source)
     return false;
 }
 
+bool isNumber(DataType type)
+{
+    if(type == TYPE_INT || type == TYPE_DOUBLE)
+    {
+        return true;
+    }
+    return false;
+}
 void stInsertFunctions(Symtable *symtable, AstNode *whole)
 {
     size_t mainCount = 0;
@@ -601,12 +609,45 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
                 }
             }
             // everything else is sign (so it must be followed by int or double)
-            if(type != TYPE_DOUBLE && type != TYPE_INT)
+            if(isNumber(type) == false)
             {
                 exit(6);
             }
             expression->type = type;
             return type;
+        }
+
+        case AST_BINARY:
+        {
+            DataType left = checkExpr(symtable, expression->data.binary.left, scopeId);
+            DataType right = checkExpr(symtable, expression->data.binary.right, scopeId);
+            TokenType operator = expression->data.binary.op;
+
+            switch(operator)
+            {
+                case TOK_PLUS:
+                    if(left == TYPE_STRING && right == TYPE_STRING)
+                    {
+                        expression->type = TYPE_STRING;
+                        return TYPE_STRING;
+                    }
+                
+                case TOK_MINUS:
+                case TOK_DIV:
+                case TOK_MUL:
+                    if((isNumber(left) && isNumber(right)) == false)
+                    {
+                        exit(6); // unallowed type in +-*/
+                    }
+                    if(left == TYPE_INT && right == TYPE_INT)
+                    {
+                        return TYPE_INT;
+                    }
+                    else  // at least one of them is TYPE_DOUBLE
+                    {
+                        return TYPE_DOUBLE;
+                    }
+            }
         }
     }
 }
