@@ -306,7 +306,8 @@ struct AstNode
 void semanticAnalysis(AstNode *whole)
 {
     Symtable *symtable = symtableInit();
-    stInsertFunction(symtable, whole);
+    stInsertFunctions(symtable, whole);
+    checkFunctionList(symtable, whole); // this will pass into every function and then check the functions statements...
     symtableFree(symtable);
 }
 
@@ -372,6 +373,23 @@ void stInsertFunctions(Symtable *symtable, AstNode *whole)
     {
         exit(4);
     }
-    
 }
+
+
+static void checkFunctionList(Symtable *symtable, AstNode *whole)
+{
+    AstNode *function = whole->data.whole.func;
+    int scopeId = 0;
+    while(function != NULL)
+    {
+        checkFunction(symtable, function, &scopeId);
+        function = function->next;
+    }
+}
+
+static checkFunction(Symtable *symtable, AstNode *function, int *scopeId)
+{
+
+}
+
 /*** End of file semantic.c ***/
