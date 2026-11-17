@@ -212,17 +212,16 @@ static AstNode *parseProg(ParsedToken *p)
 }
 static AstNode *parseFunction(ParsedToken *p)
 {
-    char *name = p->currentToken.str;
+    AstNode *func = createNodeFunc(p->currentToken.str, 0, NULL, NULL, TYPE_NONE); // the name (str) will be freed
     checkToken(p, TOK_ID);
     size_t groupCount = 0;
-    AstNode *groups = parseLop(p, &groupCount);
-
-    DataType type = parseRetType(p);
+    func->data.func.group = parseLop(p, &groupCount);
+    func->data.func.groupCount = groupCount;
+    
+    func->type = parseRetType(p);
 
     checkToken(p, TOK_ASSIGN);
-    AstNode *body = parseDefBody(p);
-
-    return createNodeFunc(name, groupCount, groups, body, type);
+    func->data.func.body = parseDefBody(p);
 }
 
 static AstNode *parseDefinition(ParsedToken *p)
