@@ -23,7 +23,7 @@
 #define RULE_SIZE 5
 /*****************************************************************/
 // Temporary from parser
-Token getNextToken(ParsedToken *p)
+void getNextToken(ParsedToken *p)
 {
     
 }
