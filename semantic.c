@@ -572,6 +572,7 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
             return expression->type;
 
         case AST_ID:
+        {
             char *name = expression->data.id.name;
             SymbolData *symbol = symtableSearch(symtable, name);
             if(symbol == NULL)
@@ -587,6 +588,26 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
             }
             expression->type = symbol->dtype;
             return expression->type;
+        }
+
+        case AST_UNARY:
+        {
+            DataType type = checkExpr(symtable, expression->data.unary.operand, scopeId);
+            if(expression->data.unary.op == TOK_NOT)
+            {
+                if(type != TYPE_BOOL)
+                {
+                    exit(6); // NOT must be followed by bool type
+                }
+            }
+            // everything else is sign (so it must be followed by int or double)
+            if(type != TYPE_DOUBLE && type != TYPE_INT)
+            {
+                exit(6);
+            }
+            expression->type = type;
+            return type;
+        }
     }
 }
 /*** End of file semantic.c ***/
