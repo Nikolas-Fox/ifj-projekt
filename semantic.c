@@ -55,6 +55,7 @@ typedef struct {
     char *symbolName;
     DataType dtype;
     bool isDefined;
+    int scope;     // ADDED (NEED TO TELL SAŠA) - I also need to do newData->scope = -1 during insertSymbol
 
     union {
         FunctionData funcData;
@@ -324,6 +325,16 @@ bool hasParams(AstNode *group)
     return false; // if we get to the end then it doesn't have a parameter
 }
 
+
+bool areCompatible(DataType destination, DataType source)
+{
+    if(destination == source || destination == TYPE_DOUBLE && source == TYPE_INT || destination == TYPE_ANY)
+    {
+        return true;
+    }
+    return false;
+}
+
 void stInsertFunctions(Symtable *symtable, AstNode *whole)
 {
     size_t mainCount = 0;
@@ -406,21 +417,28 @@ static void checkFunction(Symtable *symtable, AstNode *function, int *scopeId)
         group = group->next;
     }
 
-    checkStatementList(symtable, function->data.func.body, scopeId);
+    checkStatementList(symtable, function->data.func.body, scopeId, function->type); // I send function type as well to check compatibility (0 means implicit)
 
     symtablePopScope(symtable);
 }
 
-static void checkStatementList(Symtable *symtable, AstNode *statement, int *scopeId)
+static void checkStatementList(Symtable *symtable, AstNode *statement, int *scopeId, DataType retType)
 {
+    if(statement == NULL)
+    {
+        return;
+    }
+
+    symtablePushScope(symtable);
     while(statement != NULL)
     {
-        checkStatement(symtable, statement, scopeId);
+        checkStatement(symtable, statement, scopeId, retType);
         statement = statement->next;
     }
+    symtablePopScope(symtable);
 }
 
-static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId)
+static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId, DataType retType)
 {
     switch(statement->class)
     {
@@ -429,7 +447,7 @@ static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId)
             AstNode *destination = statement->data.assign.destination;
             SymbolData *symbol = symtableSearch(symtable, destination->data.id.name);
 
-            if(symbol == NULL || symbol == FUNCTION)
+            if(symbol == NULL || symbol->sType == FUNCTION)
             {
                 exit(3);
             }
@@ -439,14 +457,110 @@ static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId)
                 exit(7);
             }
 
-            // TODO: checkExpr for expression part of assign
+            DataType destinationType = symbol->sType;
+            DataType expressionType = checkExpr(symtable, statement->data.assign.expression, scopeId);
 
+            if(areCompatible(destinationType, expressionType) == false)
+            {
+                exit(6); // error of type compatibility
+            }
+            return;
+        }
+        
+        case AST_DECLARATION:
+        {
+            DataType expressionType = checkExpr(symtable, statement->data.declaration.expression, scopeId);
+            if(statement->type == TYPE_NONE) // statement->type is the explicit type of the variable/value
+            {
+                if(expressionType == TYPE_NONE)
+                {
+                    exit(6);  // error of inability of taking on implicit type
+                }
+                statement->type = expressionType;  // the declared value/variable takes on the expression type
+            }
+            else
+            {
+                if(areCompatible(statement->type, expressionType) == false)
+                {
+                    exit(6); // error of type compatibility
+                }
+            }
+
+            if(statement->data.declaration.isVar)
+            {
+                symtableInsertVar(symtable, statement->data.declaration.name, statement->type, true);
+            }
+            else
+            {
+                symtableInsertVal(symtable, statement->data.declaration.name, statement->type, true);
+            }
+            statement->data.declaration.scope = scopeId;
+
+            if(statement->type == TYPE_NONE)
+            {
+                statement->type = checkExpr(symtable, statement->data.declaration.expression, scopeId);
+            }
+            return;
+        }
+
+        case AST_IF:
+        {
+            AstNode *condition = statement->data.ifStat.condition;
+            if(checkExpr(symtable, condition, scopeId) != TYPE_BOOL)
+            {
+                exit(6); // incompatible condtion type (isn't bool)
+            }
+            
+            (*scopeId)++;  // incrementing the scopeId before entering a new block
+            checkStatementList(symtable, statement->data.ifStat.thenBody, scopeId);
+            
+            if(statement->data.ifStat.elseBody != NULL)
+            {
+                (*scopeId)++;
+                checkStatementList(symtable, statement->data.ifStat.elseBody, scopeId);
+            }
+            return;
+        }
+
+        case AST_WHILE:
+        {
+            AstNode *condition = statement->data.ifStat.condition;
+            if(checkExpr(symtable, condition, scopeId) != TYPE_BOOL)
+            {
+                exit(6); // incompatible condtion type (isn't bool)
+            }
+
+            (*scopeId++);
+            checkStatementList(symtable, statement->data.whileStat.body, scopeId);
+            return;
+        }
+
+        case AST_RETURN:
+        {
+            AstNode *expression = statement->data.returnStat.expression;
+            if(retType == TYPE_NONE)
+            {
+                exit(6); // you can't have return if no retType is stated
+            }
+            if(expression == NULL)
+            {
+                if(retType != TYPE_UNIT)
+                {
+                    exit(6); // if there is just return; then the return type must be TYPE_UNIT
+                }
+                return;
+            }
+            if(!areCompatible(retType, checkExpr(symtable, expression, scopeId)) && retType != TYPE_UNIT)  // if retType is TYPE_UNIT the result is disregarded (but valid)
+            {
+                exit(6); // type incompatibility
+            }
+            return;
         }
     }
 }
 
 
-static void checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
+static DataType checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
 {
 
 }
