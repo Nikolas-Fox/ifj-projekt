@@ -421,4 +421,33 @@ static void checkStatementList(Symtable *symtable, AstNode *statement, int *scop
 }
 
 static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId)
+{
+    switch(statement->class)
+    {
+        case AST_ASSIGN:
+        {
+            AstNode *destination = statement->data.assign.destination;
+            SymbolData *symbol = symtableSearch(symtable, destination->data.id.name);
+
+            if(symbol == NULL || symbol == FUNCTION)
+            {
+                exit(3);
+            }
+
+            if(symbol->sType == VAL)    // you can't assign a value or parameter of a function
+            {
+                exit(7);
+            }
+
+            // TODO: checkExpr for expression part of assign
+
+        }
+    }
+}
+
+
+static void checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
+{
+
+}
 /*** End of file semantic.c ***/
