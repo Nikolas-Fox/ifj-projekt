@@ -387,9 +387,38 @@ static void checkFunctionList(Symtable *symtable, AstNode *whole)
     }
 }
 
-static checkFunction(Symtable *symtable, AstNode *function, int *scopeId)
+static void checkFunction(Symtable *symtable, AstNode *function, int *scopeId)
 {
+    symtablePushScope(symtable);
+    (*scopeId)++;
+    // parameters of the functions will have the next scope
+    AstNode *group = function->data.func.group;
+    while(group != NULL)
+    {
+        AstNode *param = group->data.group.items;
+        while(param != NULL)
+        {
+            param->data.param.scope = scopeId;
+            symtableInsertVal(symtable, param->data.param.name, param->type, true);
 
+            param = param->next;
+        }
+        group = group->next;
+    }
+
+    checkStatementList(symtable, function->data.func.body, scopeId);
+
+    symtablePopScope(symtable);
 }
 
+static void checkStatementList(Symtable *symtable, AstNode *statement, int *scopeId)
+{
+    while(statement != NULL)
+    {
+        checkStatement(symtable, statement, scopeId);
+        statement = statement->next;
+    }
+}
+
+static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId)
 /*** End of file semantic.c ***/
