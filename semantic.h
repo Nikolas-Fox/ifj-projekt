@@ -3,7 +3,7 @@
 * Package:		semantic
 * File:			semantic.h
 * Date:			16.11.2026
-* Last change:	16.11.2026
+* Last change:	17.11.2026
 * Authors: 		Nikolas Fox xfoxnik00
 *
 * Description: Header file for semantic analysis

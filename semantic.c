@@ -3,7 +3,7 @@
 * Package:		semantic
 * File:			semantic.c
 * Date:			16.11.2026
-* Last change:	16.11.2026
+* Last change:	17.11.2026
 * Authors: 		Nikolas Fox xfoxnik00
 *
 * Description: Implementation of semantic analysis logic
@@ -306,10 +306,22 @@ struct AstNode
 void semanticAnalysis(AstNode *whole)
 {
     Symtable *symtable = symtableInit();
-    symtableFunctions(symtable, whole);\
+    stInsertFunction(symtable, whole);
     symtableFree(symtable);
 }
 
+bool hasParams(AstNode *group)
+{
+    while(group != NULL)
+    {
+        if(group->data.group.count > 0) // the group has a parameter
+        {
+            return true;
+        }
+        group = group->next;
+    }
+    return false; // if we get to the end then it doesn't have a parameter
+}
 
 void stInsertFunctions(Symtable *symtable, AstNode *whole)
 {
@@ -320,10 +332,26 @@ void stInsertFunctions(Symtable *symtable, AstNode *whole)
     {
         bool hasType = (node->type != TYPE_NONE);
 
+        SymbolData *function = symtableInsertFunction(symtable, node->data.func.name, node->type, hasType);
+        AstNode *group = node->data.func.group;
+
+        // inserting the parameters into the symtable (first activate a list - group, and then insert individual parameters)
+        while(group != NULL)
+        {
+            symtableStartParamList(function);
+            AstNode *param = group->data.group.items;    // node->data.group.items is the pointer to the first parameter in the group
+            while(param != NULL)
+            {
+                symtableAddParam(symtable, function, param->data.param.name, param->type);
+                param = param->next;
+            }
+            group = group->next;
+        }
+
         if(node->data.func.isMain == true)
         {
             mainCount++;
-            if(node->data.func.group != NULL)
+            if(hasParams(node->data.func.group) == true)
             {
                 exit(5);
             }
@@ -332,12 +360,6 @@ void stInsertFunctions(Symtable *symtable, AstNode *whole)
                 exit(6);
             }
         }
-
-
-        symtableInsertFunction(symtable, node->data.func.name, node->type, hasType);
-
-        // TODO: insert the groups of parameters (symtable doesn't have this yet)
-
         node = node->next;
     }
     
