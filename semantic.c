@@ -556,12 +556,22 @@ static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId,
             }
             return;
         }
+        
+        default:  // this is just a bare expression
+            checkExpr(symtable, statement, scopeId);
+            return;
     }
 }
 
 
 static DataType checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
 {
+    switch(expression->class)
+    {
+        case AST_LITERAL:
+            return expression->type;
 
+        
+    }
 }
 /*** End of file semantic.c ***/
