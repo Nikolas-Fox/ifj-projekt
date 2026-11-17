@@ -3,7 +3,7 @@
 * Package:		codegen
 * File:			codegen.c
 * Date:			15.11.2026
-* Last change:	16.11.2026
+* Last change:	17.11.2026
 * Authors: 		Eliška Holá xholael00
 *
 * Description:  Implementation of code generation
@@ -48,17 +48,19 @@ static void defvarLocalVariables(AstNode *node);
 static void cycleGroups(AstNode *node);
 static void cycleParams(AstNode *node);
 
+static void printBuiltins();
+
 void generateProgram(AstNode *node)
 {
     printf(".IFJcode26\n");
     AstNode *mainFunc = findMain(node->data.whole.func);
     printf("DEFVAR GF@%%tmp\n");
+    printf("DEFVAR GF@%%type\n");
     printf("CALL %s\n", mainFunc->data.func.name);
     printf("POPS GF@%%tmp\n");
     printf("EXIT int@0\n");
     generateWhole(node);
-
-    //TODO: vestavene funkce
+    printBuiltins();
 }
 
 /**
@@ -355,7 +357,6 @@ static void generateReturn(AstNode *node, CurrentFunc *cFunc)
  */
 static void generateCall(AstNode *node, CurrentFunc *cFunc)
 {
-    //TODO: vestavene funkce
     //push arguments on stack
     AstNode *group = node->data.call.group;
     while (group != NULL)
@@ -699,16 +700,191 @@ static void defvarLocalVariables(AstNode *node)
                 printf("DEFVAR LF@%s$%d\n", node->data.declaration.name, node->data.declaration.scope);
                 break;
             case AST_IF:
-                findLocalVariables(node->data.ifStat.thenBody);
-                findLocalVariables(node->data.ifStat.elseBody);
+                defvarLocalVariables(node->data.ifStat.thenBody);
+                defvarLocalVariables(node->data.ifStat.elseBody);
                 break;
             case AST_WHILE:
-                findLocalVariables(node->data.whileStat.body);
+                defvarLocalVariables(node->data.whileStat.body);
                 break;
             default:
                 break;
         }
         node = node->next;
     }
+}
+
+static void printBuiltins()
+{
+    //print(value: Any): Unit
+    printf("LABEL print\n");
+    printf("POPS GF@%%tmp\n");
+    printf("JUMPIFEQ print$unit GF@%%tmp nil@nil\n");
+    printf("WRITE GF@%%tmp\n");
+    printf("JUMP print$end\n");
+    printf("LABEL print$unit\n");
+    printf("WRITE string@()\n");
+    printf("LABEL print$end\n");
+    printf("PUSHS nil@nil\n"); //return value
+    printf("RETURN\n");
+
+    //readLine(): String
+    printf("LABEL readLine\n");
+    printf("READ GF@%%tmp string\n");
+    printf("PUSHS GF@%%tmp\n"); //return value
+    printf("RETURN\n");
+
+    //readInt(): Int
+    printf("LABEL readInt\n");
+    printf("READ GF@%%tmp int\n");
+    printf("PUSHS GF@%%tmp\n"); //return value
+    printf("RETURN\n");
+
+    //readDouble(): Double
+    printf("LABEL readDouble\n");
+    printf("READ GF@%%tmp float\n");
+    printf("PUSHS GF@%%tmp\n"); //return value
+    printf("RETURN\n");
+
+    //toStr(value: Any): String
+    printf("LABEL toStr\n");
+    printf("POPS GF@%%tmp\n");
+    printf("TYPE GF@%%type GF@%%tmp\n");
+
+    printf("JUMPIFEQ toStr$bool GF@%%type string@bool\n");
+    printf("JUMPIFEQ toStr$int GF@%%type string@int\n");
+    printf("JUMPIFEQ toStr$float GF@%%type string@float\n");
+    printf("JUMPIFEQ toStr$unit GF@%%type string@nil\n");
+
+    printf("JUMP toStr$end\n"); //string is already string
+
+    printf("LABEL toStr$bool\n");
+    printf("JUMPIFEQ toStr$false GF@%%tmp bool@false\n");
+
+    printf("LABEL toStr$true\n");
+    printf("MOVE GF@%%tmp string@true\n");
+    printf("JUMP toStr$end\n");
+
+    printf("LABEL toStr$false\n");
+    printf("MOVE GF@%%tmp string@false\n");
+    printf("JUMP toStr$end\n");
+
+    printf("LABEL toStr$int\n");
+    printf("INT2STR GF@%%tmp GF@%%tmp\n");
+    printf("JUMP toStr$end\n");
+
+    printf("LABEL toStr$float\n");
+    printf("FLOAT2STR GF@%%tmp GF@%%tmp\n");
+    printf("JUMP toStr$end\n");
+
+    printf("LABEL toStr$unit\n");
+    printf("MOVE GF@%%tmp string@()\n");
+
+    printf("LABEL toStr$end\n");
+    printf("PUSHS GF@%%tmp\n"); //return value
+    printf("RETURN\n");
+
+    //toInt(value: Double) : Int
+    printf("LABEL toInt\n");
+    printf("FLOAT2INTS\n");
+    printf("RETURN\n");
+
+    //strLength(value: String): Int
+    printf("LABEL strLength\n");
+    printf("POPS GF@%%tmp\n");
+    printf("STRLEN GF@%%tmp GF@%%tmp\n");
+    printf("PUSHS GF@%%tmp\n");
+    printf("RETURN\n");
+
+    //subStr(value: String, start: Int, end: Int): String
+    printf("LABEL subStr\n");
+    printf("CREATEFRAME\n");
+    printf("PUSHFRAME\n");
+    printf("DEFVAR LF@value\n");
+    printf("DEFVAR LF@start\n");
+    printf("DEFVAR LF@end\n");
+    printf("DEFVAR LF@result\n");
+
+    printf("DEFVAR LF@condition\n");
+    printf("DEFVAR LF@len\n");
+
+    printf("POPS LF@end\n"); //pop arguments from stack last to first
+    printf("POPS LF@start\n");
+    printf("POPS LF@value\n");
+
+    printf("LT LF@condition LF@start int@0\n"); // start < 0
+    printf("JUMPIFEQ subStr$invalid LF@condition bool@true\n");
+
+    printf("LT LF@condition LF@end int@0\n"); // end < 0
+    printf("JUMPIFEQ subStr$invalid LF@condition bool@true\n");
+
+    printf("GT LF@condition LF@start LF@end\n"); // start > end
+    printf("JUMPIFEQ subStr$invalid LF@condition bool@true\n");
+
+    printf("PUSHS LF@value\n"); //start >= strLength(value)
+    printf("CALL strLength\n");
+    printf("POPS LF@len\n");
+    printf("LT LF@condition LF@start LF@len\n");
+    printf("JUMPIFEQ subStr$invalid LF@condition bool@false\n");
+
+    printf("GT LF@condition LF@end LF@len\n"); //end > strLength(value)
+    printf("JUMPIFEQ subStr$invalid LF@condition bool@true\n");
+
+    printf("MOVE LF@result string@\n");
+
+    printf("LABEL subStr$cycle\n");
+    printf("JUMPIFEQ subStr$end LF@start LF@end\n");
+    printf("GETCHAR GF@%%tmp LF@value LF@start\n");
+    printf("PUSHS LF@start\n");
+    printf("PUSHS int@1\n");
+    printf("ADDS\n");
+    printf("POPS LF@start\n");
+
+    printf("CONCAT LF@result LF@result GF@%%tmp\n");
+    printf("JUMP subStr$cycle\n");
+
+    printf("LABEL subStr$end\n");
+    printf("PUSHS LF@result\n"); //return value
+    printf("POPFRAME\n");
+    printf("RETURN\n");
+
+    printf("LABEL subStr$invalid\n");
+    printf("EXIT int@40\n"); //exit
+
+    //ord(value: String, index: Int): Int
+    printf("LABEL ord\n");
+    printf("CREATEFRAME\n");
+    printf("PUSHFRAME\n");
+    printf("DEFVAR LF@value\n");
+    printf("DEFVAR LF@index\n");
+    printf("DEFVAR LF@len\n");
+    printf("DEFVAR LF@condition\n");
+
+    printf("POPS LF@index\n"); //pop arguments from stack last to first
+    printf("POPS LF@value\n");
+
+    printf("JUMPIFEQ ord$invalid LF@value string@\n"); //empty string
+
+    printf("LT LF@condition LF@index int@0\n"); // index < 0
+    printf("JUMPIFEQ ord$invalid LF@condition bool@true\n");
+
+    printf("STRLEN LF@len LF@value\n");
+    printf("LT LF@condition LF@index LF@len\n"); // !(index < len)
+    printf("JUMPIFEQ ord$invalid LF@condition bool@false\n");
+
+    printf("STRI2INT GF@%%tmp LF@value LF@index\n");
+    printf("PUSHS GF@%%tmp\n"); //return value
+    printf("JUMP ord$end\n");
+
+    printf("LABEL ord$invalid\n"); //invalid returns -1
+    printf("PUSHS int@-1\n");
+
+    printf("LABEL ord$end\n");
+    printf("POPFRAME\n");
+    printf("RETURN\n");
+
+    //chr(code: Int): String
+    printf("LABEL chr\n");
+    printf("INT2CHARS\n");
+    printf("RETURN\n");
 }
 /*** End of file codegen.c ***/
