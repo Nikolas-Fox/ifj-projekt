@@ -510,7 +510,27 @@ static void generateLiteral(AstNode *node, CurrentFunc *cFunc)
             printf("PUSHS int@%s\n",node->data.value);
             break;
         case TYPE_STRING:
-            //TODO escape sekvence
+            printf("string@");
+            for (int i = 0; node->data.value[i] != '\0'; i++)
+            {
+                char c = node->data.value[i];
+                if (c <= 32 || c == 35 || c == 92)
+                {
+                    if (c >= 10)
+                    {
+                        printf("\\0%d", c);
+                    }
+                    else
+                    {
+                        printf("\\00%d", c);
+                    }
+                }
+                else
+                {
+                    printf("%c", c);
+                }
+            }
+            printf("\n");
         case TYPE_BOOL:
             printf("PUSHS bool@%s\n",node->data.value);
             break;
