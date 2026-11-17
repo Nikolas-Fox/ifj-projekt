@@ -3,7 +3,7 @@
 * Package:		semantic
 * File:			semantic.c
 * Date:			16.11.2026
-* Last change:	17.11.2026
+* Last change:	18.11.2026
 * Authors: 		Nikolas Fox xfoxnik00
 *
 * Description: Implementation of semantic analysis logic
@@ -571,7 +571,22 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
         case AST_LITERAL:
             return expression->type;
 
-        
+        case AST_ID:
+            char *name = expression->data.id.name;
+            SymbolData *symbol = symtableSearch(symtable, name);
+            if(symbol == NULL)
+            {
+                if(strcmp(name, "true") == 0 || strcmp(name, "false") == 0)
+                {
+                    expression->class = AST_LITERAL;
+                    expression->type = TYPE_BOOL;
+                    return TYPE_BOOL;
+                }
+
+                exit(3); // no such value/variable exists
+            }
+            expression->type = symbol->dtype;
+            return expression->type;
     }
 }
 /*** End of file semantic.c ***/
