@@ -3,7 +3,7 @@
 * Package:		ast
 * File:			ast.h
 * Date:			12.11.2026
-* Last change:	15.11.2026
+* Last change:	18.11.2026
 * Authors: 		Nikolas Fox xfoxnik00
 *
 * Description: Header file containing abstract syntactic tree logic
@@ -127,8 +127,14 @@ typedef enum
     AST_ID
 } AstClass;
 
-typedef struct AstNode AstNode; // declared so AstNode can keep a pointer to itself
+typedef enum
+{
+    NOT_VISITED,
+    PROCESSING,
+    DONE
+} State;
 
+typedef struct AstNode AstNode; // declared so AstNode can keep a pointer to itself
 
 struct AstNode
 {
@@ -218,6 +224,7 @@ struct AstNode
             size_t groupCount;
             AstNode *body;  // first statement in a linked list of statements
             bool isMain;
+            State state; 
         } func;
 
         struct
