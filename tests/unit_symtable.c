@@ -63,6 +63,7 @@ static void test_insert_var_fields(void) {
     CHECK_STR(sym->symbolName, "counter");
     CHECK(sym->value.funcData.params == NULL);
     CHECK(sym->value.funcData.paramCount == 0u);
+    CHECK(sym->value.funcData.listCount == 0u);
     symtableFree(s);
 }
 
@@ -100,6 +101,7 @@ static void test_insert_function(void) {
     CHECK(f->dtype == TYPE_UNIT);
     CHECK(f->value.funcData.params == NULL);
     CHECK(f->value.funcData.paramCount == 0u);
+    CHECK(f->value.funcData.listCount == 0u);
     symtableFree(s);
 }
 
@@ -293,23 +295,28 @@ static void test_add_param_order_and_count(void) {
     REQUIRE(s != NULL);
     SymbolData *f = symtableInsertFunction(s, "f", TYPE_INT, true);
     REQUIRE(f != NULL);
+    REQUIRE(symtableStartParamList(f));
     CHECK(symtableAddParam(s, f, "a", TYPE_INT));
     CHECK(symtableAddParam(s, f, "b", TYPE_STRING));
     CHECK(symtableAddParam(s, f, "c", TYPE_DOUBLE));
 
     CHECK(f->value.funcData.paramCount == 3u);
+    CHECK(f->value.funcData.listCount == 1u);
     FunctionParam *p = f->value.funcData.params;
     REQUIRE(p != NULL);
     CHECK_STR(p->paramName, "a");
     CHECK(p->dType == TYPE_INT);
+    CHECK(p->listIndex == 0u);
     p = p->next;
     REQUIRE(p != NULL);
     CHECK_STR(p->paramName, "b");
     CHECK(p->dType == TYPE_STRING);
+    CHECK(p->listIndex == 0u);
     p = p->next;
     REQUIRE(p != NULL);
     CHECK_STR(p->paramName, "c");
     CHECK(p->dType == TYPE_DOUBLE);
+    CHECK(p->listIndex == 0u);
     CHECK(p->next == NULL);
     symtableFree(s);
 }
@@ -319,6 +326,7 @@ static void test_param_name_is_a_copy(void) {
     REQUIRE(s != NULL);
     SymbolData *f = symtableInsertFunction(s, "f", TYPE_UNIT, true);
     REQUIRE(f != NULL);
+    REQUIRE(symtableStartParamList(f));
     char buf[] = "param";
     REQUIRE(symtableAddParam(s, f, buf, TYPE_INT));
     buf[0] = 'X';
@@ -332,6 +340,9 @@ static void test_add_param_invalid_targets(void) {
     SymbolData *v = symtableInsertVar(s, "x", TYPE_INT, true);
     SymbolData *f = symtableInsertFunction(s, "f", TYPE_INT, true);
     REQUIRE(v != NULL && f != NULL);
+    CHECK(!symtableStartParamList(v));
+    CHECK(!symtableStartParamList(NULL));
+    REQUIRE(symtableStartParamList(f));
     CHECK(!symtableAddParam(s, v, "p", TYPE_INT));  // not a function
     CHECK(!symtableAddParam(s, NULL, "p", TYPE_INT));
     CHECK(!symtableAddParam(s, f, NULL, TYPE_INT));
@@ -346,6 +357,8 @@ static void test_same_param_name_in_different_functions(void) {
     SymbolData *f = symtableInsertFunction(s, "f", TYPE_INT, true);
     SymbolData *g = symtableInsertFunction(s, "g", TYPE_INT, true);
     REQUIRE(f != NULL && g != NULL);
+    REQUIRE(symtableStartParamList(f));
+    REQUIRE(symtableStartParamList(g));
     CHECK(symtableAddParam(s, f, "n", TYPE_INT));
     CHECK(symtableAddParam(s, g, "n", TYPE_INT));
     symtableFree(s);
@@ -360,6 +373,7 @@ static void test_free_with_params_in_several_scopes(void) {
         snprintf(fn, sizeof fn, "fn%d", i);
         SymbolData *f = symtableInsertFunction(s, fn, TYPE_INT, true);
         REQUIRE(f != NULL);
+        REQUIRE(symtableStartParamList(f));
         for (int j = 0; j < 5; j++) {
             snprintf(pn, sizeof pn, "p%d", j);
             CHECK(symtableAddParam(s, f, pn, TYPE_INT));
@@ -370,6 +384,180 @@ static void test_free_with_params_in_several_scopes(void) {
     symtablePushScope(s);
     symtableInsertVal(s, "deeper", TYPE_BOOL, true);
     symtableFree(s);  // freed with scopes still open
+}
+
+// -------------------------------------------------- curried parameter lists
+
+static void test_add_param_without_start_list_fails(void) {
+    Symtable *s = symtableInit();
+    REQUIRE(s != NULL);
+    SymbolData *f = symtableInsertFunction(s, "f", TYPE_INT, true);
+    REQUIRE(f != NULL);
+    // listCount is 0 -> adding param before starting a list must fail
+    CHECK(!symtableAddParam(s, f, "a", TYPE_INT));
+    CHECK(f->value.funcData.paramCount == 0u);
+    CHECK(f->value.funcData.listCount == 0u);
+    symtableFree(s);
+}
+
+static void test_no_parens_vs_empty_parens(void) {
+    Symtable *s = symtableInit();
+    REQUIRE(s != NULL);
+
+    // def answer: Int -> 0 parameter lists
+    SymbolData *f_no_parens = symtableInsertFunction(s, "answer", TYPE_INT, true);
+    REQUIRE(f_no_parens != NULL);
+    CHECK(f_no_parens->value.funcData.listCount == 0u);
+    CHECK(symtableParamListSize(f_no_parens, 0) == 0u);
+
+    // def answerWithParens(): Int -> 1 empty parameter list
+    SymbolData *f_empty_parens =
+        symtableInsertFunction(s, "answerWithParens", TYPE_INT, true);
+    REQUIRE(f_empty_parens != NULL);
+    CHECK(symtableStartParamList(f_empty_parens));
+    CHECK(f_empty_parens->value.funcData.listCount == 1u);
+    CHECK(f_empty_parens->value.funcData.paramCount == 0u);
+    CHECK(symtableParamListSize(f_empty_parens, 0) == 0u);
+    CHECK(symtableGetParam(f_empty_parens, 0, 0) == NULL);
+
+    // def twoEmpty()(): Int -> 2 empty parameter lists
+    SymbolData *f_two_empty =
+        symtableInsertFunction(s, "twoEmpty", TYPE_INT, true);
+    REQUIRE(f_two_empty != NULL);
+    CHECK(symtableStartParamList(f_two_empty));
+    CHECK(symtableStartParamList(f_two_empty));
+    CHECK(f_two_empty->value.funcData.listCount == 2u);
+    CHECK(symtableParamListSize(f_two_empty, 0) == 0u);
+    CHECK(symtableParamListSize(f_two_empty, 1) == 0u);
+
+    symtableFree(s);
+}
+
+static void test_multiple_param_lists_currying(void) {
+    Symtable *s = symtableInit();
+    REQUIRE(s != NULL);
+
+    // foo(a: Int, b: String)(c: Double)
+    SymbolData *foo = symtableInsertFunction(s, "foo", TYPE_UNIT, true);
+    REQUIRE(foo != NULL);
+
+    // First list: (a, b)
+    CHECK(symtableStartParamList(foo));
+    CHECK(symtableAddParam(s, foo, "a", TYPE_INT));
+    CHECK(symtableAddParam(s, foo, "b", TYPE_STRING));
+
+    // Second list: (c)
+    CHECK(symtableStartParamList(foo));
+    CHECK(symtableAddParam(s, foo, "c", TYPE_DOUBLE));
+
+    CHECK(foo->value.funcData.listCount == 2u);
+    CHECK(foo->value.funcData.paramCount == 3u);
+
+    CHECK(symtableParamListSize(foo, 0) == 2u);
+    CHECK(symtableParamListSize(foo, 1) == 1u);
+    CHECK(symtableParamListSize(foo, 2) == 0u);  // out of bounds list
+
+    const FunctionParam *p00 = symtableGetParam(foo, 0, 0);
+    const FunctionParam *p01 = symtableGetParam(foo, 0, 1);
+    const FunctionParam *p10 = symtableGetParam(foo, 1, 0);
+
+    REQUIRE(p00 != NULL);
+    CHECK_STR(p00->paramName, "a");
+    CHECK(p00->dType == TYPE_INT);
+    CHECK(p00->listIndex == 0u);
+
+    REQUIRE(p01 != NULL);
+    CHECK_STR(p01->paramName, "b");
+    CHECK(p01->dType == TYPE_STRING);
+    CHECK(p01->listIndex == 0u);
+
+    REQUIRE(p10 != NULL);
+    CHECK_STR(p10->paramName, "c");
+    CHECK(p10->dType == TYPE_DOUBLE);
+    CHECK(p10->listIndex == 1u);
+
+    // Out-of-bounds parameter indices
+    CHECK(symtableGetParam(foo, 0, 2) == NULL);
+    CHECK(symtableGetParam(foo, 1, 1) == NULL);
+    CHECK(symtableGetParam(foo, 2, 0) == NULL);
+
+    symtableFree(s);
+}
+
+static void test_mixed_empty_and_nonempty_param_lists(void) {
+    Symtable *s = symtableInit();
+    REQUIRE(s != NULL);
+
+    // foo()()()(a: Int)()
+    SymbolData *foo = symtableInsertFunction(s, "foo", TYPE_INT, true);
+    REQUIRE(foo != NULL);
+
+    CHECK(symtableStartParamList(foo));  // list 0: ()
+    CHECK(symtableStartParamList(foo));  // list 1: ()
+    CHECK(symtableStartParamList(foo));  // list 2: ()
+    CHECK(symtableStartParamList(foo));  // list 3: (a)
+    CHECK(symtableAddParam(s, foo, "a", TYPE_INT));
+    CHECK(symtableStartParamList(foo));  // list 4: ()
+
+    CHECK(foo->value.funcData.listCount == 5u);
+    CHECK(foo->value.funcData.paramCount == 1u);
+
+    CHECK(symtableParamListSize(foo, 0) == 0u);
+    CHECK(symtableParamListSize(foo, 1) == 0u);
+    CHECK(symtableParamListSize(foo, 2) == 0u);
+    CHECK(symtableParamListSize(foo, 3) == 1u);
+    CHECK(symtableParamListSize(foo, 4) == 0u);
+
+    const FunctionParam *pa = symtableGetParam(foo, 3, 0);
+    REQUIRE(pa != NULL);
+    CHECK_STR(pa->paramName, "a");
+    CHECK(pa->listIndex == 3u);
+    CHECK(symtableGetParam(foo, 0, 0) == NULL);
+    CHECK(symtableGetParam(foo, 4, 0) == NULL);
+
+    symtableFree(s);
+}
+
+static void test_param_list_invalid_queries(void) {
+    Symtable *s = symtableInit();
+    REQUIRE(s != NULL);
+    SymbolData *v = symtableInsertVar(s, "x", TYPE_INT, true);
+    REQUIRE(v != NULL);
+
+    CHECK(symtableParamListSize(NULL, 0) == 0u);
+    CHECK(symtableParamListSize(v, 0) == 0u);
+    CHECK(symtableGetParam(NULL, 0, 0) == NULL);
+    CHECK(symtableGetParam(v, 0, 0) == NULL);
+
+    symtableFree(s);
+}
+
+static void test_builtins_param_lists(void) {
+    Symtable *s = symtableInit();
+    REQUIRE(s != NULL);
+
+    // Builtin with 0 params -> must still have 1 empty param list: readInt()
+    SymbolData *readInt = symtableSearch(s, "readInt");
+    REQUIRE(readInt != NULL);
+    CHECK(readInt->sType == FUNCTION);
+    CHECK(readInt->value.funcData.listCount == 1u);
+    CHECK(readInt->value.funcData.paramCount == 0u);
+    CHECK(symtableParamListSize(readInt, 0) == 0u);
+
+    // Builtin with 3 params -> subStr(value, start, end)
+    SymbolData *subStr = symtableSearch(s, "subStr");
+    REQUIRE(subStr != NULL);
+    CHECK(subStr->sType == FUNCTION);
+    CHECK(subStr->value.funcData.listCount == 1u);
+    CHECK(subStr->value.funcData.paramCount == 3u);
+    CHECK(symtableParamListSize(subStr, 0) == 3u);
+
+    const FunctionParam *p1 = symtableGetParam(subStr, 0, 1);
+    REQUIRE(p1 != NULL);
+    CHECK_STR(p1->paramName, "start");
+    CHECK(p1->dType == TYPE_INT);
+
+    symtableFree(s);
 }
 
 // ---------------------------------------- exit codes (run in a child process)
@@ -429,6 +617,7 @@ static void test_redefinition_in_inner_scope_exits_4(void) {
 static void helper_dup_param(void) {
     Symtable *s = symtableInit();
     SymbolData *f = symtableInsertFunction(s, "f", TYPE_INT, true);
+    symtableStartParamList(f);
     symtableAddParam(s, f, "a", TYPE_INT);
     symtableAddParam(s, f, "b", TYPE_INT);
     symtableAddParam(s, f, "a", TYPE_STRING);
@@ -436,6 +625,19 @@ static void helper_dup_param(void) {
 }
 static void test_duplicate_parameter_exits_4(void) {
     EXPECT_EXIT_CODE(helper_dup_param(), 4);
+}
+
+static void helper_dup_param_across_lists(void) {
+    Symtable *s = symtableInit();
+    SymbolData *f = symtableInsertFunction(s, "f", TYPE_INT, true);
+    symtableStartParamList(f);
+    symtableAddParam(s, f, "a", TYPE_INT);
+    symtableStartParamList(f);
+    symtableAddParam(s, f, "a", TYPE_STRING);
+    symtableFree(s);
+}
+static void test_duplicate_param_across_lists_exits_4(void) {
+    EXPECT_EXIT_CODE(helper_dup_param_across_lists(), 4);
 }
 
 // ----------------------------------------------------------------------- main
@@ -478,12 +680,20 @@ int main(int argc, char **argv) {
     RUN(test_same_param_name_in_different_functions);
     RUN(test_free_with_params_in_several_scopes);
 
+    RUN(test_add_param_without_start_list_fails);
+    RUN(test_no_parens_vs_empty_parens);
+    RUN(test_multiple_param_lists_currying);
+    RUN(test_mixed_empty_and_nonempty_param_lists);
+    RUN(test_param_list_invalid_queries);
+    RUN(test_builtins_param_lists);
+
     RUN(test_redefinition_same_scope_exits_4);
     RUN(test_val_and_var_same_name_exits_4);
     RUN(test_function_redefinition_exits_4);
     RUN(test_function_and_variable_same_name_exits_4);
     RUN(test_redefinition_in_inner_scope_exits_4);
     RUN(test_duplicate_parameter_exits_4);
+    RUN(test_duplicate_param_across_lists_exits_4);
 
     printf("\n%d checks, %d failed\n", g_checks, g_failed);
     return g_failed == 0 ? 0 : 1;
