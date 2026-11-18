@@ -342,8 +342,8 @@ struct AstNode
 static void stInsertFunctions(Symtable *, AstNode *);
 static void checkFunctionList(Symtable *, AstNode *);
 static void checkFunction(Symtable *, AstNode *);
-static void checkStatementList(Symtable *, AstNode *, DataType);
-static void checkStatement(Symtable *, AstNode *, DataType);
+static DataType checkStatementList(Symtable *, AstNode *, DataType);
+static DataType checkStatement(Symtable *, AstNode *, DataType);
 static DataType checkExpr(Symtable *, AstNode *);
 
 
@@ -479,21 +479,23 @@ static void checkFunction(Symtable *symtable, AstNode *function)
     symtablePopScope(symtable);
 }
 
-static void checkStatementList(Symtable *symtable, AstNode *statement, DataType retType)
+static DataType checkStatementList(Symtable *symtable, AstNode *statement, DataType retType)
 {
     if(statement == NULL)
     {
         return;
     }
 
+    DataType last = TYPE_UNIT;
     while(statement != NULL)
     {
-        checkStatement(symtable, statement, retType);
+        last = checkStatement(symtable, statement, retType);
         statement = statement->next;
     }
+    return last; // this is the type of the last statement of a block (used for return type)
 }
 
-static void checkStatement(Symtable *symtable, AstNode *statement, DataType retType)
+static DataType checkStatement(Symtable *symtable, AstNode *statement, DataType retType)
 {
     switch(statement->class)
     {
@@ -522,7 +524,7 @@ static void checkStatement(Symtable *symtable, AstNode *statement, DataType retT
             }
 
             destination->data.id.scope = symbol->scopeID; // this isn't a declaration, so we have to look at the symbol scope, not at the current scope
-            return;
+            return TYPE_UNIT;
         }
         
         case AST_DECLARATION:
@@ -553,7 +555,7 @@ static void checkStatement(Symtable *symtable, AstNode *statement, DataType retT
                 symtableInsertVal(symtable, statement->data.declaration.name, statement->type, true);
             }
             statement->data.declaration.scope = symtableScopeID(symtable);
-            return;
+            return TYPE_UNIT;
         }
 
         case AST_IF:
@@ -590,7 +592,7 @@ static void checkStatement(Symtable *symtable, AstNode *statement, DataType retT
             symtablePushScope(symtable);
             checkStatementList(symtable, statement->data.whileStat.body, retType);
             symtablePopScope(symtable);
-            return;
+            return TYPE_UNIT;
         }
 
         case AST_RETURN:
@@ -616,8 +618,7 @@ static void checkStatement(Symtable *symtable, AstNode *statement, DataType retT
         }
         
         default:  // this is just a bare expression
-            checkExpr(symtable, statement);
-            return;
+            return checkExpr(symtable, statement);
     }
 }
 
@@ -753,7 +754,6 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression)
                 default:
                     exit (99); // TOK_DOT is not defined yet
             }
-
         }
 
         case AST_CALL:
