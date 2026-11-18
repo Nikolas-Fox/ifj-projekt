@@ -475,9 +475,36 @@ static void checkFunction(Symtable *symtable, AstNode *function)
         group = group->next;
     }
 
-    checkStatementList(symtable, function->data.func.body, function->type); // I send function type as well to check compatibility (0 means implicit)
-
+    DataType blockType = checkStatementList(symtable, function->data.func.body, function->type); // function->type to check compatibility (TYPE_NONE means implicit typing)
     symtablePopScope(symtable);
+
+    if(function->type == TYPE_NONE) // this means implicit typing
+    {
+        if(blockType == TYPE_NONE) // the type can't be deduced
+        {
+            exit(6);
+        }
+
+        if(function->data.func.isMain == true && blockType != TYPE_UNIT)
+        {
+            exit(6); // main is not TYPE_UNIT
+        }
+
+        function->type = blockType; // updating AST with function type
+
+        SymbolData *functionSymbol = symtableSearch(symtable, function->data.func.name);
+        functionSymbol->dtype = blockType; //updating symtable with function type
+    }
+    else
+    {
+        if(function->type != TYPE_UNIT)
+        {
+            if(areCompatible(function->type, blockType) == false && blockType != TYPE_RETURNED)
+            {
+                exit(6); // the block type isn't compatible with the return type
+            }
+        }
+    }
 }
 
 static DataType checkStatementList(Symtable *symtable, AstNode *statement, DataType retType)
@@ -619,7 +646,7 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement, DataType 
             }
             if(!areCompatible(retType, checkExpr(symtable, expression)) && retType != TYPE_UNIT)  // if retType is TYPE_UNIT the result is disregarded (but valid)
             {
-                exit(6); // type incompatibility
+                exit(6); // the type of the returned expression is incompatible with the return type of the function
             }
             return TYPE_RETURNED; // TYPE_RETURNED tells the function that keyword RETURN was used
         }
