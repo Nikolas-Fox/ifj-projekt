@@ -3,8 +3,8 @@
 * Package:		parser
 * File:			parser.c
 * Date:			1.11.2026
-* Last change:	16.11.2026
-* Authors: 		Eliška Holá xholael00
+* Last change:	19.11.2026
+* Authors: 		Eliška Holá xholael00, Nikolas Fox xfoxnik00
 *
 * Description: Implementation of parser - recursive descent
 *
@@ -13,16 +13,22 @@
 * @file parser.c
 *
 * @brief Implementation of parser
-* @author xholael00
+* @author Eliška Holá xholael00 (recursive descent parsing)
+* @author Nikolas Fox xfoxnik00 (AST nodes)
 */
-#include "parser.h"
 
+#include "parser.h"
+#include "precedence.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
-//recursive descent functions prototypes
+static void printError(char *message);
+static void checkStrToken(ParsedToken *p, TokenType expected, char *name);
+static bool startsStat(TokenType type);
+static bool startsLine(TokenType type);
+
 static AstNode *parseProg(ParsedToken *p);
 static AstNode *parseFunction(ParsedToken *p);
 static AstNode *parseDefinition(ParsedToken *p);
@@ -45,16 +51,8 @@ static AstNode *parseParamList(ParsedToken *p, size_t *count);
 static AstNode *parseParamEnd(ParsedToken *p, size_t *count);
 static AstNode *parseLop(ParsedToken *p, size_t *groupCount);
 static AstNode *parseId(ParsedToken *p);
+// parseArgList, parseLoa, parseArgEnd are in precedence.c, as they aren't used in parser
 
-/**
- * @brief Prints error message and exits with code 2 (syntax analysis error).
- * @param message Error message to print.
- */
-static void printError(char *message)
-{
-    fprintf(stderr, "Syntactic analysis error: %s\n", message);
-    exit(2);
-}
 
 AstNode *parseProgram()
 {
@@ -65,6 +63,16 @@ AstNode *parseProgram()
     AstNode *whole = createNode(AST_WHOLE);
     whole->data.whole.func = parseProg(&token);
     return whole;
+}
+
+/**
+ * @brief Prints error message and exits with code 2 (syntax analysis error).
+ * @param message Error message to print.
+ */
+static void printError(char *message)
+{
+    fprintf(stderr, "Syntactic analysis error: %s\n", message);
+    exit(2);
 }
 
 void getNextToken(ParsedToken *p)
@@ -89,12 +97,7 @@ void getTokenAhead(ParsedToken *p)
     }
 }
 
-/**
- * @brief Checks if token has the expected type and calls getToken() for the next one / calls printError if it doesn't.
- * @param p Struct of parser state
- * @param expected Expected token type
- */
-static void checkToken(ParsedToken *p, TokenType expected)
+void checkToken(ParsedToken *p, TokenType expected)
 {
     if (p->currentToken.type != expected)
     {
@@ -121,12 +124,7 @@ static void checkStrToken(ParsedToken *p, TokenType expected, char *name)
     getNextToken(p);
 }
 
-/**
- * @brief Checks if token type belongs to Predict(<expression>).
- * @param type Token type
- * @return True if it belongs, false if it doesn't.
- */
-static bool startsExpression(TokenType type)
+bool startsExpression(TokenType type)
 {
     switch (type)
     {
@@ -212,16 +210,17 @@ static AstNode *parseProg(ParsedToken *p)
 }
 static AstNode *parseFunction(ParsedToken *p)
 {
-    AstNode *func = createNodeFunc(p->currentToken.str, 0, NULL, NULL, TYPE_NONE); // the name (str) will be freed
+    AstNode *function = createNodeFunc(p->currentToken.str, 0, NULL, NULL, TYPE_NONE); // the name (str) will be freed
     checkToken(p, TOK_ID);
     size_t groupCount = 0;
-    func->data.func.group = parseLop(p, &groupCount);
-    func->data.func.groupCount = groupCount;
+    function->data.func.group = parseLop(p, &groupCount);
+    function->data.func.groupCount = groupCount;
     
-    func->type = parseRetType(p);
+    function->type = parseRetType(p);
 
     checkToken(p, TOK_ASSIGN);
-    func->data.func.body = parseDefBody(p);
+    function->data.func.body = parseDefBody(p);
+    return function;
 }
 
 static AstNode *parseDefinition(ParsedToken *p)
@@ -248,6 +247,7 @@ static AstNode *parseDefinition(ParsedToken *p)
             return function;
         }
 
+        // TODO: extension
         case TOK_KW_EXTENSION: //4: ⟨definition⟩ → extension(id : ⟨type⟩)⟨def_block⟩⟨definition⟩
         {   
             checkToken(p, TOK_KW_EXTENSION);
@@ -258,7 +258,7 @@ static AstNode *parseDefinition(ParsedToken *p)
             checkToken(p, TOK_RPAR);
             parseDefBlock(p);
             parseDefinition(p);
-            break;
+            return NULL;
         }
 
         case TOK_EOF: //5: ⟨definition⟩ → epsilon
@@ -297,6 +297,7 @@ static void parseDefBlock(ParsedToken *p)
     checkToken(p, TOK_DEDENT);
 }
 
+// TODO: parseExtensionDef
 static void parseExtensionDef(ParsedToken *p)
 {
     switch (p->currentToken.type)
@@ -305,7 +306,7 @@ static void parseExtensionDef(ParsedToken *p)
         {
            checkToken(p, TOK_KW_DEF);
             checkToken(p, TOK_ID);
-            parseLop(p);
+            parseLop(p, 0); // when doing this I should use &groupCount
             parseRetType(p);
             checkToken(p, TOK_ASSIGN);
             parseDefBody(p);
