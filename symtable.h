@@ -109,6 +109,16 @@ void symtablePopScope(Symtable *sTable);
  */
 void symtableFree(Symtable *sTable);
 
+
+
+/**
+ * @brief Copy string and alloc place
+ *
+ * @param src Pointer to the string
+ * @return pointer to data that has been copied
+ */
+char *copyString(const char *src);
+
 /**
  * @brief Insert Variable to the symtable
  *
@@ -156,8 +166,31 @@ SymbolData *symtableInsertFunction(Symtable *sTable, char *name,
 bool symtableAddParam(Symtable *sTable, SymbolData *funcSymbol, char *paramName,
                       DataType paramType);
 
+/**
+ * @brief Starts a new parameter list (parenthesis group) for a function.
+ * 
+ * @param funcSymbol Pointer to the function symbol.
+ * @return true on success, false if funcSymbol is NULL or not a function.
+ */                  
 bool symtableStartParamList(SymbolData *funcSymbol);
+
+/**
+ * @brief Returns the number of parameters in a specific parameter list.
+ *
+ * @param funcSymbol Pointer to the function symbol.
+ * @param list Index of the parameter list (0 for the first group, 1 for the second)
+ * @return Number of parameters in the given list, or 0 if invalid/empty.
+ */
 size_t symtableParamListSize(const SymbolData *funcSymbol, size_t list);
+
+/**
+ * @brief Gets a specific parameter from a specific parameter list.
+ *
+ * @param funcSymbol Pointer to the function symbol.
+ * @param list Index of the parameter list (starting from 0).
+ * @param index Position of the parameter inside that list (starting from 0).
+ * @return Pointer to the FunctionParam, or NULL if not found or invalid.
+ */
 const FunctionParam *symtableGetParam(const SymbolData *funcSymbol, size_t list, size_t index);
 
 /**

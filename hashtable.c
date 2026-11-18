@@ -14,7 +14,7 @@
  * @file hashtable.c
  *
  * @brief Implementation of the hash table
- * @author xpovala00
+ * @author Alexandra Povalová xpovala00
  */
 
 #include "hashtable.h"

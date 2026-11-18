@@ -35,6 +35,7 @@ static const BuiltinDef BUILTINS[] = {
     {"readLine", TYPE_STRING, 0, {0}, {0}},
     {"readInt", TYPE_INT, 0, {0}, {0}},
     {"readDouble", TYPE_DOUBLE, 0, {0}, {0}},
+    {"readBoolean", TYPE_BOOL, 0, {0}, {0}},
     {"toStr", TYPE_STRING, 1, {TYPE_ANY}, {"value"}},
     {"toInt", TYPE_INT, 1, {TYPE_DOUBLE}, {"value"}},
     {"strLength", TYPE_INT, 1, {TYPE_STRING}, {"value"}},
@@ -162,7 +163,7 @@ void symtableFree(Symtable *sTable) {
 
 /* AI-generated (Claude). Prompt: "Function for copiing the name, malloc +
  * memcpy" */
-static char *copyString(const char *src) {
+char *copyString(const char *src) {
     if (src == NULL) {
         return NULL;
     }

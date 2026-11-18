@@ -14,7 +14,7 @@
  * @file hashtable.h
  *
  * @brief Header file of the hash table
- * @author xpovala00
+ * @author Alexandra Povalová xpovala00
  */
 
 #ifndef HASHTABLE_H
