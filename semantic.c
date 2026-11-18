@@ -447,8 +447,6 @@ static void stInsertFunctions(Symtable *symtable, AstNode *whole)
 }
 
 // I will use the following states:   NOT_VISITED, PROCESSING, DONE
-
-
 static void visit(Symtable *symtable, AstNode *whole, AstNode *function)
 {
     if(function->data.func.state == DONE)
@@ -466,8 +464,36 @@ static void visit(Symtable *symtable, AstNode *whole, AstNode *function)
     // this function will pass through the body of a function, when it finds a function without a return type, it passes through the body of that function
     findCalls(symtable, whole, function, function->data.func.body);
     checkFunction(symtable, function);
+    function->data.func.state = DONE;
 }
 
+static void findCalls(Symtable *symtable, AstNode *whole, AstNode *function, AstNode *statement)
+{
+    while(statement != NULL)
+    {
+        switch(statement->class)
+        {
+            case AST_CALL:
+            {
+                AstNode *calledFunction = findFunction(whole, statement->data.call.name);
+                if(calledFunction != NULL && calledFunction->type == TYPE_NONE)
+                {
+                    visit(symtable, whole, calledFunction);
+                }
+                
+                AstNode *group = calledFunction->data.call.group;
+                while(group != NULL) // finding function calls in parameters
+                {
+                    findCalls(symtable, whole, function, group->data.group.items);
+                    group = group->next;
+                }
+                break;
+            }
+        }
+
+        statement = statement->next;
+    }
+}
 
 static void checkFunctionList(Symtable *symtable, AstNode *whole)
 {
