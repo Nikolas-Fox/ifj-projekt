@@ -568,7 +568,7 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement, DataType 
             }
             
             symtablePushScope(symtable);
-            checkStatementList(symtable, statement->data.ifStat.thenBody, retType);
+            DataType thenType = checkStatementList(symtable, statement->data.ifStat.thenBody, retType);
             
             symtablePopScope(symtable);
 
@@ -576,10 +576,21 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement, DataType 
             if(statement->data.ifStat.elseBody != NULL)
             {
                 symtablePushScope(symtable);
-                checkStatementList(symtable, statement->data.ifStat.elseBody, retType);
+                elseType = checkStatementList(symtable, statement->data.ifStat.elseBody, retType);
                 symtablePopScope(symtable);
             }
-            return;
+
+            if(thenType == TYPE_RETURNED && elseType == TYPE_RETURNED)
+            {
+                return TYPE_RETURNED; // all branches must end with TYPE_RETURNED
+            }
+
+            if(thenType == TYPE_UNIT && elseType == TYPE_UNIT && retType == TYPE_NONE)
+            {
+                return TYPE_UNIT;
+            }
+
+            return TYPE_NONE; // this is only valid if the reType is TYPE_UNIT
         }
 
         case AST_WHILE:
