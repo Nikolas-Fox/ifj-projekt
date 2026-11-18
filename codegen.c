@@ -510,7 +510,7 @@ static void generateLiteral(AstNode *node, CurrentFunc *cFunc)
             printf("PUSHS int@%s\n",node->data.value);
             break;
         case TYPE_STRING:
-            printf("string@");
+            printf("PUSHS string@");
             for (int i = 0; node->data.value[i] != '\0'; i++)
             {
                 char c = node->data.value[i];
@@ -531,6 +531,7 @@ static void generateLiteral(AstNode *node, CurrentFunc *cFunc)
                 }
             }
             printf("\n");
+            break;
         case TYPE_BOOL:
             printf("PUSHS bool@%s\n",node->data.value);
             break;
