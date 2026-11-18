@@ -200,6 +200,10 @@ SymbolData *symtableSearch(Symtable *sTable, char *name){}
  */
 SymbolData *symtableSearchCurrentScope(Symtable *sTable, char *name){}
 
+bool symtableStartParamList(SymbolData *funcSymbol);
+size_t symtableParamListSize(const SymbolData *funcSymbol, size_t list);
+const FunctionParam *symtableGetParam(const SymbolData *funcSymbol, size_t list, size_t index);
+
 //TEMPORARY
 
 
@@ -647,6 +651,12 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression)
                 {
                     exit(5);
                 }
+                // retype so it is a call, not an ID
+                expression->class = AST_CALL;
+                expression->data.call.group = NULL;
+                expression->data.call.groupCount = 0;
+                expression->type = symbol->dtype;
+                return expression->type;
             }
             expression->data.id.scope = symbol->scopeID;
             expression->type = symbol->dtype;
@@ -746,7 +756,51 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression)
 
         }
 
-        //TODO: case AST_CALL
+        case AST_CALL:
+        {
+            SymbolData *function = symtableSearch(symtable, expression->data.call.name);
+            if(function == NULL || function->sType != FUNCTION)
+            {
+                exit(3); // undefined function
+            }
+
+            if(function->value.funcData.listCount != expression->data.call.groupCount)
+            {
+                exit(5); // the number of parameter lists differs
+            }
+
+            size_t list = 0; // for looking up parameters in the symtable
+
+            AstNode *group = expression->data.call.group;
+            while(group != NULL)
+            {
+                if(group->data.group.count != symtableParamListSize(function, list))
+                {
+                    exit(5); // the number of parameters in a parameter list differs
+                }
+
+                AstNode *arg = group->data.group.items;
+                for(size_t parameterIndex = 0; parameterIndex < group->data.group.count; parameterIndex++)
+                {
+                    const FunctionParam *parameter = symtableGetParam(function, list, parameterIndex);
+                    DataType parameterType = parameter->dType;
+
+                    DataType argType = checkExpr(symtable, arg);
+
+                    // parameter type is the destination
+                    if(areCompatible(parameterType, argType) == false)
+                    {
+                        exit(5); // invalid argument type
+                    }
+
+                    arg = arg->next;
+                }
+                group = group->next;
+            }
+            expression->type = function->dtype;
+            return expression->type;
+        }
+
         default:
             return TYPE_NONE;
     }
