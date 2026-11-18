@@ -489,8 +489,51 @@ static void findCalls(Symtable *symtable, AstNode *whole, AstNode *function, Ast
                 }
                 break;
             }
-        }
 
+            case AST_ID:
+            {
+                AstNode *calledFunction = findFunction(whole, statement->data.id.name);
+                if(calledFunction != NULL && calledFunction->type == TYPE_NONE)
+                {
+                    visit(symtable, whole, calledFunction);
+                }
+                break;
+            }
+
+            case AST_ASSIGN:
+                findCalls(symtable, whole, function, statement->data.assign.expression);
+                break;
+
+            case AST_DECLARATION:
+                findCalls(symtable, whole, function, statement->data.declaration.expression);
+                break;
+
+            case AST_RETURN:
+                findCalls(symtable, whole, function, statement->data.returnStat.expression);
+                break;
+            
+            case AST_IF:
+                findCalls(symtable, whole, function, statement->data.ifStat.condition);
+                findCalls(symtable, whole, function, statement->data.ifStat.thenBody);
+                findCalls(symtable, whole, function, statement->data.ifStat.elseBody);
+                break;
+
+            case AST_WHILE:
+                findCalls(symtable, whole, function, statement->data.whileStat.condition);
+                findCalls(symtable, whole, function, statement->data.whileStat.body);
+                break;
+            
+            case AST_UNARY:
+                findCalls(symtable, whole, function, statement->data.unary.operand);
+                break;
+
+            case AST_BINARY:
+                findCalls(symtable, whole, function, statement->data.binary.left);
+                findCalls(symtable, whole, function, statement->data.binary.right);
+                break;
+
+            default: break;
+        }
         statement = statement->next;
     }
 }
