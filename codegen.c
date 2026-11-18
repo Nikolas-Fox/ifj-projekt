@@ -55,7 +55,6 @@ void generateProgram(AstNode *node)
     printf(".IFJcode26\n");
     AstNode *mainFunc = findMain(node->data.whole.func);
     printf("DEFVAR GF@%%tmp\n");
-    printf("DEFVAR GF@%%type\n");
     printf("CALL %s\n", mainFunc->data.func.name);
     printf("POPS GF@%%tmp\n");
     printf("EXIT int@0\n");
@@ -768,13 +767,16 @@ static void printBuiltins()
 
     //toStr(value: Any): String
     printf("LABEL toStr\n");
+    printf("CREATEFRAME\n");
+    printf("PUSHFRAME\n");
+    printf("DEFVAR LF@type\n");
     printf("POPS GF@%%tmp\n");
-    printf("TYPE GF@%%type GF@%%tmp\n");
+    printf("TYPE LF@type GF@%%tmp\n");
 
-    printf("JUMPIFEQ toStr$bool GF@%%type string@bool\n");
-    printf("JUMPIFEQ toStr$int GF@%%type string@int\n");
-    printf("JUMPIFEQ toStr$float GF@%%type string@float\n");
-    printf("JUMPIFEQ toStr$unit GF@%%type string@nil\n");
+    printf("JUMPIFEQ toStr$bool LF@type string@bool\n");
+    printf("JUMPIFEQ toStr$int LF@type string@int\n");
+    printf("JUMPIFEQ toStr$float LF@type string@float\n");
+    printf("JUMPIFEQ toStr$unit LF@type string@nil\n");
 
     printf("JUMP toStr$end\n"); //string is already string
 
@@ -802,6 +804,7 @@ static void printBuiltins()
 
     printf("LABEL toStr$end\n");
     printf("PUSHS GF@%%tmp\n"); //return value
+    printf("POPFRAME\n");
     printf("RETURN\n");
 
     //toInt(value: Double) : Int
