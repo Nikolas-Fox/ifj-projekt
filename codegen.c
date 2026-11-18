@@ -57,6 +57,10 @@ typedef struct {
     DataType retType;
 } CurrentFunc;
 
+/**
+ * @brief Entry point
+ * @param node Whole program - root of the AST
+ */
 void generateProgram(AstNode *node)
 {
     printf(".IFJcode26\n");
@@ -133,7 +137,8 @@ static void generateFunc(AstNode *node, CurrentFunc *cFunc)
 
 /**
  * @brief Recursively goes through all groups of parameters.
- * @param node group
+ * @param node Group
+ * @param cFunc Current function information
  */
 static void cycleGroups(AstNode *node, CurrentFunc *cFunc)
 {
@@ -151,7 +156,8 @@ static void cycleGroups(AstNode *node, CurrentFunc *cFunc)
  * Declares parameters and pops their value from stack from last to first.
  * (Arguments are pushed onto stack first to last.)
  * 
- * @param node param
+ * @param node Param
+ * @param cFunc Current function information
  */
 static void cycleParams(AstNode *node, CurrentFunc *cFunc)
 {
@@ -679,6 +685,7 @@ static void generateBlock(AstNode *node, CurrentFunc *cFunc)
  * Evaluates x first, if x is false, y is not evaluated and the result is false.
  * If x is true, the result is undecided and y has to be evaluated.
  * 
+ * @param node
  * @param cFunc Current function information - this function uses name and count of evaluations for custom labels
  */
 static void generateAnd(AstNode *node, CurrentFunc *cFunc)
@@ -709,6 +716,7 @@ static void generateAnd(AstNode *node, CurrentFunc *cFunc)
  * Evaluates x first, if x is true, y is not evaluated and the result is true.
  * If x is false, the result is undecided and y has to be evaluated.
  * 
+ * @param node
  * @param cFunc Current function information - this function uses name and count of evaluations for custom labels
  */
 static void generateOr(AstNode *node, CurrentFunc *cFunc)
@@ -782,6 +790,9 @@ static void defvarLocalVariables(AstNode *node)
     }
 }
 
+/**
+ * @brief Prints all builtin functions.
+ */
 static void printBuiltins()
 {
     //print(value: Any): Unit
