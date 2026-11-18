@@ -631,23 +631,58 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
                         expression->type = TYPE_STRING;
                         return TYPE_STRING;
                     }
-                
+                // FALLTHROUGH
                 case TOK_MINUS:
                 case TOK_DIV:
                 case TOK_MUL:
+                {
                     if((isNumber(left) && isNumber(right)) == false)
                     {
                         exit(6); // unallowed type in +-*/
                     }
                     if(left == TYPE_INT && right == TYPE_INT)
                     {
+                        expression->type = TYPE_INT;
                         return TYPE_INT;
                     }
                     else  // at least one of them is TYPE_DOUBLE
                     {
+                        expression->type = TYPE_DOUBLE;
                         return TYPE_DOUBLE;
                     }
-            }
+                }
+
+                case TOK_LESS:
+                case TOK_LESS_EQ:
+                case TOK_GREATER:
+                case TOK_GREATER_EQ:
+                    if((isNumber(left) && isNumber(right)) || (left == TYPE_STRING && right == TYPE_STRING))
+                    {
+                        expression->type = TYPE_BOOL;
+                        return TYPE_BOOL;
+                    }
+                    exit(6); 
+
+                case TOK_EQ:
+                case TOK_NEQ:
+                    if((isNumber(left) && isNumber(right)) || left == right)
+                    {
+                        expression->type = TYPE_BOOL;
+                        return TYPE_BOOL;
+                    }
+                    exit(6);
+
+                case TOK_AND:
+                case TOK_OR:
+                    if(left == TYPE_BOOL && right == TYPE_BOOL)
+                    {
+                        expression->type = TYPE_BOOL;
+                        return TYPE_BOOL;
+                    }
+                    exit(6);
+
+                // TODO: case TOK_DOT
+                    
         }
     }
 }
