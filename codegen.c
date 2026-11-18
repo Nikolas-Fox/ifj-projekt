@@ -50,6 +50,13 @@ static void cycleParams(AstNode *node, CurrentFunc *cFunc);
 
 static void printBuiltins();
 
+//current function information
+typedef struct {
+    char *funcName;
+    int ifCount, whileCount, evalCount;
+    DataType retType;
+} CurrentFunc;
+
 void generateProgram(AstNode *node)
 {
     printf(".IFJcode26\n");
