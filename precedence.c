@@ -3,7 +3,7 @@
 * Package:		precedence
 * File:			precedence.c
 * Date:			5.11.2026
-* Last change:	13.11.2026
+* Last change:	18.11.2026
 * Authors: 		Nikolas Fox xfoxnik00
 *
 * Description: Implementation of precedence syntactic analysis logic
@@ -21,27 +21,6 @@
 
 #define PREC_TABLE_SIZE 13
 #define RULE_SIZE 5
-/*****************************************************************/
-// Temporary from parser
-void getNextToken(ParsedToken *p)
-{
-    
-}
-
-void getTokenAhead(ParsedToken *p)
-{
-
-}
-
-// Temporary from symtable.c
-SymbolData *symtableSearch(Symtable *sTable, char *name)
-{
-
-}
-
-// Temporary sTable (it will be global)
-Symtable sTable;
-/*****************************************************************/
 
 
 static const char precTable[PREC_TABLE_SIZE][PREC_TABLE_SIZE] =  
