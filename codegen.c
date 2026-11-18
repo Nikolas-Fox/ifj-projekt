@@ -3,7 +3,7 @@
 * Package:		codegen
 * File:			codegen.c
 * Date:			15.11.2026
-* Last change:	17.11.2026
+* Last change:	18.11.2026
 * Authors: 		Eliška Holá xholael00
 *
 * Description:  Implementation of code generation
@@ -45,8 +45,8 @@ static void generateOr(AstNode *node, CurrentFunc *cFunc);
 static AstNode *findMain(AstNode *node);
 static void defvarLocalVariables(AstNode *node);
 
-static void cycleGroups(AstNode *node);
-static void cycleParams(AstNode *node);
+static void cycleGroups(AstNode *node, CurrentFunc *cFunc);
+static void cycleParams(AstNode *node, CurrentFunc *cFunc);
 
 static void printBuiltins();
 
@@ -92,6 +92,7 @@ static void generateWhole(AstNode *node)
 static void generateFunc(AstNode *node, CurrentFunc *cFunc)
 {
     cFunc->funcName = node->data.func.name;
+    cFunc->retType = node->type;
     cFunc->evalCount = 0;
     cFunc->ifCount = 0;
     cFunc->whileCount = 0;
@@ -104,7 +105,7 @@ static void generateFunc(AstNode *node, CurrentFunc *cFunc)
 
     //DEFVAR params, POP values from last to first
     AstNode *group = node->data.func.group;
-    cycleGroups(group);
+    cycleGroups(group, cFunc);
 
     AstNode *body = node->data.func.body;
     while (body != NULL)
@@ -127,14 +128,14 @@ static void generateFunc(AstNode *node, CurrentFunc *cFunc)
  * @brief Recursively goes through all groups of parameters.
  * @param node group
  */
-static void cycleGroups(AstNode *node)
+static void cycleGroups(AstNode *node, CurrentFunc *cFunc)
 {
     if (node == NULL)
     {
         return;
     }
-    cycleGroups(node->next);
-    cycleParams(node->data.group.items);
+    cycleGroups(node->next, cFunc);
+    cycleParams(node->data.group.items, cFunc);
 }
 
 /**
@@ -145,16 +146,24 @@ static void cycleGroups(AstNode *node)
  * 
  * @param node param
  */
-static void cycleParams(AstNode *node)
+static void cycleParams(AstNode *node, CurrentFunc *cFunc)
 {
     if (node == NULL)
     {
         return;
     }
-    cycleParams(node->next);
+    cycleParams(node->next, cFunc);
 
     printf("DEFVAR LF@%s$%d\n", node->data.param.name, node->data.param.scope);
     printf("POPS LF@%s$%d\n", node->data.param.name, node->data.param.scope);
+
+    if (node->type == TYPE_DOUBLE) //param is double
+    {
+        printf("TYPE GF@%%tmp LF@%s$%d\n", node->data.param.name, node->data.param.scope); //check if argument is int
+        printf("JUMPIFEQ %s$isFloat$%s$%d GF@%%tmp string@float\n", cFunc->funcName, node->data.param.name, node->data.param.scope);
+        printf("INT2FLOAT LF@%s$%d LF@%s$%d\n", node->data.param.name, node->data.param.scope, node->data.param.name, node->data.param.scope);
+        printf("LABEL %s$isFloat$%s$%d\n", cFunc->funcName, node->data.param.name, node->data.param.scope);
+    }
 }
 
 /**
@@ -214,6 +223,10 @@ static void generateBody(AstNode *node, CurrentFunc *cFunc)
             if (node->next == NULL) //last statement in function body
             {
                 //keep the return value on stack
+                if (cFunc->retType == TYPE_DOUBLE && node->type == TYPE_INT) //converts if function expects double and it is int
+                {
+                    printf("INT2FLOATS\n");
+                }
             }
             else
             {
@@ -233,6 +246,10 @@ static void generateBody(AstNode *node, CurrentFunc *cFunc)
 static void generateAssign(AstNode *node, CurrentFunc *cFunc)
 {
     generateExpression(node->data.assign.expression, cFunc);
+    if (node->data.assign.destination->type == TYPE_DOUBLE && node->data.assign.expression->type == TYPE_INT)
+    {
+        printf("INT2FLOATS\n");
+    }
     printf("POPS LF@%s$%d\n", node->data.assign.destination->data.id.name, node->data.assign.destination->data.id.scope);
 }
 
@@ -248,6 +265,10 @@ static void generateDeclaration(AstNode *node, CurrentFunc *cFunc)
 {
     //DEFVAR is done at the beginning of the function
     generateExpression(node->data.declaration.expression, cFunc);
+    if (node->type == TYPE_DOUBLE && node->data.declaration.expression->type == TYPE_INT)
+    {
+        printf("INT2FLOATS\n");
+    }
     printf("POPS LF@%s$%d\n", node->data.declaration.name, node->data.declaration.scope);
 }
 
@@ -343,6 +364,10 @@ static void generateReturn(AstNode *node, CurrentFunc *cFunc)
     else
     {
         generateExpression(node->data.returnStat.expression, cFunc); //leaves result on stack
+        if (cFunc->retType == TYPE_DOUBLE && node->data.returnStat.expression->type == TYPE_INT) //converts if function expects double and it is int
+        {
+            printf("INT2FLOATS\n");
+        }
     }
     printf("JUMP %s$end\n", cFunc->funcName); //the rest of the function is dead code
 }

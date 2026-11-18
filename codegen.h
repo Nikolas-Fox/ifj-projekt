@@ -3,7 +3,7 @@
 * Package:		codegen
 * File:			codegen.h
 * Date:			15.11.2026
-* Last change:	16.11.2026
+* Last change:	18.11.2026
 * Authors: 		Eliška Holá xholael00
 *
 * Description:  Header file of code generation
@@ -178,6 +178,7 @@ struct AstNode
 typedef struct {
     char *funcName;
     int ifCount, whileCount, evalCount;
+    DataType retType;
 } CurrentFunc;
 
 /**
