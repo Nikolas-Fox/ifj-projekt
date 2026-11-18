@@ -55,6 +55,7 @@ void generateProgram(AstNode *node)
     printf(".IFJcode26\n");
     AstNode *mainFunc = findMain(node->data.whole.func);
     printf("DEFVAR GF@%%tmp\n");
+    printf("DEFVAR GF@%%tmp2\n");
     printf("CALL %s\n", mainFunc->data.func.name);
     printf("POPS GF@%%tmp\n");
     printf("EXIT int@0\n");
@@ -396,6 +397,12 @@ static void generateBinary(AstNode *node, CurrentFunc *cFunc)
         return;
     }
 
+    bool isString = false;
+    if (node->data.binary.left->type == TYPE_STRING && node->data.binary.right->type == TYPE_STRING)
+    {
+        isString = true;
+    }
+
     //implicit conversion Int->Double
     bool isDouble = false;
     if (node->data.binary.left->type == TYPE_DOUBLE || node->data.binary.right->type == TYPE_DOUBLE)
@@ -418,7 +425,17 @@ static void generateBinary(AstNode *node, CurrentFunc *cFunc)
     switch (node->data.binary.op)
     {
         case TOK_PLUS:
-            printf("ADDS\n");
+            if (isString) //concatenation
+            {
+                printf("POPS GF@%%tmp2\n");
+                printf("POPS GF@%%tmp\n");
+                printf("CONCAT GF@%%tmp GF@%%tmp GF@%%tmp2\n");
+                printf("PUSHS GF@%%tmp\n");
+            }
+            else
+            {
+                printf("ADDS\n");
+            }
             break;
         case TOK_MINUS:
             printf("SUBS\n");
