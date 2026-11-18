@@ -446,13 +446,35 @@ static void stInsertFunctions(Symtable *symtable, AstNode *whole)
     }
 }
 
+// I will use the following states:   NOT_VISITED, PROCESSING, DONE
+
+
+static void visit(Symtable *symtable, AstNode *whole, AstNode *function)
+{
+    if(function->data.func.state == DONE)
+    {
+        return;
+    }
+
+    if(function->data.func.state == PROCESSING && function->type == TYPE_NONE)
+    {
+        exit(6);  // this creates a cycle of untyped functions
+    }
+
+    function->data.func.state = PROCESSING;
+
+    // this function will pass through the body of a function, when it finds a function without a return type, it passes through the body of that function
+    findCalls(symtable, whole, function, function->data.func.body);
+    checkFunction(symtable, function);
+}
+
 
 static void checkFunctionList(Symtable *symtable, AstNode *whole)
 {
     AstNode *function = whole->data.whole.func;
     while(function != NULL)
     {
-        checkFunction(symtable, function);
+        visit(symtable, whole, function);
         function = function->next;
     }
 }
