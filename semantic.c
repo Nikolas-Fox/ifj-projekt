@@ -21,6 +21,33 @@
 #include <stdbool.h>
 
 // TEMPORARY: /******************************************************** */
+
+typedef enum {
+    TOK_EOF, TOK_NL, TOK_INDENT, TOK_DEDENT,
+    TOK_ID, TOK_KEYWORD,
+    TOK_INT, TOK_DOUBLE, TOK_STRING,
+
+    //tokens for operators
+    TOK_PLUS, TOK_MINUS, TOK_MUL, TOK_DIV,
+    TOK_LESS, TOK_LESS_EQ, TOK_GREATER, TOK_GREATER_EQ,
+    TOK_EQ, TOK_NEQ, TOK_ASSIGN,
+
+    //tokens for separators
+    TOK_LPAR, TOK_RPAR, TOK_COMMA, TOK_COLON, TOK_SEMICOL,
+    TOK_DOT, TOK_AT_MAIN,
+
+    //tokens for extentions
+    TOK_AND, TOK_OR, TOK_NOT, 
+    TOK_KW_BOOLEAN, TOK_KW_EXTENSION, 
+
+    //tokens for keywords
+    TOK_KW_DEF, TOK_KW_DO, TOK_KW_DOUBLE, TOK_KW_ELSE, TOK_KW_IF, TOK_KW_IMPORT,
+    TOK_KW_INT, TOK_KW_RETURN, TOK_KW_STRING, TOK_KW_THEN, TOK_KW_UNIT, TOK_KW_VAL,
+    TOK_KW_VAR, TOK_KW_WHILE,
+    TOK_INTERP_START, TOK_INTERP_END, TOK_INTERP_EXPR_START, TOK_INTERP_EXPR_END
+}TokenType;
+
+
 #define INITIAL_CAPACITY 16
 
 typedef enum {
@@ -42,12 +69,14 @@ typedef enum {
 typedef struct FunctionParam {
     char *paramName;
     DataType dType;
+    size_t listIndex; // which parameter list it belongs to (0-based)
     struct FunctionParam *next;
 } FunctionParam;
 
 typedef struct {
     FunctionParam *params;
-    size_t paramCount;
+    size_t paramCount; //total number of params
+    size_t listCount; //0 = no list, number of lists
 } FunctionData;
 
 typedef struct {
@@ -55,7 +84,7 @@ typedef struct {
     char *symbolName;
     DataType dtype;
     bool isDefined;
-    int scopeID;     // ADDED (NEED TO TELL SAŠA) - I also need to do newData->scope = -1 during insertSymbol
+    int scopeID;
 
     union {
         FunctionData funcData;
@@ -303,6 +332,16 @@ struct AstNode
 
 
 #include "semantic.h"
+#include <stdlib.h>
+#include <string.h>
+
+static void stInsertFunctions(Symtable *, AstNode *);
+static void checkFunctionList(Symtable *, AstNode *);
+static void checkFunction(Symtable *, AstNode *);
+static void checkStatementList(Symtable *, AstNode *, DataType);
+static void checkStatement(Symtable *, AstNode *, DataType);
+static DataType checkExpr(Symtable *, AstNode *);
+
 
 void semanticAnalysis(AstNode *whole)
 {
@@ -312,7 +351,7 @@ void semanticAnalysis(AstNode *whole)
     symtableFree(symtable);
 }
 
-bool hasParams(AstNode *group)
+static bool hasParams(AstNode *group)
 {
     while(group != NULL)
     {
@@ -326,20 +365,22 @@ bool hasParams(AstNode *group)
 }
 
 
-bool areCompatible(DataType destination, DataType source)
+static bool areCompatible(DataType destination, DataType source)
 {
     if(destination == TYPE_NONE || source == TYPE_NONE)
     {
         return false;
     }
-    if(destination == source || destination == TYPE_DOUBLE && source == TYPE_INT || destination == TYPE_ANY)
+    if(destination == source
+        ||(destination == TYPE_DOUBLE && source == TYPE_INT)   // int -> double
+        || destination == TYPE_ANY)
     {
         return true;
     }
     return false;
 }
 
-bool isNumber(DataType type)
+static bool isNumber(DataType type)
 {
     if(type == TYPE_INT || type == TYPE_DOUBLE)
     {
@@ -349,7 +390,7 @@ bool isNumber(DataType type)
 }
 
 
-void stInsertFunctions(Symtable *symtable, AstNode *whole)
+static void stInsertFunctions(Symtable *symtable, AstNode *whole)
 {
     size_t mainCount = 0;
     AstNode *node = whole->data.whole.func;
@@ -602,7 +643,7 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression)
 
             if(symbol->sType == FUNCTION) // when a function has no parameter list: 'foo'
             {
-                if(symbol->value.funcData.paramCount > 0) // we need to check whether it shouldn't have more parameters here
+                if(symbol->value.funcData.listCount > 0) // we need to check whether it shouldn't have more parameters here
                 {
                     exit(5);
                 }
@@ -681,7 +722,8 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression)
 
                 case TOK_EQ:
                 case TOK_NEQ:
-                    if((isNumber(left) && isNumber(right)) || left == right)
+                    if((isNumber(left) && isNumber(right)) 
+                        ||(left != TYPE_NONE && left == right)) // TYPE_NONE would mean they aren't defined
                     {
                         expression->type = TYPE_BOOL;
                         return TYPE_BOOL;
@@ -696,11 +738,17 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression)
                         return TYPE_BOOL;
                     }
                     exit(6);
-
+                
                 // TODO: case TOK_DOT
-                    
+                default:
+                    exit (99); // TOK_DOT is not defined yet
             }
+
         }
+
+        //TODO: case AST_CALL
+        default:
+            return TYPE_NONE;
     }
 }
 /*** End of file semantic.c ***/
