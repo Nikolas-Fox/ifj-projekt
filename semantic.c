@@ -55,7 +55,7 @@ typedef struct {
     char *symbolName;
     DataType dtype;
     bool isDefined;
-    int scope;     // ADDED (NEED TO TELL SAŠA) - I also need to do newData->scope = -1 during insertSymbol
+    int scopeID;     // ADDED (NEED TO TELL SAŠA) - I also need to do newData->scope = -1 during insertSymbol
 
     union {
         FunctionData funcData;
@@ -404,18 +404,16 @@ void stInsertFunctions(Symtable *symtable, AstNode *whole)
 static void checkFunctionList(Symtable *symtable, AstNode *whole)
 {
     AstNode *function = whole->data.whole.func;
-    int scopeId = 0;
     while(function != NULL)
     {
-        checkFunction(symtable, function, &scopeId);
+        checkFunction(symtable, function);
         function = function->next;
     }
 }
 
-static void checkFunction(Symtable *symtable, AstNode *function, int *scopeId)
+static void checkFunction(Symtable *symtable, AstNode *function)
 {
     symtablePushScope(symtable);
-    (*scopeId)++;
     // parameters of the functions will have the next scope
     AstNode *group = function->data.func.group;
     while(group != NULL)
@@ -423,7 +421,7 @@ static void checkFunction(Symtable *symtable, AstNode *function, int *scopeId)
         AstNode *param = group->data.group.items;
         while(param != NULL)
         {
-            param->data.param.scope = scopeId;
+            param->data.param.scope = symtableScopeID(symtable);
             symtableInsertVal(symtable, param->data.param.name, param->type, true);
 
             param = param->next;
@@ -431,12 +429,12 @@ static void checkFunction(Symtable *symtable, AstNode *function, int *scopeId)
         group = group->next;
     }
 
-    checkStatementList(symtable, function->data.func.body, scopeId, function->type); // I send function type as well to check compatibility (0 means implicit)
+    checkStatementList(symtable, function->data.func.body, function->type); // I send function type as well to check compatibility (0 means implicit)
 
     symtablePopScope(symtable);
 }
 
-static void checkStatementList(Symtable *symtable, AstNode *statement, int *scopeId, DataType retType)
+static void checkStatementList(Symtable *symtable, AstNode *statement, DataType retType)
 {
     if(statement == NULL)
     {
@@ -445,12 +443,12 @@ static void checkStatementList(Symtable *symtable, AstNode *statement, int *scop
 
     while(statement != NULL)
     {
-        checkStatement(symtable, statement, scopeId, retType);
+        checkStatement(symtable, statement, retType);
         statement = statement->next;
     }
 }
 
-static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId, DataType retType)
+static void checkStatement(Symtable *symtable, AstNode *statement, DataType retType)
 {
     switch(statement->class)
     {
@@ -471,20 +469,20 @@ static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId,
             }
 
             destination->type = symbol->dtype;
-            expression->type = checkExpr(symtable, expression, scopeId);
+            expression->type = checkExpr(symtable, expression);
 
             if(areCompatible(destination->type, expression->type) == false)
             {
                 exit(6); // error of type compatibility
             }
 
-            destination->data.id.scope = scopeId;
+            destination->data.id.scope = symbol->scopeID; // this isn't a declaration, so we have to look at the symbol scope, not at the current scope
             return;
         }
         
         case AST_DECLARATION:
         {
-            DataType expressionType = checkExpr(symtable, statement->data.declaration.expression, scopeId);
+            DataType expressionType = checkExpr(symtable, statement->data.declaration.expression);
             if(statement->type == TYPE_NONE) // statement->type is the explicit type of the variable/value
             {
                 if(expressionType == TYPE_NONE)
@@ -509,21 +507,20 @@ static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId,
             {
                 symtableInsertVal(symtable, statement->data.declaration.name, statement->type, true);
             }
-            statement->data.declaration.scope = scopeId;
+            statement->data.declaration.scope = symtableScopeID(symtable);
             return;
         }
 
         case AST_IF:
         {
             AstNode *condition = statement->data.ifStat.condition;
-            if(checkExpr(symtable, condition, scopeId) != TYPE_BOOL)
+            if(checkExpr(symtable, condition) != TYPE_BOOL)
             {
                 exit(6); // incompatible condtion type (isn't bool)
             }
             
             symtablePushScope(symtable);
-            (*scopeId)++;  // incrementing the scopeId before entering a new block
-            checkStatementList(symtable, statement->data.ifStat.thenBody, scopeId, retType);
+            checkStatementList(symtable, statement->data.ifStat.thenBody, retType);
             
             symtablePopScope(symtable);
 
@@ -531,8 +528,7 @@ static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId,
             if(statement->data.ifStat.elseBody != NULL)
             {
                 symtablePushScope(symtable);
-                (*scopeId)++;
-                checkStatementList(symtable, statement->data.ifStat.elseBody, scopeId, retType);
+                checkStatementList(symtable, statement->data.ifStat.elseBody, retType);
                 symtablePopScope(symtable);
             }
             return;
@@ -541,13 +537,14 @@ static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId,
         case AST_WHILE:
         {
             AstNode *condition = statement->data.whileStat.condition;
-            if(checkExpr(symtable, condition, scopeId) != TYPE_BOOL)
+            if(checkExpr(symtable, condition) != TYPE_BOOL)
             {
                 exit(6); // incompatible condtion type (isn't bool)
             }
 
-            (*scopeId)++;
-            checkStatementList(symtable, statement->data.whileStat.body, scopeId, retType);
+            symtablePushScope(symtable);
+            checkStatementList(symtable, statement->data.whileStat.body, retType);
+            symtablePopScope(symtable);
             return;
         }
 
@@ -566,7 +563,7 @@ static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId,
                 }
                 return;
             }
-            if(!areCompatible(retType, checkExpr(symtable, expression, scopeId)) && retType != TYPE_UNIT)  // if retType is TYPE_UNIT the result is disregarded (but valid)
+            if(!areCompatible(retType, checkExpr(symtable, expression)) && retType != TYPE_UNIT)  // if retType is TYPE_UNIT the result is disregarded (but valid)
             {
                 exit(6); // type incompatibility
             }
@@ -574,13 +571,13 @@ static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId,
         }
         
         default:  // this is just a bare expression
-            checkExpr(symtable, statement, scopeId);
+            checkExpr(symtable, statement);
             return;
     }
 }
 
 
-static DataType checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
+static DataType checkExpr(Symtable *symtable, AstNode *expression)
 {
     switch(expression->class)
     {
@@ -610,13 +607,14 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
                     exit(5);
                 }
             }
+            expression->data.id.scope = symbol->scopeID;
             expression->type = symbol->dtype;
             return expression->type;
         }
 
         case AST_UNARY:
         {
-            DataType type = checkExpr(symtable, expression->data.unary.operand, scopeId);
+            DataType type = checkExpr(symtable, expression->data.unary.operand);
             if(expression->data.unary.op == TOK_NOT)
             {
                 if(type != TYPE_BOOL)
@@ -637,8 +635,8 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
 
         case AST_BINARY:
         {
-            DataType left = checkExpr(symtable, expression->data.binary.left, scopeId);
-            DataType right = checkExpr(symtable, expression->data.binary.right, scopeId);
+            DataType left = checkExpr(symtable, expression->data.binary.left);
+            DataType right = checkExpr(symtable, expression->data.binary.right);
             TokenType operator = expression->data.binary.op;
 
             switch(operator)
