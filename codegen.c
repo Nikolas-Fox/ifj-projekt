@@ -125,7 +125,7 @@ static void generateFunc(AstNode *node, CurrentFunc *cFunc)
         body = body->next; //body is a linked list of statements
     }
     printf("LABEL %s$end\n", node->data.func.name);
-    if (node->type == TYPE_UNIT) //return type Unit, return value is evaluated and thrown out
+    if (node->type == TYPE_UNIT) //if return type is Unit, return value is evaluated and thrown out
     {
         printf("POPS GF@%%tmp\n");
         printf("PUSHS nil@nil\n");
@@ -170,7 +170,7 @@ static void cycleParams(AstNode *node, CurrentFunc *cFunc)
     printf("DEFVAR LF@%s$%d\n", node->data.param.name, node->data.param.scope);
     printf("POPS LF@%s$%d\n", node->data.param.name, node->data.param.scope);
 
-    if (node->type == TYPE_DOUBLE) //param is double
+    if (node->type == TYPE_DOUBLE) //double -> int conversion
     {
         printf("TYPE GF@%%tmp LF@%s$%d\n", node->data.param.name, node->data.param.scope); //check if argument is int
         printf("JUMPIFEQ %s$isFloat$%s$%d GF@%%tmp string@float\n", cFunc->funcName, node->data.param.name, node->data.param.scope);
@@ -259,7 +259,7 @@ static void generateBody(AstNode *node, CurrentFunc *cFunc)
 static void generateAssign(AstNode *node, CurrentFunc *cFunc)
 {
     generateExpression(node->data.assign.expression, cFunc);
-    if (node->data.assign.destination->type == TYPE_DOUBLE && node->data.assign.expression->type == TYPE_INT)
+    if (node->data.assign.destination->type == TYPE_DOUBLE && node->data.assign.expression->type == TYPE_INT) //conversion if necessary
     {
         printf("INT2FLOATS\n");
     }
@@ -278,7 +278,7 @@ static void generateDeclaration(AstNode *node, CurrentFunc *cFunc)
 {
     //DEFVAR is done at the beginning of the function
     generateExpression(node->data.declaration.expression, cFunc);
-    if (node->type == TYPE_DOUBLE && node->data.declaration.expression->type == TYPE_INT)
+    if (node->type == TYPE_DOUBLE && node->data.declaration.expression->type == TYPE_INT) //conversion if necessary
     {
         printf("INT2FLOATS\n");
     }
@@ -423,13 +423,13 @@ static void generateCall(AstNode *node, CurrentFunc *cFunc)
  */
 static void generateBinary(AstNode *node, CurrentFunc *cFunc)
 {
-    if (node->data.binary.op == TOK_AND)
+    if (node->data.binary.op == TOK_AND) //short-circuit && evaluation
     {
         generateAnd(node, cFunc);
         return;
     }
 
-    if (node->data.binary.op == TOK_OR)
+    if (node->data.binary.op == TOK_OR) //short-circuit || evaluation
     {
         generateOr(node, cFunc);
         return;
