@@ -328,6 +328,10 @@ bool hasParams(AstNode *group)
 
 bool areCompatible(DataType destination, DataType source)
 {
+    if(destination == TYPE_NONE || source == TYPE_NONE)
+    {
+        return false;
+    }
     if(destination == source || destination == TYPE_DOUBLE && source == TYPE_INT || destination == TYPE_ANY)
     {
         return true;
@@ -343,6 +347,8 @@ bool isNumber(DataType type)
     }
     return false;
 }
+
+
 void stInsertFunctions(Symtable *symtable, AstNode *whole)
 {
     size_t mainCount = 0;
@@ -352,7 +358,7 @@ void stInsertFunctions(Symtable *symtable, AstNode *whole)
     {
         bool hasType = (node->type != TYPE_NONE);
 
-        SymbolData *function = symtableInsertFunction(symtable, node->data.func.name, node->type, hasType);
+        SymbolData *function = symtableInsertFunction(symtable, node->data.func.name, node->type, true);
         AstNode *group = node->data.func.group;
 
         // inserting the parameters into the symtable (first activate a list - group, and then insert individual parameters)
@@ -437,13 +443,11 @@ static void checkStatementList(Symtable *symtable, AstNode *statement, int *scop
         return;
     }
 
-    symtablePushScope(symtable);
     while(statement != NULL)
     {
         checkStatement(symtable, statement, scopeId, retType);
         statement = statement->next;
     }
-    symtablePopScope(symtable);
 }
 
 static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId, DataType retType)
@@ -453,6 +457,7 @@ static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId,
         case AST_ASSIGN:
         {
             AstNode *destination = statement->data.assign.destination;
+            AstNode *expression = statement->data.assign.expression;
             SymbolData *symbol = symtableSearch(symtable, destination->data.id.name);
 
             if(symbol == NULL || symbol->sType == FUNCTION)
@@ -460,18 +465,20 @@ static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId,
                 exit(3);
             }
 
-            if(symbol->sType == VAL)    // you can't assign a value or parameter of a function
+            if(symbol->sType == VAL)    // you can't assign to a value nor parameter
             {
                 exit(7);
             }
 
-            DataType destinationType = symbol->sType;
-            DataType expressionType = checkExpr(symtable, statement->data.assign.expression, scopeId);
+            destination->type = symbol->dtype;
+            expression->type = checkExpr(symtable, expression, scopeId);
 
-            if(areCompatible(destinationType, expressionType) == false)
+            if(areCompatible(destination->type, expression->type) == false)
             {
                 exit(6); // error of type compatibility
             }
+
+            destination->data.id.scope = scopeId;
             return;
         }
         
@@ -503,11 +510,6 @@ static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId,
                 symtableInsertVal(symtable, statement->data.declaration.name, statement->type, true);
             }
             statement->data.declaration.scope = scopeId;
-
-            if(statement->type == TYPE_NONE)
-            {
-                statement->type = checkExpr(symtable, statement->data.declaration.expression, scopeId);
-            }
             return;
         }
 
@@ -519,27 +521,33 @@ static void checkStatement(Symtable *symtable, AstNode *statement, int *scopeId,
                 exit(6); // incompatible condtion type (isn't bool)
             }
             
+            symtablePushScope(symtable);
             (*scopeId)++;  // incrementing the scopeId before entering a new block
-            checkStatementList(symtable, statement->data.ifStat.thenBody, scopeId);
+            checkStatementList(symtable, statement->data.ifStat.thenBody, scopeId, retType);
             
+            symtablePopScope(symtable);
+
+            DataType elseType = TYPE_UNIT; // if else body isn't defined it should be TYPE_UNIT
             if(statement->data.ifStat.elseBody != NULL)
             {
+                symtablePushScope(symtable);
                 (*scopeId)++;
-                checkStatementList(symtable, statement->data.ifStat.elseBody, scopeId);
+                checkStatementList(symtable, statement->data.ifStat.elseBody, scopeId, retType);
+                symtablePopScope(symtable);
             }
             return;
         }
 
         case AST_WHILE:
         {
-            AstNode *condition = statement->data.ifStat.condition;
+            AstNode *condition = statement->data.whileStat.condition;
             if(checkExpr(symtable, condition, scopeId) != TYPE_BOOL)
             {
                 exit(6); // incompatible condtion type (isn't bool)
             }
 
-            (*scopeId++);
-            checkStatementList(symtable, statement->data.whileStat.body, scopeId);
+            (*scopeId)++;
+            checkStatementList(symtable, statement->data.whileStat.body, scopeId, retType);
             return;
         }
 
@@ -594,6 +602,14 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
 
                 exit(3); // no such value/variable exists
             }
+
+            if(symbol->sType == FUNCTION) // when a function has no parameter list: 'foo'
+            {
+                if(symbol->value.funcData.paramCount > 0) // we need to check whether it shouldn't have more parameters here
+                {
+                    exit(5);
+                }
+            }
             expression->type = symbol->dtype;
             return expression->type;
         }
@@ -608,10 +624,12 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
                     exit(6); // NOT must be followed by bool type
                 }
             }
-            // everything else is sign (so it must be followed by int or double)
-            if(isNumber(type) == false)
+            else
             {
-                exit(6);
+                if(isNumber(type) == false)  // everything else is sign (so it must be followed by int or double)
+                {
+                    exit(6);
+                }
             }
             expression->type = type;
             return type;
@@ -683,6 +701,7 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression, int *scopeId)
 
                 // TODO: case TOK_DOT
                     
+            }
         }
     }
 }
