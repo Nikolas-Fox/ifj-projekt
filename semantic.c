@@ -482,11 +482,6 @@ static void checkFunction(Symtable *symtable, AstNode *function)
 
 static DataType checkStatementList(Symtable *symtable, AstNode *statement, DataType retType)
 {
-    if(statement == NULL)
-    {
-        return;
-    }
-
     DataType last = TYPE_UNIT;
     while(statement != NULL)
     {
@@ -807,6 +802,7 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression)
 
                     arg = arg->next;
                 }
+                list++;
                 group = group->next;
             }
             expression->type = function->dtype;
