@@ -446,6 +446,8 @@ static void stInsertFunctions(Symtable *symtable, AstNode *whole)
     }
 }
 
+static void findCalls(Symtable *, AstNode *, AstNode *, AstNode *);
+
 // I will use the following states:   NOT_VISITED, PROCESSING, DONE
 static void visit(Symtable *symtable, AstNode *whole, AstNode *function)
 {
@@ -467,6 +469,20 @@ static void visit(Symtable *symtable, AstNode *whole, AstNode *function)
     function->data.func.state = DONE;
 }
 
+// this function returns a pointer to a function with a certain name
+static AstNode *findFunction(AstNode *whole, char *name)
+{
+    AstNode *function = whole->data.whole.func;
+    while(function != NULL)
+    {
+        if(strcmp(function->data.func.name, name) == 0)
+        {
+            return function;
+        }
+        function = function->next;
+    }
+    return NULL;
+}
 static void findCalls(Symtable *symtable, AstNode *whole, AstNode *function, AstNode *statement)
 {
     while(statement != NULL)
@@ -481,7 +497,7 @@ static void findCalls(Symtable *symtable, AstNode *whole, AstNode *function, Ast
                     visit(symtable, whole, calledFunction);
                 }
                 
-                AstNode *group = calledFunction->data.call.group;
+                AstNode *group = statement->data.call.group;
                 while(group != NULL) // finding function calls in parameters
                 {
                     findCalls(symtable, whole, function, group->data.group.items);
