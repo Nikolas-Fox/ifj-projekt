@@ -58,6 +58,7 @@ typedef enum {
     TYPE_DOUBLE,
     TYPE_UNIT,
     TYPE_ANY,
+    TYPE_RETURNED
 } DataType;
 
 typedef enum {
@@ -608,13 +609,13 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement, DataType 
                 {
                     exit(6); // if there is just return; then the return type must be TYPE_UNIT
                 }
-                return;
+                return TYPE_RETURNED; // TYPE_RETURNED tells the function that keyword RETURN was used
             }
             if(!areCompatible(retType, checkExpr(symtable, expression)) && retType != TYPE_UNIT)  // if retType is TYPE_UNIT the result is disregarded (but valid)
             {
                 exit(6); // type incompatibility
             }
-            return;
+            return TYPE_RETURNED; // TYPE_RETURNED tells the function that keyword RETURN was used
         }
         
         default:  // this is just a bare expression
