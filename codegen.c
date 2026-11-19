@@ -810,6 +810,12 @@ static void printBuiltins() {
     printf("PUSHS GF@%%tmp\n"); // return value
     printf("RETURN\n");
 
+    // readBoolean(): Boolean
+    printf("LABEL readBoolean\n");
+    printf("READ GF@%%tmp bool\n");
+    printf("PUSHS GF@%%tmp\n"); // return value
+    printf("RETURN\n");
+
     // readDouble(): Double
     printf("LABEL readDouble\n");
     printf("READ GF@%%tmp float\n");
