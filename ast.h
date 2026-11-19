@@ -3,7 +3,7 @@
 * Package:		ast
 * File:			ast.h
 * Date:			12.11.2026
-* Last change:	18.11.2026
+* Last change:	19.11.2026
 * Authors: 		Nikolas Fox xfoxnik00
 *
 * Description: Header file containing abstract syntactic tree logic
@@ -19,92 +19,11 @@
 #ifndef AST_H
 #define AST_H
 
-
-// #include "scanner.h"
-// #include "symtable.h"
-
-
-/******************************************************************************/
-// temporary from scanner.h
-typedef enum {
-    TOK_EOF, TOK_NL, TOK_INDENT, TOK_DEDENT,
-    TOK_ID, TOK_KEYWORD,
-    TOK_INT, TOK_DOUBLE, TOK_STRING,
-
-    //tokens for operators
-    TOK_PLUS, TOK_MINUS, TOK_MUL, TOK_DIV,
-    TOK_LESS, TOK_LESS_EQ, TOK_GREATER, TOK_GREATER_EQ,
-    TOK_EQ, TOK_NEQ, TOK_ASSIGN,
-
-    //tokens for separators
-    TOK_LPAR, TOK_RPAR, TOK_COMMA, TOK_COLON, TOK_SEMICOL,
-    TOK_DOT, TOK_AT_MAIN,
-
-    //tokens for extentions
-    TOK_AND, TOK_OR, TOK_NOT, TOK_PLUSPLUS,
-
-    TOK_KW_DEF, TOK_KW_DO, TOK_KW_DOUBLE, TOK_KW_ELSE, TOK_KW_IF, TOK_KW_IMPORT,
-    TOK_KW_INT, TOK_KW_RETURN, TOK_KW_STRING, TOK_KW_THEN, TOK_KW_UNIT, TOK_KW_VAL,
-    TOK_KW_VAR, TOK_KW_WHILE, TOK_KW_EXTENSION, TOK_KW_BOOLEAN
-}TokenType;
-
-
-typedef struct {
-    TokenType type;
-    char *str; // identifier/string
-    int line;
-}Token;
-
-
-// temporary from symtable.h:
-
 #include <stdbool.h>
-#include <stddef.h> // for size_t
-typedef enum {
-    TYPE_NONE,
-    TYPE_INT,
-    TYPE_STRING,
-    TYPE_BOOL,
-    TYPE_DOUBLE,
-    TYPE_UNIT,
-    TYPE_ANY,
-} DataType;
+#include <stddef.h>
 
-typedef enum {
-    VAL,
-    VAR,
-    FUNCTION,
-} SymbolType;
-
-typedef struct FunctionParam {
-    char *paramName;
-    DataType dType;
-    struct FunctionParam *next;
-} FunctionParam;
-
-typedef struct {
-    FunctionParam *params;
-    size_t paramCount;
-} FunctionData;
-
-typedef struct {
-    SymbolType sType;
-    char *symbolName;
-    DataType dtype;
-    bool isDefined;
-
-    union {
-        FunctionData funcData;
-    } value;
-} SymbolData;
-
-typedef struct Symtable Symtable;
-
-SymbolData *symtableSearch(Symtable *sTable, char *name);
-
-static char *copyString(const char *src);
-
-/*********************************************************/
+#include "scanner.h"
+#include "symtable.h"
 
 typedef enum
 {
@@ -139,7 +58,7 @@ typedef struct AstNode AstNode; // declared so AstNode can keep a pointer to its
 struct AstNode
 {
     AstClass class;
-    DataType type; // The type of the nodes value (literal, expression, variable, function return type) 0 until it is set
+    DataType type; // The type of the nodes value (literal, expression, variable, function return type) TYPE_NONE until it is set
     AstNode *next;  // sibling in linked list (statements, arguments and parameters,
                     // groups in calls and definitions, functions)
 
@@ -311,7 +230,7 @@ AstNode *createNodeIf(AstNode *condition, AstNode *thenBody, AstNode *elseBody);
  * @brief Creates a variable declaration node
  * @param name Name of the variable
  * @param isVar True for var, false for val
- * @param type Declared type (0 if it's not declared)
+ * @param type Declared type (TYPE_NONE if it's not declared)
  * @param expression Subtree of the initialiser
  * @return Pointer to the new node
  */
@@ -328,7 +247,7 @@ AstNode *createNodeAssign(AstNode *destination, AstNode *expression);
 /**
  * @brief Creates a formal parameter node
  * @param name Name of the parameter
- * @param declaredType Type of the parameter
+ * @param dataType Type of the parameter
  * @return Pointer to the new node
  */
 AstNode *createNodeParam(char *name, DataType type);
@@ -347,7 +266,7 @@ AstNode *createNodeGroup(AstNode *items, size_t count);
  * @param groupCount Number of parameter groups
  * @param group First AST_GROUP of parameters
  * @param body First statement of the body (statements create a linked list)
- * @param retType Written return type (0 if it is not stated)
+ * @param retType Written return type (TYPE_NONE if it is not stated)
  * @return Pointer to the new node
  */
 AstNode *createNodeFunc(char *name, size_t groupCount, AstNode *group, AstNode *body, DataType retType);
@@ -361,9 +280,9 @@ AstNode *createNodeFunc(char *name, size_t groupCount, AstNode *group, AstNode *
 AstNode *insertStat(AstNode *head, AstNode *newStat);
 
 /**
- * @brief Inserts a function to the end of a statement list
- * @param head Pointer to the first statement of the list
- * @param newFunc Pointer to the statement we want to add to the end
+ * @brief Inserts a function to the end of a function list
+ * @param head Pointer to the first function of the list
+ * @param newFunc Pointer to the function we want to add to the end
  * @return head during normal insertion and if newFunc is null; newFunc if the list was empty
  */
 AstNode *insertFunc(AstNode *head, AstNode *newFunc);
@@ -373,12 +292,5 @@ AstNode *insertFunc(AstNode *head, AstNode *newFunc);
  * @param node Pointer to the node which should be freed
  */
 void astFree(AstNode *node);
-
-/**
- * @brief Free a linked list
- * @param node Pointer to the first element of a linked list (head)
- */
-void astFreeList(AstNode *node);
-
 #endif
 /*** End of file ast.h ***/

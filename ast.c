@@ -3,7 +3,7 @@
 * Package:		ast
 * File:			ast.c
 * Date:			12.11.2026
-* Last change:	15.11.2026
+* Last change:	19.11.2026
 * Authors: 		Nikolas Fox xfoxnik00
 *
 * Description: Implementation of abstract syntactic tree logic
@@ -16,14 +16,10 @@
 * @author Nikolas Fox xfoxnik00
 */
 
+#include <stdlib.h>
 #include "ast.h"
 
-// TEMP from symtable.c (add this function to utils)
-static char *copyString(const char *src)
-{
-
-}
-
+static void astFreeList(AstNode *node);
 
 AstNode *createNode(AstClass class)
 {
@@ -146,6 +142,7 @@ AstNode *createNodeFunc(char *name, size_t groupCount,AstNode *group, AstNode *b
     node->data.func.groupCount = groupCount;
     node->data.func.group = group;
     node->type = retType;
+    node->data.func.state = NOT_VISITED;
     node->data.func.body = body;
     return node;
 }
@@ -196,8 +193,11 @@ AstNode *insertFunc(AstNode *head, AstNode *newFunc)
     return head;
 }
 
-
-void astFreeList(AstNode *head)
+/**
+ * @brief Free a linked list
+ * @param head Pointer to the first element of a linked list (head)
+ */
+static void astFreeList(AstNode *head)
 {
     while(head != NULL)
     {
@@ -206,7 +206,6 @@ void astFreeList(AstNode *head)
         head = next;
     }
 }
-
 
 void astFree(AstNode *node)
 {
