@@ -9,7 +9,7 @@
 # Paths to binaries (adjust according to the executable names in your Makefile)
 COMPILER="./compiler"
 INTERPRETER="./ic26int"
-TEST_DIR="tests/e2e"
+TEST_DIR="e2e_tests/e2e"
 
 USE_VALGRIND=0
 if [ "$1" == "--valgrind" ]; then
@@ -28,7 +28,7 @@ FAILED=0
 run_test() {
     local src_file="$1"
     local expected_rc="$2"
-    local base="${src_file%.src}"
+    local base="${src_file%.*}"
     local tmp_code
     local tmp_out
     local tmp_vg
