@@ -1,0 +1,7 @@
+import ifj26.*
+
+def add(a: Int, b: Int): Int = a + b
+
+@main def run(): Unit =
+  val res = add(3, 4)
+  print(res)

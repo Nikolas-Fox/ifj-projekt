@@ -1,0 +1,9 @@
+import ifj26.*
+
+@main def run(): Unit =
+  val flag: Boolean = true
+  val check = !false && flag
+  if check then
+    print("ok")
+  else if false || flag then
+    print("fallback")

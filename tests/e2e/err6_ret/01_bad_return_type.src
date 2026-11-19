@@ -1,0 +1,7 @@
+import ifj26.*
+
+def foo(): Int =
+  return "retazec"
+
+@main def run(): Unit =
+  val r = foo()

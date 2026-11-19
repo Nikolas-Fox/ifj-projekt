@@ -1,6 +1,0 @@
-def main() {
-    var flag: Boolean = true
-    if (flag) {
-        print(toStr(flag))
-    }
-}

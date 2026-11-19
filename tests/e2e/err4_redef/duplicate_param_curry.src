@@ -1,5 +1,0 @@
-def invalidFunc(a: Int)(a: String): Int {
-    return 0
-}
-
-def main() {}
