@@ -54,9 +54,10 @@ static AstNode *parseId(ParsedToken *p);
 // parseArgList, parseLoa, parseArgEnd are in precedence.c, as they aren't used in parser
 
 
-AstNode *parseProgram()
+AstNode *parseProgram(Scanner *sc)
 {
     ParsedToken token;
+    token.sc = sc;
     token.lookAhead = false;
     getNextToken(&token);
 
@@ -84,7 +85,7 @@ void getNextToken(ParsedToken *p)
     }
     else
     {
-        p->currentToken = getToken();
+        p->currentToken = getToken(p->sc);
     }
 }
 
@@ -93,7 +94,7 @@ void getTokenAhead(ParsedToken *p)
     if (!p->lookAhead)
     {
         p->lookAhead = true;
-        p->aheadToken = getToken();
+        p->aheadToken = getToken(p->sc);
     }
 }
 
