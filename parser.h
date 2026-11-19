@@ -20,12 +20,12 @@
 #define PARSER_H
 
 #include <stdbool.h>
-#include <stddef.h>
 #include "scanner.h"
 #include "ast.h"
 
 //Parser state struct
 typedef struct {
+    Scanner *sc;
     Token currentToken;
     Token aheadToken;
     bool lookAhead;    // true if aheadToken holds a token from the lexer
@@ -61,7 +61,7 @@ bool startsExpression(TokenType type);
  * @brief Parses the program and builds its AST, exit(2) on syntax errors
  * @return Pointer to the root of the whole AST
  */
-AstNode *parseProgram();
+AstNode *parseProgram(Scanner *sc);
 
 #endif
 /*** End of file parser.h ***/
