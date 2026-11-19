@@ -3,7 +3,7 @@
 * Package:		codegen
 * File:			codegen.c
 * Date:			15.11.2026
-* Last change:	18.11.2026
+* Last change:	19.11.2026
 * Authors: 		Eliška Holá xholael00
 *
 * Description:  Implementation of code generation
@@ -53,7 +53,7 @@ static void printBuiltins();
 //current function information
 typedef struct {
     char *funcName;
-    int ifCount, whileCount, evalCount;
+    int ifCount, whileCount, evalCount; //used to generate unique labels, if and while cycles, eval is used for short-circuit evaluation
     DataType retType;
 } CurrentFunc;
 
@@ -170,7 +170,7 @@ static void cycleParams(AstNode *node, CurrentFunc *cFunc)
     printf("DEFVAR LF@%s$%d\n", node->data.param.name, node->data.param.scope);
     printf("POPS LF@%s$%d\n", node->data.param.name, node->data.param.scope);
 
-    if (node->type == TYPE_DOUBLE) //double -> int conversion
+    if (node->type == TYPE_DOUBLE) //int -> double conversion
     {
         printf("TYPE GF@%%tmp LF@%s$%d\n", node->data.param.name, node->data.param.scope); //check if argument is int
         printf("JUMPIFEQ %s$isFloat$%s$%d GF@%%tmp string@float\n", cFunc->funcName, node->data.param.name, node->data.param.scope);
