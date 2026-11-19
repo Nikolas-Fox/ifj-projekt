@@ -83,18 +83,33 @@ static void test_hash_null_or_zero_size(void) {
 // ------------------------------------------------------------------- htInit
 
 static void test_init_zero_size(void) {
-    CHECK(htInit(0) == NULL);
+    CHECK(htInit(0, 0) == NULL); 
 }
 
 static void test_init_creates_empty_table(void) {
-    HashTable *t = htInit(11);
+    HashTable *t = htInit(11, 42); 
     REQUIRE(t != NULL);
     CHECK(t->size == 11u);
     CHECK(t->count_occupied == 0u);
+    CHECK(t->scopeID == 42); 
+    CHECK(htScopeID(t) == 42); 
     REQUIRE(t->tableItems != NULL);
     for (size_t i = 0; i < t->size; i++) {
         CHECK(t->tableItems[i].state == EMPTY);
     }
+    htFree(t);
+}
+
+
+static void test_scope_id_and_rehash_preserves_it(void) {
+    HashTable *t = htInit(5, 7);
+    REQUIRE(t != NULL);
+    CHECK(htScopeID(t) == 7);
+
+    for (int i = 0; i < 5; i++) {
+        CHECK(htInsert(t, g_keys[i], &g_vals[i]) != NULL);
+    }
+    CHECK(htScopeID(t) == 7);
     htFree(t);
 }
 
@@ -105,7 +120,7 @@ static void test_free_null(void) {
 // ------------------------------------------------ insert / search / update
 
 static void test_insert_then_search(void) {
-    HashTable *t = htInit(HASH_T_SIZE);
+    HashTable *t = htInit(HASH_T_SIZE, 1);
     REQUIRE(t != NULL);
     int x = 1;
     HashTItem *item = htInsert(t, "foo", &x);
@@ -122,14 +137,14 @@ static void test_insert_then_search(void) {
 }
 
 static void test_search_missing(void) {
-    HashTable *t = htInit(HASH_T_SIZE);
+    HashTable *t = htInit(HASH_T_SIZE, 1); 
     REQUIRE(t != NULL);
     CHECK(htSearch(t, "nothing") == NULL);
     htFree(t);
 }
 
 static void test_insert_existing_updates(void) {
-    HashTable *t = htInit(HASH_T_SIZE);
+    HashTable *t = htInit(HASH_T_SIZE, 1); 
     REQUIRE(t != NULL);
     int a = 1, b = 2;
     HashTItem *first = htInsert(t, "k", &a);
@@ -142,7 +157,7 @@ static void test_insert_existing_updates(void) {
 }
 
 static void test_insert_null_data_allowed(void) {
-    HashTable *t = htInit(HASH_T_SIZE);
+    HashTable *t = htInit(HASH_T_SIZE, 1); 
     REQUIRE(t != NULL);
     HashTItem *item = htInsert(t, "k", NULL);
     REQUIRE(item != NULL);
@@ -152,7 +167,7 @@ static void test_insert_null_data_allowed(void) {
 }
 
 static void test_null_arguments(void) {
-    HashTable *t = htInit(HASH_T_SIZE);
+    HashTable *t = htInit(HASH_T_SIZE, 1);
     REQUIRE(t != NULL);
     int x = 0;
     CHECK(htInsert(NULL, "k", &x) == NULL);
@@ -166,7 +181,7 @@ static void test_null_arguments(void) {
 }
 
 static void test_keys_compared_by_content(void) {
-    HashTable *t = htInit(HASH_T_SIZE);
+    HashTable *t = htInit(HASH_T_SIZE, 1); 
     REQUIRE(t != NULL);
     int x = 7;
     htInsert(t, "same", &x);
@@ -180,7 +195,7 @@ static void test_keys_compared_by_content(void) {
 // ------------------------------------------------------------------- delete
 
 static void test_delete_marks_slot(void) {
-    HashTable *t = htInit(HASH_T_SIZE);
+    HashTable *t = htInit(HASH_T_SIZE, 1); 
     REQUIRE(t != NULL);
     int x = 1;
     htInsert(t, "foo", &x);
@@ -197,7 +212,7 @@ static void test_delete_marks_slot(void) {
 }
 
 static void test_delete_missing(void) {
-    HashTable *t = htInit(HASH_T_SIZE);
+    HashTable *t = htInit(HASH_T_SIZE, 1); 
     REQUIRE(t != NULL);
     CHECK(!htDelete(t, "ghost"));
     CHECK(t->count_occupied == 0u);
@@ -205,7 +220,7 @@ static void test_delete_missing(void) {
 }
 
 static void test_delete_twice(void) {
-    HashTable *t = htInit(HASH_T_SIZE);
+    HashTable *t = htInit(HASH_T_SIZE, 1); 
     REQUIRE(t != NULL);
     int x = 1;
     htInsert(t, "foo", &x);
@@ -219,7 +234,7 @@ static void test_delete_twice(void) {
 
 static void test_colliding_keys_all_found(void) {
     const size_t size = 11;
-    HashTable *t = htInit(size);
+    HashTable *t = htInit(size, 1); 
     REQUIRE(t != NULL);
     REQUIRE(findCollidingKeys(size, 4) == 4);
     int v[4] = {0, 1, 2, 3};
@@ -237,7 +252,7 @@ static void test_colliding_keys_all_found(void) {
 
 static void test_search_probes_past_tombstone(void) {
     const size_t size = 11;
-    HashTable *t = htInit(size);
+    HashTable *t = htInit(size, 1); 
     REQUIRE(t != NULL);
     REQUIRE(findCollidingKeys(size, 3) == 3);
     int v[3] = {0, 1, 2};
@@ -253,7 +268,7 @@ static void test_search_probes_past_tombstone(void) {
 
 static void test_insert_reuses_first_deleted_slot(void) {
     const size_t size = 11;
-    HashTable *t = htInit(size);
+    HashTable *t = htInit(size, 1); 
     REQUIRE(t != NULL);
     REQUIRE(findCollidingKeys(size, 4) == 4);
     int v[4] = {0, 1, 2, 3};
@@ -274,7 +289,7 @@ static void test_no_duplicate_after_delete_and_reinsert(void) {
     // Regression: A, B collide; delete A; insert B again must UPDATE B,
     // not create a second copy in A's old slot.
     const size_t size = 11;
-    HashTable *t = htInit(size);
+    HashTable *t = htInit(size, 1); 
     REQUIRE(t != NULL);
     REQUIRE(findCollidingKeys(size, 2) == 2);
     int a = 1, b = 2, b2 = 3;
@@ -295,21 +310,18 @@ static void test_no_duplicate_after_delete_and_reinsert(void) {
 // --------------------------------------------------------------- full table
 
 static void test_rehash_on_high_load(void) {
-    HashTable *t = htInit(5); // Malá počiatočná veľkosť
+    HashTable *t = htInit(5, 1); 
     REQUIRE(t != NULL);
     
-    size_t oldSize = t->size; // mali by sme zistiť 5
+    size_t oldSize = t->size;
     
-    // Vložíme dostatok prvkov na prekročenie 70% (pri veľkosti 5 je to > 3.5, teda 4 prvky)
     for (int i = 0; i < 5; i++) {
         CHECK(htInsert(t, g_keys[i], &g_vals[i]) != NULL);
     }
     
-    // Rehashing mal prebehnúť, takže veľkosť tabuľky sa musela zväčšiť (bude to väčšie prvočíslo)
     CHECK(t->size > oldSize);
     CHECK(t->count_occupied == 5u);
     
-    // Overíme, že všetky vložene prvky vieme stále nájsť
     for (int i = 0; i < 5; i++) {
         CHECK(htSearch(t, g_keys[i]) != NULL);
         CHECK(htSearch(t, g_keys[i])->data == &g_vals[i]);
@@ -320,7 +332,7 @@ static void test_rehash_on_high_load(void) {
 
 static void test_full_table_with_tombstones_reuses_deleted(void) {
     // No EMPTY slot left, but DELETED slots must still be usable.
-    HashTable *t = htInit(5);
+    HashTable *t = htInit(5, 1); 
     REQUIRE(t != NULL);
     for (int i = 0; i < 5; i++) {
         CHECK(htInsert(t, g_keys[i], &g_vals[i]) != NULL);
@@ -341,7 +353,7 @@ static void test_full_table_with_tombstones_reuses_deleted(void) {
 }
 
 static void test_size_one_table(void) {
-    HashTable *t = htInit(1);
+    HashTable *t = htInit(1, 1); 
     REQUIRE(t != NULL);
     int a = 1, b = 2;
     CHECK(htInsert(t, "a", &a) != NULL);
@@ -357,7 +369,7 @@ static void test_size_one_table(void) {
 
 static void test_many_items(void) {
     const int n = 3000;
-    HashTable *t = htInit(HASH_T_SIZE);
+    HashTable *t = htInit(HASH_T_SIZE, 1); 
     REQUIRE(t != NULL);
     for (int i = 0; i < n; i++) {
         REQUIRE(htInsert(t, g_keys[i], &g_vals[i]) != NULL);
@@ -385,7 +397,7 @@ static void test_many_items(void) {
 // -------------------------------------------------------------- forEachData
 
 static void test_foreach_visits_only_occupied(void) {
-    HashTable *t = htInit(HASH_T_SIZE);
+    HashTable *t = htInit(HASH_T_SIZE, 1); 
     REQUIRE(t != NULL);
     int a = 1, b = 2, c = 3;
     htInsert(t, "a", &a);
@@ -403,7 +415,7 @@ static void test_foreach_visits_only_occupied(void) {
 }
 
 static void test_foreach_empty_table(void) {
-    HashTable *t = htInit(HASH_T_SIZE);
+    HashTable *t = htInit(HASH_T_SIZE, 1); 
     REQUIRE(t != NULL);
     g_visited = 0;
     forEachData(t, countCallback);
@@ -413,7 +425,7 @@ static void test_foreach_empty_table(void) {
 
 static void test_foreach_uses_tables_own_size(void) {
     // Regression: must not assume HASH_T_SIZE.
-    HashTable *t = htInit(3);
+    HashTable *t = htInit(3, 1); 
     REQUIRE(t != NULL);
     int a = 1;
     htInsert(t, "a", &a);
@@ -424,17 +436,13 @@ static void test_foreach_uses_tables_own_size(void) {
 }
 
 static void helper_foreach_null_callback(void) {
-    HashTable *t = htInit(HASH_T_SIZE);
-    // Tu zavoláme funkciu s NULL callbackom
+    HashTable *t = htInit(HASH_T_SIZE, 1);
     forEachData(t, NULL);
-    htFree(t); // Vždy sa poctivo uvoľní v tom istom kontexte
+    htFree(t);
 }
 
 static void test_foreach_null_arguments(void) {
-    // 1. Test s NULL tabuľkou
     EXPECT_SURVIVES(forEachData(NULL, countCallback));
-
-    // 2. Test s NULL callbackom spustený bezpečne cez pomocnú funkciu
     EXPECT_SURVIVES(helper_foreach_null_callback());
 }
 
@@ -453,6 +461,7 @@ int main(int argc, char **argv) {
 
     RUN(test_init_zero_size);
     RUN(test_init_creates_empty_table);
+    RUN(test_scope_id_and_rehash_preserves_it); 
     RUN(test_free_null);
 
     RUN(test_insert_then_search);

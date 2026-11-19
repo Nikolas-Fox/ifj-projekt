@@ -10,6 +10,7 @@
 static void test_init_global_scope_usable(void) {
     Symtable *s = symtableInit();
     REQUIRE(s != NULL);
+    CHECK(symtableScopeID(s) == 0); 
     CHECK(symtableSearch(s, "anything") == NULL);
     CHECK(symtableSearchCurrentScope(s, "anything") == NULL);
     symtableFree(s);
@@ -29,8 +30,39 @@ static void test_push_scope(void) {
     CHECK(!symtablePushScope(NULL));
     Symtable *s = symtableInit();
     REQUIRE(s != NULL);
+    CHECK(symtableScopeID(s) == 0); 
     CHECK(symtablePushScope(s));
+    CHECK(symtableScopeID(s) == 1); 
     CHECK(symtablePushScope(s));
+    CHECK(symtableScopeID(s) == 2); 
+    symtableFree(s);
+}
+
+
+static void test_scope_ids_unique_and_stored_in_symbols(void) {
+    Symtable *s = symtableInit();
+    REQUIRE(s != NULL);
+
+    SymbolData *g = symtableInsertVar(s, "g", TYPE_INT, true);
+    REQUIRE(g != NULL);
+    CHECK(g->scopeID == 0);
+    CHECK(symtableScopeID(s) == 0);
+
+    REQUIRE(symtablePushScope(s));
+    CHECK(symtableScopeID(s) == 1);
+    SymbolData *v1 = symtableInsertVar(s, "a", TYPE_INT, true);
+    REQUIRE(v1 != NULL);
+    CHECK(v1->scopeID == 1);
+
+    symtablePopScope(s);
+    CHECK(symtableScopeID(s) == 0);
+
+    REQUIRE(symtablePushScope(s));
+    CHECK(symtableScopeID(s) == 2);
+    SymbolData *v2 = symtableInsertVar(s, "a", TYPE_INT, true);
+    REQUIRE(v2 != NULL);
+    CHECK(v2->scopeID == 2);
+
     symtableFree(s);
 }
 
@@ -40,6 +72,7 @@ static void test_pop_global_scope_is_ignored(void) {
     REQUIRE(symtableInsertVar(s, "g", TYPE_INT, true) != NULL);
     symtablePopScope(s);  // top == 0 -> must do nothing
     symtablePopScope(s);
+    CHECK(symtableScopeID(s) == 0); 
     CHECK(symtableSearch(s, "g") != NULL);
     CHECK(symtableInsertVar(s, "h", TYPE_INT, true) != NULL);  // still usable
     symtableFree(s);
@@ -60,6 +93,7 @@ static void test_insert_var_fields(void) {
     CHECK(sym->sType == VAR);
     CHECK(sym->dtype == TYPE_DOUBLE);
     CHECK(!sym->isDefined);
+    CHECK(sym->scopeID == 0); 
     CHECK_STR(sym->symbolName, "counter");
     CHECK(sym->value.funcData.params == NULL);
     CHECK(sym->value.funcData.paramCount == 0u);
@@ -89,6 +123,7 @@ static void test_insert_val(void) {
     CHECK(sym->sType == VAL);
     CHECK(sym->dtype == TYPE_DOUBLE);
     CHECK(sym->isDefined);
+    CHECK(sym->scopeID == 0); 
     symtableFree(s);
 }
 
@@ -99,6 +134,7 @@ static void test_insert_function(void) {
     REQUIRE(f != NULL);
     CHECK(f->sType == FUNCTION);
     CHECK(f->dtype == TYPE_UNIT);
+    CHECK(f->scopeID == 0); 
     CHECK(f->value.funcData.params == NULL);
     CHECK(f->value.funcData.paramCount == 0u);
     CHECK(f->value.funcData.listCount == 0u);
@@ -174,10 +210,12 @@ static void test_shadowing_allowed(void) {
     Symtable *s = symtableInit();
     REQUIRE(s != NULL);
     SymbolData *outer = symtableInsertVar(s, "x", TYPE_INT, true);
+    CHECK(outer->scopeID == 0); 
     REQUIRE(symtablePushScope(s));
     SymbolData *inner = symtableInsertVal(s, "x", TYPE_STRING, true);
     REQUIRE(inner != NULL);
     CHECK(inner != outer);
+    CHECK(inner->scopeID == 1); 
 
     CHECK(symtableSearch(s, "x") == inner);
     CHECK(symtableSearchCurrentScope(s, "x") == inner);
@@ -197,6 +235,7 @@ static void test_innermost_scope_wins_in_three_levels(void) {
     symtablePushScope(s);
     CHECK(symtableSearch(s, "v") == a);  // found two levels up
     SymbolData *c = symtableInsertVar(s, "v", TYPE_BOOL, true);
+    CHECK(c->scopeID == 2); 
     CHECK(symtableSearch(s, "v") == c);
     symtablePopScope(s);
     CHECK(symtableSearch(s, "v") == a);
@@ -249,6 +288,7 @@ static void test_deep_nesting_grows_stack(void) {
 
     for (int i = 0; i < depth; i++) {
         REQUIRE(symtablePushScope(s));
+        CHECK(symtableScopeID(s) == i + 1); 
         snprintf(name, sizeof name, "v%d", i);
         REQUIRE(symtableInsertVar(s, name, TYPE_INT, true) != NULL);
     }
@@ -651,6 +691,7 @@ int main(int argc, char **argv) {
     RUN(test_init_and_free);
     RUN(test_free_null);
     RUN(test_push_scope);
+    RUN(test_scope_ids_unique_and_stored_in_symbols);
     RUN(test_pop_global_scope_is_ignored);
     RUN(test_pop_null);
 
