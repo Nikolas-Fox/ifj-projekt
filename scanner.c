@@ -33,7 +33,7 @@ typedef enum {
     
     // states for comments
     ST_SLASH, ST_LINE_COMMENT, ST_BLOCK_COMMENT,        
-    ST_BLOCK_SLASH, ST_BLOCK_STAR, ST_AFTER_BLOCK,
+    ST_BLOCK_SLASH, ST_BLOCK_STAR, ST_AFTER_BLOCK, ST_AFTER_BLOCK_SLASH, 
       
     // states for numeric literals
     ST_START_DOT, ST_ZERO, ST_INT,
@@ -505,12 +505,29 @@ static Token readToken(Scanner *sc) {
                 if (character == ' ' || character == '\t' || character == '\r') {
                     break;
                 }
+
+                if (character == '/') {
+                    state = ST_AFTER_BLOCK_SLASH;   // may be another comment
+                     break;
+                }
+                
                 if (character == '\n' || character == EOF) {
                     ungetc(character, stdin);
                     state = ST_START;
                     break;
                 }
                 lexError(sc, "A token cannot follow a multi-line comment.");
+                break;
+
+            case ST_AFTER_BLOCK_SLASH:
+                if (character == '/') {
+                    state = ST_LINE_COMMENT;
+                } else if (character == '*') {
+                    commentDepth = 1;
+                    state = ST_BLOCK_COMMENT;
+                } else {
+                    lexError(sc, "A token cannot follow a multi-line comment.");
+                }
                 break;
 
             // cases for numeric literal states
