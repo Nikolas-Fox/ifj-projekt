@@ -1,0 +1,7 @@
+import ifj26.*
+
+@main def run(): Unit =
+  val s: String = "abc"
+  val len: Int = strLength(s)
+  val numStr: String = toStr(len)
+  print(numStr)

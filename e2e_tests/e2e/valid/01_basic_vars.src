@@ -1,0 +1,9 @@
+import ifj26.*
+
+@main def run(): Unit =
+  val a: Int = 10
+  var b = 2.5
+  val text = "hello"
+  print(text)
+  print(a)
+  print(b)

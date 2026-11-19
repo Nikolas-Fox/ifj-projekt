@@ -1,0 +1,158 @@
+.IFJcode26
+DEFVAR GF@%tmp
+DEFVAR GF@%tmp2
+CALL run
+POPS GF@%tmp
+EXIT int@0
+LABEL run
+CREATEFRAME
+PUSHFRAME
+DEFVAR LF@x$1
+PUSHS int@5
+POPS LF@x$1
+LABEL run$if$0$start
+PUSHS LF@x$1
+PUSHS int@5
+EQS
+POPS GF@%tmp
+JUMPIFEQ run$if$0$else GF@%tmp bool@false
+PUSHS string@five
+CALL print
+POPS GF@%tmp
+JUMP run$if$0$end
+LABEL run$if$0$else
+LABEL run$if$0$end
+PUSHS nil@nil
+LABEL run$end
+POPS GF@%tmp
+PUSHS nil@nil
+POPFRAME
+RETURN
+LABEL print
+POPS GF@%tmp
+JUMPIFEQ print$unit GF@%tmp nil@nil
+WRITE GF@%tmp
+JUMP print$end
+LABEL print$unit
+WRITE string@()
+LABEL print$end
+PUSHS nil@nil
+RETURN
+LABEL readLine
+READ GF@%tmp string
+PUSHS GF@%tmp
+RETURN
+LABEL readInt
+READ GF@%tmp int
+PUSHS GF@%tmp
+RETURN
+LABEL readDouble
+READ GF@%tmp float
+PUSHS GF@%tmp
+RETURN
+LABEL toStr
+CREATEFRAME
+PUSHFRAME
+DEFVAR LF@type
+POPS GF@%tmp
+TYPE LF@type GF@%tmp
+JUMPIFEQ toStr$bool LF@type string@bool
+JUMPIFEQ toStr$int LF@type string@int
+JUMPIFEQ toStr$float LF@type string@float
+JUMPIFEQ toStr$unit LF@type string@nil
+JUMP toStr$end
+LABEL toStr$bool
+JUMPIFEQ toStr$false GF@%tmp bool@false
+LABEL toStr$true
+MOVE GF@%tmp string@true
+JUMP toStr$end
+LABEL toStr$false
+MOVE GF@%tmp string@false
+JUMP toStr$end
+LABEL toStr$int
+INT2STR GF@%tmp GF@%tmp
+JUMP toStr$end
+LABEL toStr$float
+FLOAT2STR GF@%tmp GF@%tmp
+JUMP toStr$end
+LABEL toStr$unit
+MOVE GF@%tmp string@()
+LABEL toStr$end
+PUSHS GF@%tmp
+POPFRAME
+RETURN
+LABEL toInt
+FLOAT2INTS
+RETURN
+LABEL strLength
+POPS GF@%tmp
+STRLEN GF@%tmp GF@%tmp
+PUSHS GF@%tmp
+RETURN
+LABEL subStr
+CREATEFRAME
+PUSHFRAME
+DEFVAR LF@value
+DEFVAR LF@start
+DEFVAR LF@end
+DEFVAR LF@result
+DEFVAR LF@condition
+DEFVAR LF@len
+POPS LF@end
+POPS LF@start
+POPS LF@value
+LT LF@condition LF@start int@0
+JUMPIFEQ subStr$invalid LF@condition bool@true
+LT LF@condition LF@end int@0
+JUMPIFEQ subStr$invalid LF@condition bool@true
+GT LF@condition LF@start LF@end
+JUMPIFEQ subStr$invalid LF@condition bool@true
+PUSHS LF@value
+CALL strLength
+POPS LF@len
+LT LF@condition LF@start LF@len
+JUMPIFEQ subStr$invalid LF@condition bool@false
+GT LF@condition LF@end LF@len
+JUMPIFEQ subStr$invalid LF@condition bool@true
+MOVE LF@result string@
+LABEL subStr$cycle
+JUMPIFEQ subStr$end LF@start LF@end
+GETCHAR GF@%tmp LF@value LF@start
+PUSHS LF@start
+PUSHS int@1
+ADDS
+POPS LF@start
+CONCAT LF@result LF@result GF@%tmp
+JUMP subStr$cycle
+LABEL subStr$end
+PUSHS LF@result
+POPFRAME
+RETURN
+LABEL subStr$invalid
+EXIT int@40
+LABEL ord
+CREATEFRAME
+PUSHFRAME
+DEFVAR LF@value
+DEFVAR LF@index
+DEFVAR LF@len
+DEFVAR LF@condition
+POPS LF@index
+POPS LF@value
+JUMPIFEQ ord$invalid LF@value string@
+LT LF@condition LF@index int@0
+JUMPIFEQ ord$invalid LF@condition bool@true
+STRLEN LF@len LF@value
+LT LF@condition LF@index LF@len
+JUMPIFEQ ord$invalid LF@condition bool@false
+STRI2INT GF@%tmp LF@value LF@index
+PUSHS GF@%tmp
+JUMP ord$end
+LABEL ord$invalid
+PUSHS int@-1
+LABEL ord$end
+POPFRAME
+RETURN
+LABEL chr
+INT2CHARS
+RETURN

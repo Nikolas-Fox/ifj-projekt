@@ -1,0 +1,6 @@
+import ifj26.*
+
+def foo(a: Int): Int = a
+
+@main def run(): Unit =
+  val r = foo("nie_cislo")
