@@ -3,7 +3,7 @@
 * Package:		semantic
 * File:			semantic.c
 * Date:			16.11.2026
-* Last change:	18.11.2026
+* Last change:	19.11.2026
 * Authors: 		Nikolas Fox xfoxnik00
 *
 * Description: Implementation of semantic analysis logic
@@ -139,9 +139,13 @@ static void visit(Symtable *symtable, AstNode *whole, AstNode *function)
         return;
     }
 
-    if(function->data.func.state == PROCESSING && function->type == TYPE_NONE)
+    if(function->data.func.state == PROCESSING)
     {
-        exit(6);  // this creates a cycle of untyped functions
+        if(function->type == TYPE_NONE)
+        {
+            exit(6);  // this creates a cycle of untyped functions
+        }
+        return; // skip typed functions
     }
 
     function->data.func.state = PROCESSING;

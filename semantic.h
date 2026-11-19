@@ -23,9 +23,9 @@
 
 /**
  * @brief Decides whether the program is semantically correct
- * @param whole Head of the entire AST
+ * @param whole Root of the entire AST
  */
 void semanticAnalysis(AstNode *whole);
 
 #endif
-/*** End of file semantic. ***/
+/*** End of file semantic.h ***/
