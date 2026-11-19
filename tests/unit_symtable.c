@@ -1,5 +1,5 @@
-/* AI-generated (Claude). Prompt: "Generate me tests for whole symtable based on the brief"
- * (unit tests of symtable.c in plain C, no framework) */
+/* AI-generated (Claude). Prompt: "Generate me tests for whole symtable based on
+ * the brief" (unit tests of symtable.c in plain C, no framework) */
 #include "unit_utils.h"
 
 #include "hashtable.h"
@@ -10,7 +10,7 @@
 static void test_init_global_scope_usable(void) {
     Symtable *s = symtableInit();
     REQUIRE(s != NULL);
-    CHECK(symtableScopeID(s) == 0); 
+    CHECK(symtableScopeID(s) == 0);
     CHECK(symtableSearch(s, "anything") == NULL);
     CHECK(symtableSearchCurrentScope(s, "anything") == NULL);
     symtableFree(s);
@@ -22,22 +22,19 @@ static void test_init_and_free(void) {
     symtableFree(s);
 }
 
-static void test_free_null(void) {
-    EXPECT_SURVIVES(symtableFree(NULL));
-}
+static void test_free_null(void) { EXPECT_SURVIVES(symtableFree(NULL)); }
 
 static void test_push_scope(void) {
     CHECK(!symtablePushScope(NULL));
     Symtable *s = symtableInit();
     REQUIRE(s != NULL);
-    CHECK(symtableScopeID(s) == 0); 
+    CHECK(symtableScopeID(s) == 0);
     CHECK(symtablePushScope(s));
-    CHECK(symtableScopeID(s) == 1); 
+    CHECK(symtableScopeID(s) == 1);
     CHECK(symtablePushScope(s));
-    CHECK(symtableScopeID(s) == 2); 
+    CHECK(symtableScopeID(s) == 2);
     symtableFree(s);
 }
-
 
 static void test_scope_ids_unique_and_stored_in_symbols(void) {
     Symtable *s = symtableInit();
@@ -70,17 +67,15 @@ static void test_pop_global_scope_is_ignored(void) {
     Symtable *s = symtableInit();
     REQUIRE(s != NULL);
     REQUIRE(symtableInsertVar(s, "g", TYPE_INT, true) != NULL);
-    symtablePopScope(s);  // top == 0 -> must do nothing
+    symtablePopScope(s); // top == 0 -> must do nothing
     symtablePopScope(s);
-    CHECK(symtableScopeID(s) == 0); 
+    CHECK(symtableScopeID(s) == 0);
     CHECK(symtableSearch(s, "g") != NULL);
-    CHECK(symtableInsertVar(s, "h", TYPE_INT, true) != NULL);  // still usable
+    CHECK(symtableInsertVar(s, "h", TYPE_INT, true) != NULL); // still usable
     symtableFree(s);
 }
 
-static void test_pop_null(void) {
-    EXPECT_SURVIVES(symtablePopScope(NULL));
-}
+static void test_pop_null(void) { EXPECT_SURVIVES(symtablePopScope(NULL)); }
 
 // -------------------------------------------------------------------- inserts
 
@@ -93,7 +88,7 @@ static void test_insert_var_fields(void) {
     CHECK(sym->sType == VAR);
     CHECK(sym->dtype == TYPE_DOUBLE);
     CHECK(!sym->isDefined);
-    CHECK(sym->scopeID == 0); 
+    CHECK(sym->scopeID == 0);
     CHECK_STR(sym->symbolName, "counter");
     CHECK(sym->value.funcData.params == NULL);
     CHECK(sym->value.funcData.paramCount == 0u);
@@ -108,7 +103,7 @@ static void test_symbol_name_is_a_copy(void) {
     SymbolData *sym = symtableInsertVar(s, buf, TYPE_INT, true);
     REQUIRE(sym != NULL);
     CHECK(sym->symbolName != buf);
-    buf[0] = 'X';  // the token buffer changes / dies later
+    buf[0] = 'X'; // the token buffer changes / dies later
     CHECK_STR(sym->symbolName, "counter");
     CHECK(symtableSearch(s, "counter") == sym);
     CHECK(symtableSearch(s, "Xounter") == NULL);
@@ -123,7 +118,7 @@ static void test_insert_val(void) {
     CHECK(sym->sType == VAL);
     CHECK(sym->dtype == TYPE_DOUBLE);
     CHECK(sym->isDefined);
-    CHECK(sym->scopeID == 0); 
+    CHECK(sym->scopeID == 0);
     symtableFree(s);
 }
 
@@ -134,7 +129,7 @@ static void test_insert_function(void) {
     REQUIRE(f != NULL);
     CHECK(f->sType == FUNCTION);
     CHECK(f->dtype == TYPE_UNIT);
-    CHECK(f->scopeID == 0); 
+    CHECK(f->scopeID == 0);
     CHECK(f->value.funcData.params == NULL);
     CHECK(f->value.funcData.paramCount == 0u);
     CHECK(f->value.funcData.listCount == 0u);
@@ -210,12 +205,12 @@ static void test_shadowing_allowed(void) {
     Symtable *s = symtableInit();
     REQUIRE(s != NULL);
     SymbolData *outer = symtableInsertVar(s, "x", TYPE_INT, true);
-    CHECK(outer->scopeID == 0); 
+    CHECK(outer->scopeID == 0);
     REQUIRE(symtablePushScope(s));
     SymbolData *inner = symtableInsertVal(s, "x", TYPE_STRING, true);
     REQUIRE(inner != NULL);
     CHECK(inner != outer);
-    CHECK(inner->scopeID == 1); 
+    CHECK(inner->scopeID == 1);
 
     CHECK(symtableSearch(s, "x") == inner);
     CHECK(symtableSearchCurrentScope(s, "x") == inner);
@@ -233,9 +228,9 @@ static void test_innermost_scope_wins_in_three_levels(void) {
     SymbolData *a = symtableInsertVar(s, "v", TYPE_INT, true);
     symtablePushScope(s);
     symtablePushScope(s);
-    CHECK(symtableSearch(s, "v") == a);  // found two levels up
+    CHECK(symtableSearch(s, "v") == a); // found two levels up
     SymbolData *c = symtableInsertVar(s, "v", TYPE_BOOL, true);
-    CHECK(c->scopeID == 2); 
+    CHECK(c->scopeID == 2);
     CHECK(symtableSearch(s, "v") == c);
     symtablePopScope(s);
     CHECK(symtableSearch(s, "v") == a);
@@ -262,9 +257,9 @@ static void test_reused_scope_slot_starts_empty(void) {
     symtableInsertVar(s, "x", TYPE_INT, true);
     symtablePopScope(s);
 
-    symtablePushScope(s);  // reuses the same stack slot
+    symtablePushScope(s); // reuses the same stack slot
     CHECK(symtableSearchCurrentScope(s, "x") == NULL);
-    CHECK(symtableInsertVar(s, "x", TYPE_INT, true) != NULL);  // no redefinition
+    CHECK(symtableInsertVar(s, "x", TYPE_INT, true) != NULL); // no redefinition
     symtableFree(s);
 }
 
@@ -288,7 +283,7 @@ static void test_deep_nesting_grows_stack(void) {
 
     for (int i = 0; i < depth; i++) {
         REQUIRE(symtablePushScope(s));
-        CHECK(symtableScopeID(s) == i + 1); 
+        CHECK(symtableScopeID(s) == i + 1);
         snprintf(name, sizeof name, "v%d", i);
         REQUIRE(symtableInsertVar(s, name, TYPE_INT, true) != NULL);
     }
@@ -305,7 +300,8 @@ static void test_deep_nesting_grows_stack(void) {
         symtablePopScope(s);
         CHECK(symtableSearch(s, name) == NULL);
     }
-    CHECK(symtableInsertVar(s, "after", TYPE_INT, true) != NULL);  // global still OK
+    CHECK(symtableInsertVar(s, "after", TYPE_INT, true) !=
+          NULL); // global still OK
     symtableFree(s);
 }
 
@@ -323,7 +319,7 @@ static void test_many_symbols_in_one_scope(void) {
     }
     for (int i = 0; i < N; i++) {
         snprintf(name, sizeof name, "sym%d", i);
-        CHECK(symtableSearch(s, name) == syms[i]);  // pointers stay valid
+        CHECK(symtableSearch(s, name) == syms[i]); // pointers stay valid
     }
     symtableFree(s);
 }
@@ -383,7 +379,7 @@ static void test_add_param_invalid_targets(void) {
     CHECK(!symtableStartParamList(v));
     CHECK(!symtableStartParamList(NULL));
     REQUIRE(symtableStartParamList(f));
-    CHECK(!symtableAddParam(s, v, "p", TYPE_INT));  // not a function
+    CHECK(!symtableAddParam(s, v, "p", TYPE_INT)); // not a function
     CHECK(!symtableAddParam(s, NULL, "p", TYPE_INT));
     CHECK(!symtableAddParam(s, f, NULL, TYPE_INT));
     CHECK(f->value.funcData.paramCount == 0u);
@@ -405,7 +401,8 @@ static void test_same_param_name_in_different_functions(void) {
 }
 
 static void test_free_with_params_in_several_scopes(void) {
-    // Content is verified by AddressSanitizer / Valgrind (no leak, no double free).
+    // Content is verified by AddressSanitizer / Valgrind (no leak, no double
+    // free).
     char fn[16], pn[16];
     Symtable *s = symtableInit();
     REQUIRE(s != NULL);
@@ -423,7 +420,7 @@ static void test_free_with_params_in_several_scopes(void) {
     symtableInsertVar(s, "local", TYPE_STRING, true);
     symtablePushScope(s);
     symtableInsertVal(s, "deeper", TYPE_BOOL, true);
-    symtableFree(s);  // freed with scopes still open
+    symtableFree(s); // freed with scopes still open
 }
 
 // -------------------------------------------------- curried parameter lists
@@ -445,7 +442,8 @@ static void test_no_parens_vs_empty_parens(void) {
     REQUIRE(s != NULL);
 
     // def answer: Int -> 0 parameter lists
-    SymbolData *f_no_parens = symtableInsertFunction(s, "answer", TYPE_INT, true);
+    SymbolData *f_no_parens =
+        symtableInsertFunction(s, "answer", TYPE_INT, true);
     REQUIRE(f_no_parens != NULL);
     CHECK(f_no_parens->value.funcData.listCount == 0u);
     CHECK(symtableParamListSize(f_no_parens, 0) == 0u);
@@ -495,7 +493,7 @@ static void test_multiple_param_lists_currying(void) {
 
     CHECK(symtableParamListSize(foo, 0) == 2u);
     CHECK(symtableParamListSize(foo, 1) == 1u);
-    CHECK(symtableParamListSize(foo, 2) == 0u);  // out of bounds list
+    CHECK(symtableParamListSize(foo, 2) == 0u); // out of bounds list
 
     const FunctionParam *p00 = symtableGetParam(foo, 0, 0);
     const FunctionParam *p01 = symtableGetParam(foo, 0, 1);
@@ -532,12 +530,12 @@ static void test_mixed_empty_and_nonempty_param_lists(void) {
     SymbolData *foo = symtableInsertFunction(s, "foo", TYPE_INT, true);
     REQUIRE(foo != NULL);
 
-    CHECK(symtableStartParamList(foo));  // list 0: ()
-    CHECK(symtableStartParamList(foo));  // list 1: ()
-    CHECK(symtableStartParamList(foo));  // list 2: ()
-    CHECK(symtableStartParamList(foo));  // list 3: (a)
+    CHECK(symtableStartParamList(foo)); // list 0: ()
+    CHECK(symtableStartParamList(foo)); // list 1: ()
+    CHECK(symtableStartParamList(foo)); // list 2: ()
+    CHECK(symtableStartParamList(foo)); // list 3: (a)
     CHECK(symtableAddParam(s, foo, "a", TYPE_INT));
-    CHECK(symtableStartParamList(foo));  // list 4: ()
+    CHECK(symtableStartParamList(foo)); // list 4: ()
 
     CHECK(foo->value.funcData.listCount == 5u);
     CHECK(foo->value.funcData.paramCount == 1u);
@@ -601,7 +599,6 @@ static void test_builtins_param_lists(void) {
 }
 
 // ---------------------------------------- exit codes (run in a child process)
-
 
 static void helper_redef_same_scope(void) {
     Symtable *s = symtableInit();

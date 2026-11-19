@@ -53,7 +53,7 @@ HashTable *htInit(size_t size, int scopeID) {
     if (hTable == NULL) {
         return NULL;
     }
-    hTable->scopeID = scopeID; 
+    hTable->scopeID = scopeID;
     hTable->size = size;
     hTable->count_occupied = 0;
 
@@ -68,10 +68,7 @@ HashTable *htInit(size_t size, int scopeID) {
     return hTable;
 }
 
-
-int htScopeID(HashTable *table) {
-    return table->scopeID;
-}
+int htScopeID(HashTable *table) { return table->scopeID; }
 
 HashTItem *htSearch(HashTable *table, const char *key) {
     // check for NULL pointers
@@ -265,4 +262,4 @@ void forEachData(HashTable *table, CallBackData callback) {
     }
 }
 
- /*** End of file hashtable.c ***/
+/*** End of file hashtable.c ***/

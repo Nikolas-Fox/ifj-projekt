@@ -27,9 +27,8 @@ struct Symtable {
     HashTable **htArray; // array of pointers to Hashtables
     size_t top;          // actual hashtable
     size_t capacity;
-    int scopeCounter; 
+    int scopeCounter;
 };
-
 
 static const BuiltinDef BUILTINS[] = {
     {"print", TYPE_UNIT, 1, {TYPE_ANY}, {"value"}},
@@ -67,7 +66,7 @@ Symtable *symtableInit(void) {
     symTable->scopeCounter = 0;
 
     // inicialize first global hashtable
-    symTable->htArray[0] = htInit(HASH_T_SIZE, 0); 
+    symTable->htArray[0] = htInit(HASH_T_SIZE, 0);
     if (symTable->htArray[0] == NULL) {
         free(symTable->htArray);
         free(symTable);
@@ -77,10 +76,12 @@ Symtable *symtableInit(void) {
     for (size_t i = 0; i < sizeof BUILTINS / sizeof BUILTINS[0];
          i++) { // i < size of whole builtins / one line
         const BuiltinDef *b = &BUILTINS[i];
-        SymbolData *f = symtableInsertFunction(symTable, (char *)b->name, b->ret, true);
+        SymbolData *f =
+            symtableInsertFunction(symTable, (char *)b->name, b->ret, true);
         symtableStartParamList(f);
         for (int j = 0; j < b->paramCount; j++) {
-            symtableAddParam(symTable, f, (char *)b->paramNames[j], b->params[j]);
+            symtableAddParam(symTable, f, (char *)b->paramNames[j],
+                             b->params[j]);
         }
     }
     return symTable;
@@ -174,7 +175,7 @@ char *copyString(const char *src) {
     if (src == NULL) {
         return NULL;
     }
-    size_t len = strlen(src) + 1; //including '\0'
+    size_t len = strlen(src) + 1; // including '\0'
     char *copy = malloc(len);
     if (copy == NULL) {
         return NULL;
@@ -183,7 +184,8 @@ char *copyString(const char *src) {
     return copy;
 }
 
-//before first added parameter of the function, and then before every group/list
+// before first added parameter of the function, and then before every
+// group/list
 bool symtableStartParamList(SymbolData *funcSymbol) {
     if (funcSymbol == NULL || funcSymbol->sType != FUNCTION) {
         return false; // if it is not the function return false
@@ -192,7 +194,8 @@ bool symtableStartParamList(SymbolData *funcSymbol) {
     return true;
 }
 
-//call this function to find out  the count of parameters in list with given index 
+// call this function to find out  the count of parameters in list with given
+// index
 size_t symtableParamListSize(const SymbolData *funcSymbol, size_t list) {
     if (funcSymbol == NULL || funcSymbol->sType != FUNCTION) {
         return 0; // if it is not the function
@@ -201,30 +204,31 @@ size_t symtableParamListSize(const SymbolData *funcSymbol, size_t list) {
     // go through whole list of parameters of function from start to end
     for (const FunctionParam *p = funcSymbol->value.funcData.params; p != NULL;
          p = p->next) {
-        if (p->listIndex == list) { // if the parameter has the index of the list i am looking for
-            size++;                  // count him
+        if (p->listIndex == list) { // if the parameter has the index of the
+                                    // list i am looking for
+            size++;                 // count him
         }
     }
     return size;
 }
 
-
-const FunctionParam *symtableGetParam(const SymbolData *funcSymbol,
-                                      size_t list, size_t index) {
+const FunctionParam *symtableGetParam(const SymbolData *funcSymbol, size_t list,
+                                      size_t index) {
     if (funcSymbol == NULL || funcSymbol->sType != FUNCTION) {
         return NULL;
     }
-    size_t seen = 0; // Counter -> how many parameters has been seen from this list
+    size_t seen =
+        0; // Counter -> how many parameters has been seen from this list
     for (const FunctionParam *p = funcSymbol->value.funcData.params; p != NULL;
          p = p->next) {
-        if (p->listIndex == list) {     // is it the right parenthesis?
-            if (seen == index) {        // is it the right parameter? 
-                return p;               // if yes return him
+        if (p->listIndex == list) { // is it the right parenthesis?
+            if (seen == index) {    // is it the right parameter?
+                return p;           // if yes return him
             }
-            seen++;                     // no, so we go on
+            seen++; // no, so we go on
         }
     }
-    return NULL; //we did not find it at all
+    return NULL; // we did not find it at all
 }
 
 static SymbolData *insertSymbol(Symtable *sTable, char *name, SymbolType sType,
@@ -261,7 +265,7 @@ static SymbolData *insertSymbol(Symtable *sTable, char *name, SymbolType sType,
     newData->dtype = dType;
     newData->isDefined = isDefined;
     newData->value.funcData.paramCount = 0;
-    newData->scopeID = htScopeID(current); 
+    newData->scopeID = htScopeID(current);
     newData->value.funcData.params = NULL;
     newData->value.funcData.listCount = 0;
 
@@ -299,7 +303,7 @@ bool symtableAddParam(Symtable *sTable, SymbolData *funcSymbol, char *paramName,
         return false;
     }
 
-    //for expansion - open at least one list of parameters
+    // for expansion - open at least one list of parameters
     if (funcSymbol->value.funcData.listCount == 0) {
         return false;
     }
@@ -330,7 +334,6 @@ bool symtableAddParam(Symtable *sTable, SymbolData *funcSymbol, char *paramName,
         fprintf(stderr, "Error 99: memory allocation failed\n");
         exit(99);
     }
-
 
     param->dType = paramType;
     param->listIndex = funcSymbol->value.funcData.listCount - 1;
@@ -368,4 +371,4 @@ SymbolData *symtableSearch(Symtable *sTable, char *name) {
     return NULL;
 }
 
- /*** End of file symtable.c ***/
+/*** End of file symtable.c ***/

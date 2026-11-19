@@ -33,7 +33,8 @@ typedef enum {
     TYPE_DOUBLE,
     TYPE_UNIT,
     TYPE_ANY,
-    TYPE_RETURNED   //uses the emantic analyzer to resolve types on explicit return
+    TYPE_RETURNED // uses the emantic analyzer to resolve types on explicit
+                  // return
 } DataType;
 
 typedef enum {
@@ -51,8 +52,8 @@ typedef struct FunctionParam {
 
 typedef struct {
     FunctionParam *params;
-    size_t paramCount; //total number of params
-    size_t listCount; //0 = no list, number of lists
+    size_t paramCount; // total number of params
+    size_t listCount;  // 0 = no list, number of lists
 } FunctionData;
 
 typedef struct {
@@ -60,7 +61,7 @@ typedef struct {
     char *symbolName;
     DataType dtype;
     bool isDefined;
-    int scopeID; 
+    int scopeID;
 
     union {
         FunctionData funcData;
@@ -111,8 +112,6 @@ void symtablePopScope(Symtable *sTable);
  */
 void symtableFree(Symtable *sTable);
 
-
-
 /**
  * @brief Copy string and alloc place
  *
@@ -120,7 +119,6 @@ void symtableFree(Symtable *sTable);
  * @return pointer to data that has been copied
  */
 char *copyString(const char *src);
-
 
 /**
  * @brief Gets the scope ID of the current active scope
@@ -179,17 +177,18 @@ bool symtableAddParam(Symtable *sTable, SymbolData *funcSymbol, char *paramName,
 
 /**
  * @brief Starts a new parameter list (parenthesis group) for a function.
- * 
+ *
  * @param funcSymbol Pointer to the function symbol.
  * @return true on success, false if funcSymbol is NULL or not a function.
- */                  
+ */
 bool symtableStartParamList(SymbolData *funcSymbol);
 
 /**
  * @brief Returns the number of parameters in a specific parameter list.
  *
  * @param funcSymbol Pointer to the function symbol.
- * @param list Index of the parameter list (0 for the first group, 1 for the second)
+ * @param list Index of the parameter list (0 for the first group, 1 for the
+ * second)
  * @return Number of parameters in the given list, or 0 if invalid/empty.
  */
 size_t symtableParamListSize(const SymbolData *funcSymbol, size_t list);
@@ -202,7 +201,8 @@ size_t symtableParamListSize(const SymbolData *funcSymbol, size_t list);
  * @param index Position of the parameter inside that list (starting from 0).
  * @return Pointer to the FunctionParam, or NULL if not found or invalid.
  */
-const FunctionParam *symtableGetParam(const SymbolData *funcSymbol, size_t list, size_t index);
+const FunctionParam *symtableGetParam(const SymbolData *funcSymbol, size_t list,
+                                      size_t index);
 
 /**
  * @brief Search through all scopes
@@ -224,4 +224,4 @@ SymbolData *symtableSearchCurrentScope(Symtable *sTable, char *name);
 
 #endif
 
- /*** End of file symtable.h ***/
+/*** End of file symtable.h ***/

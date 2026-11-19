@@ -61,11 +61,11 @@ typedef void (*CallBackData)(void *data);
  * fails
  */
 
-HashTable *htInit(size_t size, int scopeID); 
+HashTable *htInit(size_t size, int scopeID);
 
 /**
- * @brief function for return the scope id where the table is 
- * 
+ * @brief function for return the scope id where the table is
+ *
  * @param table the actual table i wnat to know the scope of
  * @return scope id - int
  */
@@ -135,4 +135,4 @@ void forEachData(HashTable *table, CallBackData callback);
 
 #endif
 
- /*** End of file hashtable.h ***/
+/*** End of file hashtable.h ***/
