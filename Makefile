@@ -1,19 +1,12 @@
-
-
-# AI-generated(Gemini): Here is my simple Makefile and repository structure. 
-# Update this Makefile with minimal changes so that the project can ru on a 
-# fresh machine with all required dependencies automatically installed when missing.
-
 CC     = gcc
-CFLAGS = -std=c11 -Wall -Wextra -g -I. -Itests
+CFLAGS = -std=c11 -Wall -Wextra -g -I.
 
 TARGET   = compiler
 MAIN_SRC = main.c
 CORE_SRC = ast.c codegen.c hashtable.c parser.c precedence.c scanner.c semantic.c symtable.c
 
-UNIT_SYM = unit_symtable
-UNIT_HT  = unit_hashtable
-SRC      = hashtable.c symtable.c
+FORMAT_FILES = $(wildcard *.c *.h)
+E2E_SCRIPT   = ./e2e_tests/e2e/run_e2e.sh
 
 build: $(TARGET)
 
@@ -27,25 +20,20 @@ install-clang-format:
 		sudo apt-get install -y clang-format \
 	)
 
-check: install-clang-format format-check unit-tests
+check: install-clang-format format-check
 
 build-check: check build
 
-unit-tests: $(UNIT_SYM) $(UNIT_HT)
-
-$(UNIT_SYM): $(SRC) tests/unit_symtable.c
-	$(CC) $(CFLAGS) symtable.c hashtable.c tests/unit_symtable.c -o $(UNIT_SYM)
-
-$(UNIT_HT): $(SRC) tests/unit_hashtable.c
-	$(CC) $(CFLAGS) hashtable.c tests/unit_hashtable.c -o $(UNIT_HT)
+tests: build
+	$(E2E_SCRIPT)
 
 format-check:
-	clang-format --dry-run --Werror hashtable.c hashtable.h symtable.c symtable.h
+	clang-format --dry-run --Werror $(FORMAT_FILES)
 
 format: install-clang-format
-	clang-format -i hashtable.c hashtable.h symtable.c symtable.h
+	clang-format -i $(FORMAT_FILES)
 
 clean:
-	rm -f $(TARGET) $(UNIT_SYM) $(UNIT_HT)
+	rm -f $(TARGET)
 
-.PHONY: build install-clang-format check build-check unit-tests format-check format clean
+.PHONY: build install-clang-format check build-check tests format-check format clean

@@ -1,3 +1,5 @@
 *.o
 build/
-
+compiler
+unit_symtable
+unit_hashtable

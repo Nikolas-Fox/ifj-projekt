@@ -1,10 +1,10 @@
-//AI generated with Gemini
-// prompt: vygeneruj mi jednotkové testy pro tento soubor
+// AI generated with Gemini
+//  prompt: vygeneruj mi jednotkové testy pro tento soubor
+#include "scanner.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include "scanner.h"
 
 typedef struct {
     TokenType type;
@@ -12,9 +12,11 @@ typedef struct {
     int line;
 } TestToken;
 
-static int collect_tokens(const char *input, TestToken *out_tokens, int max_tokens) {
+static int collect_tokens(const char *input, TestToken *out_tokens,
+                          int max_tokens) {
     FILE *tmp = tmpfile();
-    if (!tmp) return -1;
+    if (!tmp)
+        return -1;
     fputs(input, tmp);
     rewind(tmp);
 
@@ -54,9 +56,10 @@ void test_keywords_and_identifiers(void) {
     assert(tokens[6].type == TOK_KW_FALSE);
     assert(tokens[7].type == TOK_ID);
     assert(strcmp(tokens[7].str, "custom_id") == 0);
-    
-    for(int i=0; i<n; i++) {
-        if(tokens[i].str) free(tokens[i].str);
+
+    for (int i = 0; i < n; i++) {
+        if (tokens[i].str)
+            free(tokens[i].str);
     }
     printf("test_keywords_and_identifiers PASSED.\n");
 }
@@ -82,8 +85,9 @@ void test_operators(void) {
     assert(tokens[12].type == TOK_MUL);
     assert(tokens[13].type == TOK_DIV);
     assert(tokens[14].type == TOK_AT_MAIN);
-    for(int i=0; i<n; i++) {
-        if(tokens[i].str) free(tokens[i].str);
+    for (int i = 0; i < n; i++) {
+        if (tokens[i].str)
+            free(tokens[i].str);
     }
     printf("test_operators PASSED.\n");
 }
@@ -108,8 +112,9 @@ void test_numeric_literals(void) {
     assert(strcmp(tokens[5].str, "123") == 0);
     assert(tokens[6].type == TOK_DOUBLE);
     assert(strcmp(tokens[6].str, "1.5e-3") == 0);
-    for(int i=0; i<n; i++) {
-        if(tokens[i].str) free(tokens[i].str);
+    for (int i = 0; i < n; i++) {
+        if (tokens[i].str)
+            free(tokens[i].str);
     }
     printf("test_numeric_literals PASSED.\n");
 }
@@ -125,9 +130,11 @@ void test_strings(void) {
     assert(tokens[1].type == TOK_STRING);
     assert(strcmp(tokens[1].str, "") == 0);
     assert(tokens[2].type == TOK_STRING);
-    assert(strcmp(tokens[2].str, "multi\\nline") == 0); // Víceřádkový řetězec zachovává text doslovně
-    for(int i=0; i<n; i++) {
-        if(tokens[i].str) free(tokens[i].str);
+    assert(strcmp(tokens[2].str, "multi\\nline") ==
+           0); // Víceřádkový řetězec zachovává text doslovně
+    for (int i = 0; i < n; i++) {
+        if (tokens[i].str)
+            free(tokens[i].str);
     }
     printf("test_strings PASSED.\n");
 }
@@ -140,14 +147,17 @@ void test_comments(void) {
     assert(n > 0);
     assert(tokens[0].type == TOK_ID);
     assert(strcmp(tokens[0].str, "x") == 0);
-    
+
     int found_y = 0, found_z = 0;
-    for(int i=0; i<n; i++) {
-        if(tokens[i].type == TOK_ID) {
-            if(strcmp(tokens[i].str, "y") == 0) found_y = 1;
-            if(strcmp(tokens[i].str, "z") == 0) found_z = 1;
+    for (int i = 0; i < n; i++) {
+        if (tokens[i].type == TOK_ID) {
+            if (strcmp(tokens[i].str, "y") == 0)
+                found_y = 1;
+            if (strcmp(tokens[i].str, "z") == 0)
+                found_z = 1;
         }
-        if(tokens[i].str) free(tokens[i].str);
+        if (tokens[i].str)
+            free(tokens[i].str);
     }
     assert(found_y);
     assert(found_z);
@@ -163,10 +173,13 @@ void test_indentation(void) {
 
     int found_indent = 0;
     int found_dedent = 0;
-    for(int i=0; i<n; i++) {
-        if(tokens[i].type == TOK_INDENT) found_indent = 1;
-        if(tokens[i].type == TOK_DEDENT) found_dedent = 1;
-        if(tokens[i].str) free(tokens[i].str);
+    for (int i = 0; i < n; i++) {
+        if (tokens[i].type == TOK_INDENT)
+            found_indent = 1;
+        if (tokens[i].type == TOK_DEDENT)
+            found_dedent = 1;
+        if (tokens[i].str)
+            free(tokens[i].str);
     }
 
     assert(found_indent);

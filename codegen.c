@@ -1,35 +1,37 @@
 /******************************************************************************
-* Project:		IFJ
-* Package:		codegen
-* File:			codegen.c
-* Date:			15.11.2026
-* Last change:	19.11.2026
-* Authors: 		Eliška Holá xholael00
-*
-* Description:  Implementation of code generation
-*
-*******************************************************************************/
+ * Project:		IFJ
+ * Package:		codegen
+ * File:			codegen.c
+ * Date:			15.11.2026
+ * Last change:	19.11.2026
+ * Authors: 		Eliška Holá xholael00
+ *
+ * Description:  Implementation of code generation
+ *
+ *******************************************************************************/
 /**
-* @file codegen.c
-*
-* @brief Implementation of code generation
-* @author Eliška Holá xholael00
-*/
+ * @file codegen.c
+ *
+ * @brief Implementation of code generation
+ * @author Eliška Holá xholael00
+ */
 
 #include "codegen.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
-//current function information
+// current function information
 typedef struct {
     char *funcName;
-    int ifCount, whileCount, evalCount; //used to generate unique labels, if and while cycles, eval is used for short-circuit evaluation
+    int ifCount, whileCount,
+        evalCount; // used to generate unique labels, if and while cycles, eval
+                   // is used for short-circuit evaluation
     DataType retType;
 } CurrentFunc;
 
-//generate functions protypes
+// generate functions protypes
 static void generateWhole(AstNode *node);
 static void generateFunc(AstNode *node, CurrentFunc *cFunc);
 static void generateBody(AstNode *node, CurrentFunc *cFunc);
@@ -61,8 +63,7 @@ static void printBuiltins();
  * @brief Entry point
  * @param node Whole program - root of the AST
  */
-void generateProgram(AstNode *node)
-{
+void generateProgram(AstNode *node) {
     printf(".IFJcode26\n");
     AstNode *mainFunc = findMain(node->data.whole.func);
     printf("DEFVAR GF@%%tmp\n");
@@ -75,33 +76,32 @@ void generateProgram(AstNode *node)
 }
 
 /**
- * @brief Goes through the program, which is a linked list of functions, and generates for each one.
+ * @brief Goes through the program, which is a linked list of functions, and
+ * generates for each one.
  * @param node Whole program - root of the AST
  */
-static void generateWhole(AstNode *node)
-{
+static void generateWhole(AstNode *node) {
     CurrentFunc cFunc;
     AstNode *func = node->data.whole.func;
-    while (func != NULL)
-    {
+    while (func != NULL) {
         generateFunc(func, &cFunc);
         func = func->next;
-    }  
+    }
 }
 
 /**
  * @brief Generates function.
- * 
+ *
  * Updates current function information.
- * Declares all local variables used in the function and all parameters, then pops arguments from stack last to first.
- * Goes through the body, which is a linked list of statements, and generates for each one.
- * Returns the return value on stack.
- * 
+ * Declares all local variables used in the function and all parameters, then
+ * pops arguments from stack last to first. Goes through the body, which is a
+ * linked list of statements, and generates for each one. Returns the return
+ * value on stack.
+ *
  * @param node AST node of the function
  * @param cFunc Current function information
  */
-static void generateFunc(AstNode *node, CurrentFunc *cFunc)
-{
+static void generateFunc(AstNode *node, CurrentFunc *cFunc) {
     cFunc->funcName = node->data.func.name;
     cFunc->retType = node->type;
     cFunc->evalCount = 0;
@@ -114,23 +114,23 @@ static void generateFunc(AstNode *node, CurrentFunc *cFunc)
 
     defvarLocalVariables(node->data.func.body);
 
-    //DEFVAR params, POP values from last to first
+    // DEFVAR params, POP values from last to first
     AstNode *group = node->data.func.group;
     cycleGroups(group, cFunc);
 
     AstNode *body = node->data.func.body;
-    while (body != NULL)
-    {
+    while (body != NULL) {
         generateBody(body, cFunc);
-        body = body->next; //body is a linked list of statements
+        body = body->next; // body is a linked list of statements
     }
     printf("LABEL %s$end\n", node->data.func.name);
-    if (node->type == TYPE_UNIT) //if return type is Unit, return value is evaluated and thrown out
+    if (node->type == TYPE_UNIT) // if return type is Unit, return value is
+                                 // evaluated and thrown out
     {
         printf("POPS GF@%%tmp\n");
         printf("PUSHS nil@nil\n");
     }
-    //return value is on stack
+    // return value is on stack
     printf("POPFRAME\n");
     printf("RETURN\n");
 }
@@ -140,10 +140,8 @@ static void generateFunc(AstNode *node, CurrentFunc *cFunc)
  * @param node Group
  * @param cFunc Current function information
  */
-static void cycleGroups(AstNode *node, CurrentFunc *cFunc)
-{
-    if (node == NULL)
-    {
+static void cycleGroups(AstNode *node, CurrentFunc *cFunc) {
+    if (node == NULL) {
         return;
     }
     cycleGroups(node->next, cFunc);
@@ -152,17 +150,15 @@ static void cycleGroups(AstNode *node, CurrentFunc *cFunc)
 
 /**
  * @brief Recursively goes through all parameters.
- * 
+ *
  * Declares parameters and pops their value from stack from last to first.
  * (Arguments are pushed onto stack first to last.)
- * 
+ *
  * @param node Param
  * @param cFunc Current function information
  */
-static void cycleParams(AstNode *node, CurrentFunc *cFunc)
-{
-    if (node == NULL)
-    {
+static void cycleParams(AstNode *node, CurrentFunc *cFunc) {
+    if (node == NULL) {
         return;
     }
     cycleParams(node->next, cFunc);
@@ -170,190 +166,201 @@ static void cycleParams(AstNode *node, CurrentFunc *cFunc)
     printf("DEFVAR LF@%s$%d\n", node->data.param.name, node->data.param.scope);
     printf("POPS LF@%s$%d\n", node->data.param.name, node->data.param.scope);
 
-    if (node->type == TYPE_DOUBLE) //int -> double conversion
+    if (node->type == TYPE_DOUBLE) // int -> double conversion
     {
-        printf("TYPE GF@%%tmp LF@%s$%d\n", node->data.param.name, node->data.param.scope); //check if argument is int
-        printf("JUMPIFEQ %s$isFloat$%s$%d GF@%%tmp string@float\n", cFunc->funcName, node->data.param.name, node->data.param.scope);
-        printf("INT2FLOAT LF@%s$%d LF@%s$%d\n", node->data.param.name, node->data.param.scope, node->data.param.name, node->data.param.scope);
-        printf("LABEL %s$isFloat$%s$%d\n", cFunc->funcName, node->data.param.name, node->data.param.scope);
+        printf("TYPE GF@%%tmp LF@%s$%d\n", node->data.param.name,
+               node->data.param.scope); // check if argument is int
+        printf("JUMPIFEQ %s$isFloat$%s$%d GF@%%tmp string@float\n",
+               cFunc->funcName, node->data.param.name, node->data.param.scope);
+        printf("INT2FLOAT LF@%s$%d LF@%s$%d\n", node->data.param.name,
+               node->data.param.scope, node->data.param.name,
+               node->data.param.scope);
+        printf("LABEL %s$isFloat$%s$%d\n", cFunc->funcName,
+               node->data.param.name, node->data.param.scope);
     }
 }
 
 /**
  * @brief Generates body, which is a linked list of statements
- * 
+ *
  * Generates based on the class of node.
- * If the statement is the last in the function body and it has not returned explicitly, it leaves the return value on stack.
- * 
- * @param node 
+ * If the statement is the last in the function body and it has not returned
+ * explicitly, it leaves the return value on stack.
+ *
+ * @param node
  * @param cFunc Current function information
  */
-static void generateBody(AstNode *node, CurrentFunc *cFunc)
-{
-    switch (node->class)
-    {
-        case AST_ASSIGN:
-            generateAssign(node, cFunc);
-            //body ending with assignment returns ()
-            if (node->next == NULL) //last statement in function body
+static void generateBody(AstNode *node, CurrentFunc *cFunc) {
+    switch (node->class) {
+    case AST_ASSIGN:
+        generateAssign(node, cFunc);
+        // body ending with assignment returns ()
+        if (node->next == NULL) // last statement in function body
+        {
+            printf("PUSHS nil@nil\n");
+        }
+        break;
+    case AST_DECLARATION:
+        generateDeclaration(node, cFunc);
+        // body ending with declaration returns ()
+        if (node->next == NULL) // last statement in function body
+        {
+            printf("PUSHS nil@nil\n");
+        }
+        break;
+    case AST_IF:
+        generateIf(node, cFunc);
+        // body ending with a cycle returns ()
+        if (node->next == NULL) // last statement in function body
+        {
+            printf("PUSHS nil@nil\n");
+        }
+        break;
+    case AST_WHILE:
+        generateWhile(node, cFunc);
+        // body ending with a cycle returns ()
+        if (node->next == NULL) // last statement in function body
+        {
+            printf("PUSHS nil@nil\n");
+        }
+        break;
+    case AST_RETURN:
+        generateReturn(node, cFunc);
+        break;
+    case AST_CALL:
+    case AST_BINARY:
+    case AST_UNARY:
+    case AST_ID:
+    case AST_LITERAL:
+        generateExpression(node, cFunc);
+        if (node->next == NULL) // last statement in function body
+        {
+            // keep the return value on stack
+            if (cFunc->retType == TYPE_DOUBLE &&
+                node->type == TYPE_INT) // converts if function expects double
+                                        // and it is int
             {
-                printf("PUSHS nil@nil\n");
+                printf("INT2FLOATS\n");
             }
-            break;
-        case AST_DECLARATION:
-            generateDeclaration(node, cFunc);
-            //body ending with declaration returns ()
-            if (node->next == NULL) //last statement in function body
-            {
-                printf("PUSHS nil@nil\n");
-            }
-            break;
-        case AST_IF:
-            generateIf(node, cFunc);
-            //body ending with a cycle returns ()
-            if (node->next == NULL) //last statement in function body
-            {
-                printf("PUSHS nil@nil\n");
-            }
-            break;
-        case AST_WHILE:
-            generateWhile(node, cFunc);
-            //body ending with a cycle returns ()
-            if (node->next == NULL) //last statement in function body
-            {
-                printf("PUSHS nil@nil\n");
-            }
-            break;
-        case AST_RETURN:
-            generateReturn(node, cFunc);
-            break;
-        case AST_CALL:
-        case AST_BINARY:
-        case AST_UNARY:
-        case AST_ID:
-        case AST_LITERAL:
-            generateExpression(node, cFunc);
-            if (node->next == NULL) //last statement in function body
-            {
-                //keep the return value on stack
-                if (cFunc->retType == TYPE_DOUBLE && node->type == TYPE_INT) //converts if function expects double and it is int
-                {
-                    printf("INT2FLOATS\n");
-                }
-            }
-            else
-            {
-                printf("POPS GF@%%tmp\n"); //get rid of the return value
-            }
-        default:
-            break;
+        } else {
+            printf("POPS GF@%%tmp\n"); // get rid of the return value
+        }
+    default:
+        break;
     }
 }
 
 /**
  * @brief Generates code for assignment.
- * 
- * Generates right-hand side expression which is left on stack and pops it into the destination variable.
- * 
+ *
+ * Generates right-hand side expression which is left on stack and pops it into
+ * the destination variable.
+ *
  * @param node AST_ASSIGN
  * @param cFunc Current function information
  */
-static void generateAssign(AstNode *node, CurrentFunc *cFunc)
-{
+static void generateAssign(AstNode *node, CurrentFunc *cFunc) {
     generateExpression(node->data.assign.expression, cFunc);
-    if (node->data.assign.destination->type == TYPE_DOUBLE && node->data.assign.expression->type == TYPE_INT) //conversion if necessary
+    if (node->data.assign.destination->type == TYPE_DOUBLE &&
+        node->data.assign.expression->type ==
+            TYPE_INT) // conversion if necessary
     {
         printf("INT2FLOATS\n");
     }
-    printf("POPS LF@%s$%d\n", node->data.assign.destination->data.id.name, node->data.assign.destination->data.id.scope);
+    printf("POPS LF@%s$%d\n", node->data.assign.destination->data.id.name,
+           node->data.assign.destination->data.id.scope);
 }
 
 /**
  * @brief Generates code for declaration.
- * 
- * Generates right-hand side expression which is left on stack and pops it into the at the start of the function declared variable.
- * 
+ *
+ * Generates right-hand side expression which is left on stack and pops it into
+ * the at the start of the function declared variable.
+ *
  * @param node AST_DECLARATION
  * @param cFunc Current function information
  */
-static void generateDeclaration(AstNode *node, CurrentFunc *cFunc)
-{
-    //DEFVAR is done at the beginning of the function
+static void generateDeclaration(AstNode *node, CurrentFunc *cFunc) {
+    // DEFVAR is done at the beginning of the function
     generateExpression(node->data.declaration.expression, cFunc);
-    if (node->type == TYPE_DOUBLE && node->data.declaration.expression->type == TYPE_INT) //conversion if necessary
+    if (node->type == TYPE_DOUBLE && node->data.declaration.expression->type ==
+                                         TYPE_INT) // conversion if necessary
     {
         printf("INT2FLOATS\n");
     }
-    printf("POPS LF@%s$%d\n", node->data.declaration.name, node->data.declaration.scope);
+    printf("POPS LF@%s$%d\n", node->data.declaration.name,
+           node->data.declaration.scope);
 }
 
 /**
  * @brief Generates code for an if statement.
- * 
+ *
  * Prints custom start, else and end labels.
  * Evaluates the condition.
- * Generates code for the then and else blocks, which are linked lists of statements.
- * 
+ * Generates code for the then and else blocks, which are linked lists of
+ * statements.
+ *
  * @param node AST_IF
- * @param cFunc Current function information - this function uses name and count of if cycles for custom labels
+ * @param cFunc Current function information - this function uses name and count
+ * of if cycles for custom labels
  */
-static void generateIf(AstNode *node, CurrentFunc *cFunc)
-{
+static void generateIf(AstNode *node, CurrentFunc *cFunc) {
     int currentIf = cFunc->ifCount;
     cFunc->ifCount++;
 
     printf("LABEL %s$if$%d$start\n", cFunc->funcName, currentIf);
-    //condition evaluation, leaves result on stack
+    // condition evaluation, leaves result on stack
     generateExpression(node->data.ifStat.condition, cFunc);
-    //pops result into tmp
+    // pops result into tmp
     printf("POPS GF@%%tmp\n");
-    printf("JUMPIFEQ %s$if$%d$else GF@%%tmp bool@false\n", cFunc->funcName, currentIf);
+    printf("JUMPIFEQ %s$if$%d$else GF@%%tmp bool@false\n", cFunc->funcName,
+           currentIf);
 
     AstNode *block = node->data.ifStat.thenBody;
-    while (block != NULL)
-    {
+    while (block != NULL) {
         generateBlock(block, cFunc);
         block = block->next;
     }
 
     printf("JUMP %s$if$%d$end\n", cFunc->funcName, currentIf);
-    printf("LABEL %s$if$%d$else\n", cFunc->funcName, currentIf); //if there is no else branch, it will fall through to end
+    printf(
+        "LABEL %s$if$%d$else\n", cFunc->funcName,
+        currentIf); // if there is no else branch, it will fall through to end
 
     block = node->data.ifStat.elseBody;
-    while (block != NULL)
-    {
+    while (block != NULL) {
         generateBlock(block, cFunc);
         block = block->next;
     }
-    
+
     printf("LABEL %s$if$%d$end\n", cFunc->funcName, currentIf);
 }
 
 /**
  * @brief Generates code for a while statement.
- * 
+ *
  * Prints custom start and end labels.
  * Evaluates the condition.
  * Generates code for the while block, which is a linked list of statements.
- * 
+ *
  * @param node AST_WHILE
- * @param cFunc Current function information - this function uses name and count of while cycles for custom labels
+ * @param cFunc Current function information - this function uses name and count
+ * of while cycles for custom labels
  */
-static void generateWhile(AstNode *node, CurrentFunc *cFunc)
-{
+static void generateWhile(AstNode *node, CurrentFunc *cFunc) {
     int currentWhile = cFunc->whileCount;
     cFunc->whileCount++;
 
     printf("LABEL %s$while$%d$start\n", cFunc->funcName, currentWhile);
-    //condition evaluation, leaves result on stack
+    // condition evaluation, leaves result on stack
     generateExpression(node->data.whileStat.condition, cFunc);
-    //pops result into tmp
+    // pops result into tmp
     printf("POPS GF@%%tmp\n");
-    printf("JUMPIFEQ %s$while$%d$end GF@%%tmp bool@false\n", cFunc->funcName, currentWhile);
+    printf("JUMPIFEQ %s$while$%d$end GF@%%tmp bool@false\n", cFunc->funcName,
+           currentWhile);
 
     AstNode *block = node->data.whileStat.body;
-    while (block != NULL)
-    {
+    while (block != NULL) {
         generateBlock(block, cFunc);
         block = block->next;
     }
@@ -364,46 +371,46 @@ static void generateWhile(AstNode *node, CurrentFunc *cFunc)
 
 /**
  * @brief Generates code for a return statement.
- * 
+ *
  * Pushes the result value onto stack and jumps to the end of the function.
- * 
+ *
  * @param node AST_RETURN
- * @param cFunc Current function information - this function uses name for a label to jump to over dead code
+ * @param cFunc Current function information - this function uses name for a
+ * label to jump to over dead code
  */
-static void generateReturn(AstNode *node, CurrentFunc *cFunc)
-{
-    if (node->data.returnStat.expression == NULL) //standalone return returns ()
+static void generateReturn(AstNode *node, CurrentFunc *cFunc) {
+    if (node->data.returnStat.expression ==
+        NULL) // standalone return returns ()
     {
         printf("PUSHS nil@nil\n");
-    }
-    else
-    {
-        generateExpression(node->data.returnStat.expression, cFunc); //leaves result on stack
-        if (cFunc->retType == TYPE_DOUBLE && node->data.returnStat.expression->type == TYPE_INT) //converts if function expects double and it is int
+    } else {
+        generateExpression(node->data.returnStat.expression,
+                           cFunc); // leaves result on stack
+        if (cFunc->retType == TYPE_DOUBLE &&
+            node->data.returnStat.expression->type ==
+                TYPE_INT) // converts if function expects double and it is int
         {
             printf("INT2FLOATS\n");
         }
     }
-    printf("JUMP %s$end\n", cFunc->funcName); //the rest of the function is dead code
+    printf("JUMP %s$end\n",
+           cFunc->funcName); // the rest of the function is dead code
 }
 
 /**
  * @brief Generates code for a function call.
- * 
+ *
  * Pushes arguments onto stack left to right and prints CALL.
- * 
+ *
  * @param node AST_CALL
  * @param cFunc Current function information
  */
-static void generateCall(AstNode *node, CurrentFunc *cFunc)
-{
-    //push arguments on stack
+static void generateCall(AstNode *node, CurrentFunc *cFunc) {
+    // push arguments on stack
     AstNode *group = node->data.call.group;
-    while (group != NULL)
-    {
+    while (group != NULL) {
         AstNode *item = group->data.group.items;
-        while (item != NULL)
-        {
+        while (item != NULL) {
             generateExpression(item, cFunc);
             item = item->next;
         }
@@ -415,307 +422,282 @@ static void generateCall(AstNode *node, CurrentFunc *cFunc)
 
 /**
  * @brief Generates code for a binary operator.
- * 
+ *
  * Performs implicit conversion Int->Double if needed.
  * Evaluates both expressions, results are left on stack.
  * Generates based on the operator.
- * 
+ *
  * @param node AST_BINARY
  * @param cFunc Current function information
  */
-static void generateBinary(AstNode *node, CurrentFunc *cFunc)
-{
-    if (node->data.binary.op == TOK_AND) //short-circuit && evaluation
+static void generateBinary(AstNode *node, CurrentFunc *cFunc) {
+    if (node->data.binary.op == TOK_AND) // short-circuit && evaluation
     {
         generateAnd(node, cFunc);
         return;
     }
 
-    if (node->data.binary.op == TOK_OR) //short-circuit || evaluation
+    if (node->data.binary.op == TOK_OR) // short-circuit || evaluation
     {
         generateOr(node, cFunc);
         return;
     }
 
     bool isString = false;
-    if (node->data.binary.left->type == TYPE_STRING && node->data.binary.right->type == TYPE_STRING)
-    {
+    if (node->data.binary.left->type == TYPE_STRING &&
+        node->data.binary.right->type == TYPE_STRING) {
         isString = true;
     }
 
-    //implicit conversion Int->Double
+    // implicit conversion Int->Double
     bool isDouble = false;
-    if (node->data.binary.left->type == TYPE_DOUBLE || node->data.binary.right->type == TYPE_DOUBLE)
-    {
+    if (node->data.binary.left->type == TYPE_DOUBLE ||
+        node->data.binary.right->type == TYPE_DOUBLE) {
         isDouble = true;
     }
 
     generateExpression(node->data.binary.left, cFunc);
-    if (node->data.binary.left->type == TYPE_INT && isDouble)
-    {
+    if (node->data.binary.left->type == TYPE_INT && isDouble) {
         printf("INT2FLOATS\n");
     }
 
     generateExpression(node->data.binary.right, cFunc);
-    if (node->data.binary.right->type == TYPE_INT && isDouble)
-    {
+    if (node->data.binary.right->type == TYPE_INT && isDouble) {
         printf("INT2FLOATS\n");
     }
 
-    switch (node->data.binary.op)
-    {
-        case TOK_PLUS:
-            if (isString) //concatenation
-            {
-                printf("POPS GF@%%tmp2\n");
-                printf("POPS GF@%%tmp\n");
-                printf("CONCAT GF@%%tmp GF@%%tmp GF@%%tmp2\n");
-                printf("PUSHS GF@%%tmp\n");
-            }
-            else
-            {
-                printf("ADDS\n");
-            }
-            break;
-        case TOK_MINUS:
-            printf("SUBS\n");
-            break;
-        case TOK_MUL:
-            printf("MULS\n");
-            break;
-        case TOK_DIV:
-            if (isDouble)
-            {
-                printf("DIVS\n");
-            }
-            else
-            {
-                printf("IDIVS\n");
-            }
-            break;
-        case TOK_LESS:
-            printf("LTS\n");
-            break;
-        case TOK_GREATER:
-            printf("GTS\n");
-            break;
-        case TOK_EQ:
-            printf("EQS\n");
-            break;
-        case TOK_LESS_EQ:
-            printf("GTS\n");
-            printf("NOTS\n");
-            break;
-        case TOK_GREATER_EQ:
-            printf("LTS\n");
-            printf("NOTS\n");
-            break;
-        case TOK_NEQ:
-            printf("EQS\n");
-            printf("NOTS\n");
-            break;
-        default:
-            break;
+    switch (node->data.binary.op) {
+    case TOK_PLUS:
+        if (isString) // concatenation
+        {
+            printf("POPS GF@%%tmp2\n");
+            printf("POPS GF@%%tmp\n");
+            printf("CONCAT GF@%%tmp GF@%%tmp GF@%%tmp2\n");
+            printf("PUSHS GF@%%tmp\n");
+        } else {
+            printf("ADDS\n");
+        }
+        break;
+    case TOK_MINUS:
+        printf("SUBS\n");
+        break;
+    case TOK_MUL:
+        printf("MULS\n");
+        break;
+    case TOK_DIV:
+        if (isDouble) {
+            printf("DIVS\n");
+        } else {
+            printf("IDIVS\n");
+        }
+        break;
+    case TOK_LESS:
+        printf("LTS\n");
+        break;
+    case TOK_GREATER:
+        printf("GTS\n");
+        break;
+    case TOK_EQ:
+        printf("EQS\n");
+        break;
+    case TOK_LESS_EQ:
+        printf("GTS\n");
+        printf("NOTS\n");
+        break;
+    case TOK_GREATER_EQ:
+        printf("LTS\n");
+        printf("NOTS\n");
+        break;
+    case TOK_NEQ:
+        printf("EQS\n");
+        printf("NOTS\n");
+        break;
+    default:
+        break;
     }
 }
 
 /**
  * @brief Generates code for a unary operator.
- * 
+ *
  * Evaluates the expression, result is left on stack.
  * Generates based on the operator.
- * 
+ *
  * @param node AST_UNARY
  * @param cFunc Current function information
  */
-static void generateUnary(AstNode *node, CurrentFunc *cFunc)
-{
+static void generateUnary(AstNode *node, CurrentFunc *cFunc) {
     generateExpression(node->data.unary.operand, cFunc);
-    switch (node->data.unary.op)
-    {
-        case TOK_NOT:
-            printf("NOTS\n");
-            break;
-        case TOK_PLUS:
-            break;
-        case TOK_MINUS:
-            printf("POPS GF@%%tmp\n"); //pops x into temporary
-            if (node->type == TYPE_INT)
-            {
-                printf("PUSHS int@0\n");
-            }
-            else
-            {
-                printf("PUSHS float@%a\n", 0.0);
-            }
-            printf("PUSHS GF@%%tmp\n");
-            printf("SUBS\n"); //0-x => -x
-            break;
-        default:
-            break;
+    switch (node->data.unary.op) {
+    case TOK_NOT:
+        printf("NOTS\n");
+        break;
+    case TOK_PLUS:
+        break;
+    case TOK_MINUS:
+        printf("POPS GF@%%tmp\n"); // pops x into temporary
+        if (node->type == TYPE_INT) {
+            printf("PUSHS int@0\n");
+        } else {
+            printf("PUSHS float@%a\n", 0.0);
+        }
+        printf("PUSHS GF@%%tmp\n");
+        printf("SUBS\n"); // 0-x => -x
+        break;
+    default:
+        break;
     }
 }
 
 /**
  * @brief Generates code for a literal based on its type.
- * 
+ *
  * @param node AST_LITERAL
  * @param cFunc Current function information
  */
-static void generateLiteral(AstNode *node)
-{
-    switch (node->type)
-    {
-        case TYPE_INT:
-            printf("PUSHS int@%s\n",node->data.value);
-            break;
-        case TYPE_STRING:
-            printf("PUSHS string@");
-            for (int i = 0; node->data.value[i] != '\0'; i++)
-            {
-                char c = node->data.value[i];
-                if (c <= 32 || c == 35 || c == 92)
-                {
-                    if (c >= 10)
-                    {
-                        printf("\\0%d", c);
-                    }
-                    else
-                    {
-                        printf("\\00%d", c);
-                    }
+static void generateLiteral(AstNode *node) {
+    switch (node->type) {
+    case TYPE_INT:
+        printf("PUSHS int@%s\n", node->data.value);
+        break;
+    case TYPE_STRING:
+        printf("PUSHS string@");
+        for (int i = 0; node->data.value[i] != '\0'; i++) {
+            char c = node->data.value[i];
+            if (c <= 32 || c == 35 || c == 92) {
+                if (c >= 10) {
+                    printf("\\0%d", c);
+                } else {
+                    printf("\\00%d", c);
                 }
-                else
-                {
-                    printf("%c", c);
-                }
+            } else {
+                printf("%c", c);
             }
-            printf("\n");
-            break;
-        case TYPE_BOOL:
-            printf("PUSHS bool@%s\n",node->data.value);
-            break;
-        case TYPE_DOUBLE:
-            double value = strtod(node->data.value, NULL);
-            printf("PUSHS float@%a\n", value);
-            break;
-        case TYPE_UNIT:
-            printf("PUSHS nil@nil\n");
-            break;
-        default:
-            break;
+        }
+        printf("\n");
+        break;
+    case TYPE_BOOL:
+        printf("PUSHS bool@%s\n", node->data.value);
+        break;
+    case TYPE_DOUBLE:
+        double value = strtod(node->data.value, NULL);
+        printf("PUSHS float@%a\n", value);
+        break;
+    case TYPE_UNIT:
+        printf("PUSHS nil@nil\n");
+        break;
+    default:
+        break;
     }
 }
 
 /**
  * @brief Generates code for an ID.
- * 
+ *
  * @param node AST_ID
  * @param cFunc Current function information
  */
-static void generateId(AstNode *node)
-{
+static void generateId(AstNode *node) {
     printf("PUSHS LF@%s$%d\n", node->data.id.name, node->data.id.scope);
 }
 
 /**
  * @brief Evaluates an expression
- * 
+ *
  * Calls a generate function based on the class of the node.
  * Leaves the evaluation result on stack.
- * 
+ *
  * @param node Evaluated node
  * @param cFunc Current function information
  */
-static void generateExpression(AstNode *node, CurrentFunc *cFunc)
-{
-    switch (node->class)
-    {
-        case AST_CALL:
-            generateCall(node, cFunc);
-            break;
-        case AST_BINARY:
-            generateBinary(node, cFunc);
-            break;
-        case AST_UNARY:
-            generateUnary(node, cFunc);
-            break;
-        case AST_ID:
-            generateId(node);
-            break;
-        case AST_LITERAL:
-            generateLiteral(node);
-            break;
-        default:
-            break;
+static void generateExpression(AstNode *node, CurrentFunc *cFunc) {
+    switch (node->class) {
+    case AST_CALL:
+        generateCall(node, cFunc);
+        break;
+    case AST_BINARY:
+        generateBinary(node, cFunc);
+        break;
+    case AST_UNARY:
+        generateUnary(node, cFunc);
+        break;
+    case AST_ID:
+        generateId(node);
+        break;
+    case AST_LITERAL:
+        generateLiteral(node);
+        break;
+    default:
+        break;
     }
 }
 
 /**
  * @brief Generates code for statements in a block.
- * 
- * Calls a generate function based on the class of the node, pops the return value from stack.
- * 
+ *
+ * Calls a generate function based on the class of the node, pops the return
+ * value from stack.
+ *
  * @param node Evaluated node
  * @param cFunc Current function information
  */
-static void generateBlock(AstNode *node, CurrentFunc *cFunc)
-{
-    switch (node->class)
-    {
-        case AST_ASSIGN:
-            generateAssign(node, cFunc);
-            break;
-        case AST_DECLARATION:
-            generateDeclaration(node, cFunc);
-            break;
-        case AST_IF:
-            generateIf(node, cFunc);
-            break;
-        case AST_WHILE:
-            generateWhile(node, cFunc);
-            break;
-        case AST_RETURN:
-            generateReturn(node, cFunc);
-            break;
-        case AST_CALL:
-        case AST_BINARY:
-        case AST_UNARY:
-        case AST_ID:
-        case AST_LITERAL:
-            generateExpression(node, cFunc);
-            printf("POPS GF@%%tmp\n"); //get rid of the return value
-            break;
-        default:
-            break;
+static void generateBlock(AstNode *node, CurrentFunc *cFunc) {
+    switch (node->class) {
+    case AST_ASSIGN:
+        generateAssign(node, cFunc);
+        break;
+    case AST_DECLARATION:
+        generateDeclaration(node, cFunc);
+        break;
+    case AST_IF:
+        generateIf(node, cFunc);
+        break;
+    case AST_WHILE:
+        generateWhile(node, cFunc);
+        break;
+    case AST_RETURN:
+        generateReturn(node, cFunc);
+        break;
+    case AST_CALL:
+    case AST_BINARY:
+    case AST_UNARY:
+    case AST_ID:
+    case AST_LITERAL:
+        generateExpression(node, cFunc);
+        printf("POPS GF@%%tmp\n"); // get rid of the return value
+        break;
+    default:
+        break;
     }
 }
 
 /**
  * @brief Generates && short-circuit evaluation.
- * 
+ *
  * Evaluates x first, if x is false, y is not evaluated and the result is false.
  * If x is true, the result is undecided and y has to be evaluated.
- * 
+ *
  * @param node
- * @param cFunc Current function information - this function uses name and count of evaluations for custom labels
+ * @param cFunc Current function information - this function uses name and count
+ * of evaluations for custom labels
  */
-static void generateAnd(AstNode *node, CurrentFunc *cFunc)
-{
+static void generateAnd(AstNode *node, CurrentFunc *cFunc) {
     int currentEval = cFunc->evalCount;
     cFunc->evalCount++;
 
     generateExpression(node->data.binary.left, cFunc);
     printf("POPS GF@%%tmp\n");
 
-    //jump if x is false
-    printf("JUMPIFEQ %s$%d$$eval$decided GF@%%tmp bool@false\n", cFunc->funcName, currentEval);
+    // jump if x is false
+    printf("JUMPIFEQ %s$%d$$eval$decided GF@%%tmp bool@false\n",
+           cFunc->funcName, currentEval);
 
-    //x is not false -> the result is y
-    generateExpression(node->data.binary.right, cFunc); //leaves result on stack
+    // x is not false -> the result is y
+    generateExpression(node->data.binary.right, cFunc); // leaves result on
+                                                        // stack
     printf("JUMP %s$%d$$eval$end\n", cFunc->funcName, currentEval);
 
-    //x is false -> false
+    // x is false -> false
     printf("LABEL %s$%d$$eval$decided\n", cFunc->funcName, currentEval);
     printf("PUSHS bool@false\n");
 
@@ -724,29 +706,31 @@ static void generateAnd(AstNode *node, CurrentFunc *cFunc)
 
 /**
  * @brief Generates || short-circuit evaluation.
- * 
+ *
  * Evaluates x first, if x is true, y is not evaluated and the result is true.
  * If x is false, the result is undecided and y has to be evaluated.
- * 
+ *
  * @param node
- * @param cFunc Current function information - this function uses name and count of evaluations for custom labels
+ * @param cFunc Current function information - this function uses name and count
+ * of evaluations for custom labels
  */
-static void generateOr(AstNode *node, CurrentFunc *cFunc)
-{
+static void generateOr(AstNode *node, CurrentFunc *cFunc) {
     int currentEval = cFunc->evalCount;
     cFunc->evalCount++;
 
     generateExpression(node->data.binary.left, cFunc);
     printf("POPS GF@%%tmp\n");
 
-    //jump if x is true
-    printf("JUMPIFEQ %s$%d$$eval$decided GF@%%tmp bool@true\n", cFunc->funcName, currentEval);
+    // jump if x is true
+    printf("JUMPIFEQ %s$%d$$eval$decided GF@%%tmp bool@true\n", cFunc->funcName,
+           currentEval);
 
-    //x is not true -> the result is y
-    generateExpression(node->data.binary.right, cFunc); //leaves result on stack
+    // x is not true -> the result is y
+    generateExpression(node->data.binary.right, cFunc); // leaves result on
+                                                        // stack
     printf("JUMP %s$%d$$eval$end\n", cFunc->funcName, currentEval);
 
-    //x is true -> true
+    // x is true -> true
     printf("LABEL %s$%d$$eval$decided\n", cFunc->funcName, currentEval);
     printf("PUSHS bool@true\n");
 
@@ -754,17 +738,15 @@ static void generateOr(AstNode *node, CurrentFunc *cFunc)
 }
 
 /**
- * @brief Goes through the linked list of functions of the program and finds main.
- * 
+ * @brief Goes through the linked list of functions of the program and finds
+ * main.
+ *
  * @param node Starting point
  * @return Main function
  */
-static AstNode *findMain(AstNode *node)
-{
-    while (node != NULL)
-    {
-        if (node->data.func.isMain)
-        {
+static AstNode *findMain(AstNode *node) {
+    while (node != NULL) {
+        if (node->data.func.isMain) {
             return node;
         }
         node = node->next;
@@ -774,29 +756,27 @@ static AstNode *findMain(AstNode *node)
 
 /**
  * @brief Goes through the function subtree and declares all local variables.
- * 
+ *
  * Called recursively on blocks in if and while statements.
- * 
+ *
  * @param node Starting point
  */
-static void defvarLocalVariables(AstNode *node)
-{
-    while (node != NULL)
-    {
-        switch (node->class)
-        {
-            case AST_DECLARATION:
-                printf("DEFVAR LF@%s$%d\n", node->data.declaration.name, node->data.declaration.scope);
-                break;
-            case AST_IF:
-                defvarLocalVariables(node->data.ifStat.thenBody);
-                defvarLocalVariables(node->data.ifStat.elseBody);
-                break;
-            case AST_WHILE:
-                defvarLocalVariables(node->data.whileStat.body);
-                break;
-            default:
-                break;
+static void defvarLocalVariables(AstNode *node) {
+    while (node != NULL) {
+        switch (node->class) {
+        case AST_DECLARATION:
+            printf("DEFVAR LF@%s$%d\n", node->data.declaration.name,
+                   node->data.declaration.scope);
+            break;
+        case AST_IF:
+            defvarLocalVariables(node->data.ifStat.thenBody);
+            defvarLocalVariables(node->data.ifStat.elseBody);
+            break;
+        case AST_WHILE:
+            defvarLocalVariables(node->data.whileStat.body);
+            break;
+        default:
+            break;
         }
         node = node->next;
     }
@@ -805,9 +785,8 @@ static void defvarLocalVariables(AstNode *node)
 /**
  * @brief Prints all builtin functions.
  */
-static void printBuiltins()
-{
-    //print(value: Any): Unit
+static void printBuiltins() {
+    // print(value: Any): Unit
     printf("LABEL print\n");
     printf("POPS GF@%%tmp\n");
     printf("JUMPIFEQ print$unit GF@%%tmp nil@nil\n");
@@ -816,28 +795,28 @@ static void printBuiltins()
     printf("LABEL print$unit\n");
     printf("WRITE string@()\n");
     printf("LABEL print$end\n");
-    printf("PUSHS nil@nil\n"); //return value
+    printf("PUSHS nil@nil\n"); // return value
     printf("RETURN\n");
 
-    //readLine(): String
+    // readLine(): String
     printf("LABEL readLine\n");
     printf("READ GF@%%tmp string\n");
-    printf("PUSHS GF@%%tmp\n"); //return value
+    printf("PUSHS GF@%%tmp\n"); // return value
     printf("RETURN\n");
 
-    //readInt(): Int
+    // readInt(): Int
     printf("LABEL readInt\n");
     printf("READ GF@%%tmp int\n");
-    printf("PUSHS GF@%%tmp\n"); //return value
+    printf("PUSHS GF@%%tmp\n"); // return value
     printf("RETURN\n");
 
-    //readDouble(): Double
+    // readDouble(): Double
     printf("LABEL readDouble\n");
     printf("READ GF@%%tmp float\n");
-    printf("PUSHS GF@%%tmp\n"); //return value
+    printf("PUSHS GF@%%tmp\n"); // return value
     printf("RETURN\n");
 
-    //toStr(value: Any): String
+    // toStr(value: Any): String
     printf("LABEL toStr\n");
     printf("CREATEFRAME\n");
     printf("PUSHFRAME\n");
@@ -850,7 +829,7 @@ static void printBuiltins()
     printf("JUMPIFEQ toStr$float LF@type string@float\n");
     printf("JUMPIFEQ toStr$unit LF@type string@nil\n");
 
-    printf("JUMP toStr$end\n"); //string is already string
+    printf("JUMP toStr$end\n"); // string is already string
 
     printf("LABEL toStr$bool\n");
     printf("JUMPIFEQ toStr$false GF@%%tmp bool@false\n");
@@ -875,23 +854,23 @@ static void printBuiltins()
     printf("MOVE GF@%%tmp string@()\n");
 
     printf("LABEL toStr$end\n");
-    printf("PUSHS GF@%%tmp\n"); //return value
+    printf("PUSHS GF@%%tmp\n"); // return value
     printf("POPFRAME\n");
     printf("RETURN\n");
 
-    //toInt(value: Double) : Int
+    // toInt(value: Double) : Int
     printf("LABEL toInt\n");
     printf("FLOAT2INTS\n");
     printf("RETURN\n");
 
-    //strLength(value: String): Int
+    // strLength(value: String): Int
     printf("LABEL strLength\n");
     printf("POPS GF@%%tmp\n");
     printf("STRLEN GF@%%tmp GF@%%tmp\n");
     printf("PUSHS GF@%%tmp\n");
     printf("RETURN\n");
 
-    //subStr(value: String, start: Int, end: Int): String
+    // subStr(value: String, start: Int, end: Int): String
     printf("LABEL subStr\n");
     printf("CREATEFRAME\n");
     printf("PUSHFRAME\n");
@@ -903,7 +882,7 @@ static void printBuiltins()
     printf("DEFVAR LF@condition\n");
     printf("DEFVAR LF@len\n");
 
-    printf("POPS LF@end\n"); //pop arguments from stack last to first
+    printf("POPS LF@end\n"); // pop arguments from stack last to first
     printf("POPS LF@start\n");
     printf("POPS LF@value\n");
 
@@ -916,13 +895,13 @@ static void printBuiltins()
     printf("GT LF@condition LF@start LF@end\n"); // start > end
     printf("JUMPIFEQ subStr$invalid LF@condition bool@true\n");
 
-    printf("PUSHS LF@value\n"); //start >= strLength(value)
+    printf("PUSHS LF@value\n"); // start >= strLength(value)
     printf("CALL strLength\n");
     printf("POPS LF@len\n");
     printf("LT LF@condition LF@start LF@len\n");
     printf("JUMPIFEQ subStr$invalid LF@condition bool@false\n");
 
-    printf("GT LF@condition LF@end LF@len\n"); //end > strLength(value)
+    printf("GT LF@condition LF@end LF@len\n"); // end > strLength(value)
     printf("JUMPIFEQ subStr$invalid LF@condition bool@true\n");
 
     printf("MOVE LF@result string@\n");
@@ -939,14 +918,14 @@ static void printBuiltins()
     printf("JUMP subStr$cycle\n");
 
     printf("LABEL subStr$end\n");
-    printf("PUSHS LF@result\n"); //return value
+    printf("PUSHS LF@result\n"); // return value
     printf("POPFRAME\n");
     printf("RETURN\n");
 
     printf("LABEL subStr$invalid\n");
-    printf("EXIT int@40\n"); //exit
+    printf("EXIT int@40\n"); // exit
 
-    //ord(value: String, index: Int): Int
+    // ord(value: String, index: Int): Int
     printf("LABEL ord\n");
     printf("CREATEFRAME\n");
     printf("PUSHFRAME\n");
@@ -955,10 +934,10 @@ static void printBuiltins()
     printf("DEFVAR LF@len\n");
     printf("DEFVAR LF@condition\n");
 
-    printf("POPS LF@index\n"); //pop arguments from stack last to first
+    printf("POPS LF@index\n"); // pop arguments from stack last to first
     printf("POPS LF@value\n");
 
-    printf("JUMPIFEQ ord$invalid LF@value string@\n"); //empty string
+    printf("JUMPIFEQ ord$invalid LF@value string@\n"); // empty string
 
     printf("LT LF@condition LF@index int@0\n"); // index < 0
     printf("JUMPIFEQ ord$invalid LF@condition bool@true\n");
@@ -968,17 +947,17 @@ static void printBuiltins()
     printf("JUMPIFEQ ord$invalid LF@condition bool@false\n");
 
     printf("STRI2INT GF@%%tmp LF@value LF@index\n");
-    printf("PUSHS GF@%%tmp\n"); //return value
+    printf("PUSHS GF@%%tmp\n"); // return value
     printf("JUMP ord$end\n");
 
-    printf("LABEL ord$invalid\n"); //invalid returns -1
+    printf("LABEL ord$invalid\n"); // invalid returns -1
     printf("PUSHS int@-1\n");
 
     printf("LABEL ord$end\n");
     printf("POPFRAME\n");
     printf("RETURN\n");
 
-    //chr(code: Int): String
+    // chr(code: Int): String
     printf("LABEL chr\n");
     printf("INT2CHARS\n");
     printf("RETURN\n");

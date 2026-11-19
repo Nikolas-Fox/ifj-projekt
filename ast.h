@@ -1,20 +1,20 @@
 /******************************************************************************
-* Project:		IFJ
-* Package:		ast
-* File:			ast.h
-* Date:			12.11.2026
-* Last change:	19.11.2026
-* Authors: 		Nikolas Fox xfoxnik00
-*
-* Description: Header file containing abstract syntactic tree logic
-*
-*******************************************************************************/
+ * Project:		IFJ
+ * Package:		ast
+ * File:			ast.h
+ * Date:			12.11.2026
+ * Last change:	19.11.2026
+ * Authors: 		Nikolas Fox xfoxnik00
+ *
+ * Description: Header file containing abstract syntactic tree logic
+ *
+ *******************************************************************************/
 /**
-* @file ast.h
-*
-* @brief Header file containing abstract syntactic tree logic
-* @author Nikolas Fox xfoxnik00
-*/
+ * @file ast.h
+ *
+ * @brief Header file containing abstract syntactic tree logic
+ * @author Nikolas Fox xfoxnik00
+ */
 
 #ifndef AST_H
 #define AST_H
@@ -25,12 +25,12 @@
 #include "scanner.h"
 #include "symtable.h"
 
-typedef enum
-{
+typedef enum {
     AST_WHOLE, // the whole program - a linked list of functions
 
-    AST_FUNC, // function definition
-    AST_GROUP, // group of parameters/arguments (a,b) - they will be in a linked list
+    AST_FUNC,  // function definition
+    AST_GROUP, // group of parameters/arguments (a,b) - they will be in a linked
+               // list
     AST_PARAM, // one parameter - parameters will be in a linked list
 
     AST_ASSIGN,
@@ -46,113 +46,101 @@ typedef enum
     AST_ID
 } AstClass;
 
-typedef enum
-{
-    NOT_VISITED,
-    PROCESSING,
-    DONE
-} State;
+typedef enum { NOT_VISITED, PROCESSING, DONE } State;
 
-typedef struct AstNode AstNode; // declared so AstNode can keep a pointer to itself
+typedef struct AstNode
+    AstNode; // declared so AstNode can keep a pointer to itself
 
-struct AstNode
-{
+struct AstNode {
     AstClass class;
-    DataType type; // The type of the nodes value (literal, expression, variable, function return type) TYPE_NONE until it is set
-    AstNode *next;  // sibling in linked list (statements, arguments and parameters,
-                    // groups in calls and definitions, functions)
+    DataType type; // The type of the nodes value (literal, expression,
+                   // variable, function return type) TYPE_NONE until it is set
+    AstNode *next; // sibling in linked list (statements, arguments and
+                   // parameters, groups in calls and definitions, functions)
 
-    union
-    {
+    union {
         char *value; // AST_LITERAL - value (NULL for unit)
 
-        struct
-        {
+        struct {
             char *name;
             int scope;
-        }id;
+        } id;
 
-        struct
-        {
+        struct {
             TokenType op;
             AstNode *operand;
-        }unary;
+        } unary;
 
-        struct 
-        {
+        struct {
             TokenType op;
-            AstNode *left;   // operands
+            AstNode *left; // operands
             AstNode *right;
-        }binary;
+        } binary;
 
-        struct
-        {
+        struct {
             char *name;
-            AstNode *group; // poitner to group (each group has a pointer to the next group, and a pointer to a list of arguments)
+            AstNode *group; // poitner to group (each group has a pointer to the
+                            // next group, and a pointer to a list of arguments)
             size_t groupCount;
-        }call;
+        } call;
 
-        struct
-        {
+        struct {
             AstNode *expression;
-        }returnStat;
+        } returnStat;
 
-        struct 
-        {
+        struct {
             AstNode *condition;
             AstNode *body; // first statement in a linked list of statements
-        }whileStat;
+        } whileStat;
 
-        struct
-        {
-            AstNode *condition;   // expression
-            AstNode *thenBody;   // first statement in linked list of statements
-            AstNode *elseBody; // first statement in linked list of statements
-        }ifStat;
+        struct {
+            AstNode *condition; // expression
+            AstNode *thenBody;  // first statement in linked list of statements
+            AstNode *elseBody;  // first statement in linked list of statements
+        } ifStat;
 
-        struct
-        {
+        struct {
             char *name;
-            bool isVar;     // to tell between variable and value
+            bool isVar; // to tell between variable and value
             AstNode *expression;
-            int scope;      // number of scope we are in (so codegen knows which variable is used); not depth
-        }declaration;
+            int scope; // number of scope we are in (so codegen knows which
+                       // variable is used); not depth
+        } declaration;
 
-        struct 
-        {
+        struct {
             AstNode *destination;
             AstNode *expression;
-        }assign;
+        } assign;
 
-        struct
-        {
+        struct {
             char *name;
             int scope;
-        }param;
+        } param;
 
-        struct
-        {
-            AstNode *items; // pointer to the first parameter/ argument in a linked list
-            size_t count; // size of the group for checking whether there is the right number of parameters/arguments
-        }group;
+        struct {
+            AstNode *items; // pointer to the first parameter/ argument in a
+                            // linked list
+            size_t count; // size of the group for checking whether there is the
+                          // right number of parameters/arguments
+        } group;
 
-        struct
-        {
+        struct {
             char *name;
-            AstNode *group; // poitner to group (each group has a pointer to the next group, and a pointer to a list of parameters)
+            AstNode
+                *group; // poitner to group (each group has a pointer to the
+                        // next group, and a pointer to a list of parameters)
             size_t groupCount;
-            AstNode *body;  // first statement in a linked list of statements
+            AstNode *body; // first statement in a linked list of statements
             bool isMain;
-            State state; 
+            State state;
         } func;
 
-        struct
-        {
-            AstNode *func; // pointer to first function (it is a linked list of functions)
-        }whole;        
-    }data;
+        struct {
+            AstNode *func; // pointer to first function (it is a linked list of
+                           // functions)
+        } whole;
+    } data;
 };
-
 
 /**
  * @brief Creates AST node of certain class
@@ -170,7 +158,8 @@ AstNode *createNode(AstClass class);
 AstNode *createNodeLiteral(DataType type, char *value);
 
 /**
- * @brief Creates an identifier node, a use of a variable or a function without parameters
+ * @brief Creates an identifier node, a use of a variable or a function without
+ * parameters
  * @param name Name of the identifier (copied)
  * @return Pointer to the new node
  */
@@ -220,7 +209,8 @@ AstNode *createNodeWhile(AstNode *condition, AstNode *body);
 /**
  * @brief Creates a conditional statement node
  * @param condition Subtree of the condition
- * @param thenBody First statement of the then branch (statements form a linked list)
+ * @param thenBody First statement of the then branch (statements form a linked
+ * list)
  * @param elseBody First statement of the else branch
  * @return Pointer to the new node
  */
@@ -234,7 +224,8 @@ AstNode *createNodeIf(AstNode *condition, AstNode *thenBody, AstNode *elseBody);
  * @param expression Subtree of the initialiser
  * @return Pointer to the new node
  */
-AstNode *createNodeDeclaration(char *name, bool isVar, DataType type, AstNode *expression);
+AstNode *createNodeDeclaration(char *name, bool isVar, DataType type,
+                               AstNode *expression);
 
 /**
  * @brief Creates an assignment node
@@ -269,13 +260,15 @@ AstNode *createNodeGroup(AstNode *items, size_t count);
  * @param retType Written return type (TYPE_NONE if it is not stated)
  * @return Pointer to the new node
  */
-AstNode *createNodeFunc(char *name, size_t groupCount, AstNode *group, AstNode *body, DataType retType);
+AstNode *createNodeFunc(char *name, size_t groupCount, AstNode *group,
+                        AstNode *body, DataType retType);
 
 /**
  * @brief Inserts a statement to the end of a statement list
  * @param head Pointer to the first statement of the list
  * @param newStat Pointer to the statement we want to add to the end
- * @return head during normal insertion and if newStat is null; newStat if the list was empty
+ * @return head during normal insertion and if newStat is null; newStat if the
+ * list was empty
  */
 AstNode *insertStat(AstNode *head, AstNode *newStat);
 
@@ -283,7 +276,8 @@ AstNode *insertStat(AstNode *head, AstNode *newStat);
  * @brief Inserts a function to the end of a function list
  * @param head Pointer to the first function of the list
  * @param newFunc Pointer to the function we want to add to the end
- * @return head during normal insertion and if newFunc is null; newFunc if the list was empty
+ * @return head during normal insertion and if newFunc is null; newFunc if the
+ * list was empty
  */
 AstNode *insertFunc(AstNode *head, AstNode *newFunc);
 

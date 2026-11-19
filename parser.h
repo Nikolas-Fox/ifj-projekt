@@ -1,38 +1,39 @@
 /******************************************************************************
-* Project:		IFJ
-* Package:		parser
-* File:			parser.h
-* Date:			1.11.2026
-* Last change:	19.11.2026
-* Authors: 		Eliška Holá xholael00
-*
-* Description: Header file of parser logic
-*
-*******************************************************************************/
+ * Project:		IFJ
+ * Package:		parser
+ * File:			parser.h
+ * Date:			1.11.2026
+ * Last change:	19.11.2026
+ * Authors: 		Eliška Holá xholael00
+ *
+ * Description: Header file of parser logic
+ *
+ *******************************************************************************/
 /**
-* @file parser.h
-*
-* @brief Parser header file
-* @author Eliška Holá xholael00
-*/
+ * @file parser.h
+ *
+ * @brief Parser header file
+ * @author Eliška Holá xholael00
+ */
 
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <stdbool.h>
-#include "scanner.h"
 #include "ast.h"
+#include "scanner.h"
+#include <stdbool.h>
 
-//Parser state struct
+// Parser state struct
 typedef struct {
     Scanner *sc;
     Token currentToken;
     Token aheadToken;
-    bool lookAhead;    // true if aheadToken holds a token from the lexer
+    bool lookAhead; // true if aheadToken holds a token from the lexer
 } ParsedToken;
 
 /**
- * @brief Decides if look ahead was done or if it needs to get a new token from lexer.
+ * @brief Decides if look ahead was done or if it needs to get a new token from
+ * lexer.
  * @param p Struct of parser state
  */
 void getNextToken(ParsedToken *p);
@@ -44,7 +45,8 @@ void getNextToken(ParsedToken *p);
 void getTokenAhead(ParsedToken *p);
 
 /**
- * @brief Checks if token has the expected type and calls getToken() for the next one / calls printError if it doesn't.
+ * @brief Checks if token has the expected type and calls getToken() for the
+ * next one / calls printError if it doesn't.
  * @param p Struct of parser state
  * @param expected Expected token type
  */
