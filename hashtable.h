@@ -44,6 +44,7 @@ typedef struct {
     HashTItem *tableItems;
     size_t size;
     size_t count_occupied;
+    int scopeID;
 } HashTable;
 
 // return void, and it is pointer to function
@@ -55,11 +56,20 @@ typedef void (*CallBackData)(void *data);
  * Uses calloc to automatically zero-initialize all items (setting states to
  * EMPTY).
  * @param size The capacity of the hash table
+ * @param scopeId in whic scope is it
  * @return Pointer to the initialized HashTable, or NULL if memory allocation
  * fails
  */
 
-HashTable *htInit(size_t size);
+HashTable *htInit(size_t size, int scopeID); 
+
+/**
+ * @brief function for return the scope id where the table is 
+ * 
+ * @param table the actual table i wnat to know the scope of
+ * @return scope id - int
+ */
+int htScopeID(HashTable *table);
 
 /**
  * @brief Inserts a new element into the hash table or updates an existing one.

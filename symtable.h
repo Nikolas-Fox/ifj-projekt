@@ -33,6 +33,7 @@ typedef enum {
     TYPE_DOUBLE,
     TYPE_UNIT,
     TYPE_ANY,
+    TYPE_RETURNED   //uses the emantic analyzer to resolve types on explicit return
 } DataType;
 
 typedef enum {
@@ -59,6 +60,7 @@ typedef struct {
     char *symbolName;
     DataType dtype;
     bool isDefined;
+    int scopeID; 
 
     union {
         FunctionData funcData;
@@ -118,6 +120,15 @@ void symtableFree(Symtable *sTable);
  * @return pointer to data that has been copied
  */
 char *copyString(const char *src);
+
+
+/**
+ * @brief Gets the scope ID of the current active scope
+ *
+ * @param sTable Pointer to the Symtable
+ * @return Scope ID of the current top scope
+ */
+int symtableScopeID(Symtable *sTable);
 
 /**
  * @brief Insert Variable to the symtable

@@ -27,6 +27,7 @@ struct Symtable {
     HashTable **htArray; // array of pointers to Hashtables
     size_t top;          // actual hashtable
     size_t capacity;
+    int scopeCounter; 
 };
 
 
@@ -63,9 +64,10 @@ Symtable *symtableInit(void) {
     }
     symTable->top = 0;
     symTable->capacity = INITIAL_CAPACITY;
+    symTable->scopeCounter = 0;
 
     // inicialize first global hashtable
-    symTable->htArray[0] = htInit(HASH_T_SIZE);
+    symTable->htArray[0] = htInit(HASH_T_SIZE, 0); 
     if (symTable->htArray[0] == NULL) {
         free(symTable->htArray);
         free(symTable);
@@ -103,7 +105,8 @@ bool symtablePushScope(Symtable *sTable) {
 
     // Move to the new scope index and initialize a new hash table
     sTable->top++;
-    sTable->htArray[sTable->top] = htInit(HASH_T_SIZE);
+    sTable->scopeCounter++;
+    sTable->htArray[sTable->top] = htInit(HASH_T_SIZE, sTable->scopeCounter);
     if (sTable->htArray[sTable->top] == NULL) {
         // give back top if hash table initialization failed
         sTable->top--;
@@ -111,6 +114,10 @@ bool symtablePushScope(Symtable *sTable) {
     }
 
     return true;
+}
+
+int symtableScopeID(Symtable *sTable) {
+    return htScopeID(sTable->htArray[sTable->top]);
 }
 
 static void freeParams(FunctionParam *params) {
@@ -254,6 +261,7 @@ static SymbolData *insertSymbol(Symtable *sTable, char *name, SymbolType sType,
     newData->dtype = dType;
     newData->isDefined = isDefined;
     newData->value.funcData.paramCount = 0;
+    newData->scopeID = htScopeID(current); 
     newData->value.funcData.params = NULL;
     newData->value.funcData.listCount = 0;
 

@@ -44,7 +44,7 @@ size_t hashFunction(const char *key, size_t tableSize) {
     return hash % tableSize;
 }
 
-HashTable *htInit(size_t size) {
+HashTable *htInit(size_t size, int scopeID) {
     // i cannot init a table with size 0
     if (size == 0) {
         return NULL;
@@ -53,6 +53,7 @@ HashTable *htInit(size_t size) {
     if (hTable == NULL) {
         return NULL;
     }
+    hTable->scopeID = scopeID; 
     hTable->size = size;
     hTable->count_occupied = 0;
 
@@ -65,6 +66,11 @@ HashTable *htInit(size_t size) {
     }
 
     return hTable;
+}
+
+
+int htScopeID(HashTable *table) {
+    return table->scopeID;
 }
 
 HashTItem *htSearch(HashTable *table, const char *key) {
