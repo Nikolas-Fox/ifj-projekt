@@ -1,0 +1,14 @@
+import ifj26.*
+
+def forty_two: Int = 42
+
+def add_groups(a: Int)(b: Int, c: Int): Int =
+  a + b + c
+
+def no_args_parens(): Int = 10
+
+@main def run(): Unit =
+  val base = forty_two
+  val extra = no_args_parens()
+  val total = add_groups(base)(extra, 5)
+  print(total)

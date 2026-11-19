@@ -1,0 +1,11 @@
+import ifj26.*
+
+@main def run(): Unit =
+  var outer = 0
+  while outer < 2 do
+    var inner = 0
+    while inner < 2 do
+      val prod = outer * 10 + inner
+      print(prod)
+      inner = inner + 1
+    outer = outer + 1

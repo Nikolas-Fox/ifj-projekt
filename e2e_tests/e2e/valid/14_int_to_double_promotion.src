@@ -1,0 +1,11 @@
+import ifj26.*
+
+@main def run(): Unit =
+  val i: Int = 3
+  val d1: Double = i
+  val d2: Double = i + 2.5
+  if i < 4.5 then
+    print(d1)
+    print(d2)
+  else
+    print(0.0)

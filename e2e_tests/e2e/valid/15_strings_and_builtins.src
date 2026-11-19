@@ -1,0 +1,13 @@
+import ifj26.*
+
+@main def run(): Unit =
+  val greeting = "Ahoj" + " " + "IFJ26"
+  val len = strLength(greeting)
+  val sub = subStr(greeting, 0, 4)
+  val code = ord("A", 0)
+  val ch = chr(code)
+  val s_num = toStr(len)
+  print(greeting)
+  print(sub)
+  print(ch)
+  print(s_num)

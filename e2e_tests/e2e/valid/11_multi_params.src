@@ -1,0 +1,10 @@
+import ifj26.*
+
+def sub_and_add(a: Int, b: Int, c: Int): Int =
+  val diff = a - b
+  diff + c
+
+@main def run(): Unit =
+  val x = 10
+  val res = sub_and_add(x, 3, 2)
+  print(res)

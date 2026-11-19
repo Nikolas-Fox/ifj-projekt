@@ -1,0 +1,17 @@
+import ifj26.*
+
+@main def run(): Unit =
+  val r = even_step(4)
+  print(r)
+
+def even_step(n: Int): Int =
+  if n <= 0 then
+    0
+  else
+    odd_step(n - 1)
+
+def odd_step(n: Int): Int =
+  if n <= 0 then
+    1
+  else
+    even_step(n - 1)
