@@ -138,6 +138,13 @@ static Token endNumber(Scanner *sc, TokenType type, int character) {
     return makeToken(sc, type, bufCopy(sc));
 }
 
+// An Int literal must not have leading zeros (a Double may)
+static void checkIntLeadingZero(Scanner *sc) {
+    if (sc -> bufLen > 1 && sc -> buf[0] == '0') {
+        lexError(sc, "A non-zero Int literal must not begin with a zero.");
+    }
+}
+
 // opens an interpolated string (kind 0 = one line, 1 = multi-line)
 // INTERPOLATEDS extention AI (Claude): explained and partialy generated
 // prompts:
@@ -545,7 +552,8 @@ static Token readToken(Scanner *sc) {
 
             case ST_ZERO:
                 if (isdigit(character)) {
-                    lexError(sc, "A non-zero literal must not begin with a zero.");
+                    bufAdd(sc, character);
+                    state = ST_INT;
                 } else if (character == '.') {
                     bufAdd(sc, character);
                     state = ST_DOT;
@@ -573,6 +581,7 @@ static Token readToken(Scanner *sc) {
                 } else if (character == 'd' || character == 'D') {
                     state = ST_SUFFIX;
                 } else {
+                    checkIntLeadingZero(sc);
                     return endNumber(sc, TOK_INT, character);
                 }
                 break;
@@ -594,6 +603,7 @@ static Token readToken(Scanner *sc) {
                     ungetc(character, stdin);
                 sc -> bufLen--;
                 sc -> buf[sc -> bufLen] = '\0';
+                checkIntLeadingZero(sc);
                 sc -> dotAfterNumber = 1;
                 return makeToken(sc, TOK_INT, bufCopy(sc));
                 }
