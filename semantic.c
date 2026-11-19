@@ -428,7 +428,7 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement, DataType 
             AstNode *expression = statement->data.returnStat.expression;
             if(retType == TYPE_NONE)
             {
-                exit(6); // you can't have return if no retType is stated
+                exit(10); // you can't have return if no retType is stated
             }
             if(expression == NULL)
             {
