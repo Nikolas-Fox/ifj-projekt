@@ -3,7 +3,7 @@
 * Package:		precedence
 * File:			precedence.c
 * Date:			5.11.2026
-* Last change:	18.11.2026
+* Last change:	19.11.2026
 * Authors: 		Nikolas Fox xfoxnik00
 *
 * Description: Implementation of precedence syntactic analysis logic
@@ -367,8 +367,8 @@ static PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand, PrecStack
             {
                 return PREC_RPAR;
             }
+            return PREC_END; //')' is PREC_END when openParCnt == 0, because an expression can be inside parentheses: 'if (expression)'
 
-        // FALLTHROUGH ')' is PREC_END when openParCnt == 0, because an expression can be inside parentheses: 'if (expression)' 
         default: 
             return PREC_END;   // everything else is an end (the parser will take care of it if it's not valid)
     }
@@ -482,8 +482,6 @@ static void precReduce(PrecStack *stack)
  */
 static AstNode *parseLoa(ParsedToken *p, size_t *groupCount)
 {
-    AstNode *groups = NULL;
-
     //46: ⟨loa⟩ → (⟨arg_list⟩)⟨loa⟩
     if (p->currentToken.type == TOK_LPAR)
     {

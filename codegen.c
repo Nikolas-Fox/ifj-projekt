@@ -41,8 +41,8 @@ static void generateReturn(AstNode *node, CurrentFunc *cFunc);
 static void generateCall(AstNode *node, CurrentFunc *cFunc);
 static void generateBinary(AstNode *node, CurrentFunc *cFunc);
 static void generateUnary(AstNode *node, CurrentFunc *cFunc);
-static void generateLiteral(AstNode *node, CurrentFunc *cFunc);
-static void generateId(AstNode *node, CurrentFunc *cFunc);
+static void generateLiteral(AstNode *node);
+static void generateId(AstNode *node);
 static void generateExpression(AstNode *node, CurrentFunc *cFunc);
 static void generateBlock(AstNode *node, CurrentFunc *cFunc);
 
@@ -562,7 +562,7 @@ static void generateUnary(AstNode *node, CurrentFunc *cFunc)
  * @param node AST_LITERAL
  * @param cFunc Current function information
  */
-static void generateLiteral(AstNode *node, CurrentFunc *cFunc)
+static void generateLiteral(AstNode *node)
 {
     switch (node->type)
     {
@@ -613,7 +613,7 @@ static void generateLiteral(AstNode *node, CurrentFunc *cFunc)
  * @param node AST_ID
  * @param cFunc Current function information
  */
-static void generateId(AstNode *node, CurrentFunc *cFunc)
+static void generateId(AstNode *node)
 {
     printf("PUSHS LF@%s$%d\n", node->data.id.name, node->data.id.scope);
 }
@@ -641,10 +641,10 @@ static void generateExpression(AstNode *node, CurrentFunc *cFunc)
             generateUnary(node, cFunc);
             break;
         case AST_ID:
-            generateId(node, cFunc);
+            generateId(node);
             break;
         case AST_LITERAL:
-            generateLiteral(node, cFunc);
+            generateLiteral(node);
             break;
         default:
             break;
