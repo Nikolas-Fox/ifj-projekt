@@ -22,6 +22,13 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+//current function information
+typedef struct {
+    char *funcName;
+    int ifCount, whileCount, evalCount; //used to generate unique labels, if and while cycles, eval is used for short-circuit evaluation
+    DataType retType;
+} CurrentFunc;
+
 //generate functions protypes
 static void generateWhole(AstNode *node);
 static void generateFunc(AstNode *node, CurrentFunc *cFunc);
@@ -49,13 +56,6 @@ static void cycleGroups(AstNode *node, CurrentFunc *cFunc);
 static void cycleParams(AstNode *node, CurrentFunc *cFunc);
 
 static void printBuiltins();
-
-//current function information
-typedef struct {
-    char *funcName;
-    int ifCount, whileCount, evalCount; //used to generate unique labels, if and while cycles, eval is used for short-circuit evaluation
-    DataType retType;
-} CurrentFunc;
 
 /**
  * @brief Entry point
@@ -245,6 +245,8 @@ static void generateBody(AstNode *node, CurrentFunc *cFunc)
             {
                 printf("POPS GF@%%tmp\n"); //get rid of the return value
             }
+        default:
+            break;
     }
 }
 
@@ -512,6 +514,8 @@ static void generateBinary(AstNode *node, CurrentFunc *cFunc)
             printf("EQS\n");
             printf("NOTS\n");
             break;
+        default:
+            break;
     }
 }
 
@@ -546,6 +550,8 @@ static void generateUnary(AstNode *node, CurrentFunc *cFunc)
             }
             printf("PUSHS GF@%%tmp\n");
             printf("SUBS\n"); //0-x => -x
+            break;
+        default:
             break;
     }
 }
@@ -596,6 +602,8 @@ static void generateLiteral(AstNode *node, CurrentFunc *cFunc)
         case TYPE_UNIT:
             printf("PUSHS nil@nil\n");
             break;
+        default:
+            break;
     }
 }
 
@@ -638,6 +646,8 @@ static void generateExpression(AstNode *node, CurrentFunc *cFunc)
         case AST_LITERAL:
             generateLiteral(node, cFunc);
             break;
+        default:
+            break;
     }
 }
 
@@ -675,6 +685,8 @@ static void generateBlock(AstNode *node, CurrentFunc *cFunc)
         case AST_LITERAL:
             generateExpression(node, cFunc);
             printf("POPS GF@%%tmp\n"); //get rid of the return value
+            break;
+        default:
             break;
     }
 }
