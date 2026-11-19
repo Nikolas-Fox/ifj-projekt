@@ -6,13 +6,13 @@
 * Last change:	19.11.2026
 * Authors: 		Eliška Holá xholael00
 *
-* Description:  Main
+* Description:  Entry point of the compiler
 *
 *******************************************************************************/
 /**
 * @file main.c
 *
-* @brief Main
+* @brief Entry point of the compiler
 * @author Eliška Holá xholael00
 */
 
@@ -39,4 +39,4 @@ int main()
     scannerFree(sc);
 }
 
-/*** End of file codegen.c ***/
+/*** End of file main.c ***/
