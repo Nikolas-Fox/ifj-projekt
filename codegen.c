@@ -3,7 +3,7 @@
  * Package:		codegen
  * File:			codegen.c
  * Date:			15.11.2026
- * Last change:	19.11.2026
+ * Last change:	23.11.2026
  * Authors: 		Eliška Holá xholael00
  *
  * Description:  Implementation of code generation
@@ -807,6 +807,9 @@ static void printBuiltins() {
     // readInt(): Int
     printf("LABEL readInt\n");
     printf("READ GF@%%tmp int\n");
+    printf("JUMPIFNEQ readInt$end GF@%%tmp nil@nil\n");
+    printf("MOVE GF@%%tmp int@0\n");
+    printf("LABEL readInt$end\n");
     printf("PUSHS GF@%%tmp\n"); // return value
     printf("RETURN\n");
 
@@ -819,6 +822,9 @@ static void printBuiltins() {
     // readDouble(): Double
     printf("LABEL readDouble\n");
     printf("READ GF@%%tmp float\n");
+    printf("JUMPIFNEQ readDouble$end GF@%%tmp nil@nil\n");
+    printf("MOVE GF@%%tmp float@%a\n", 0.0);
+    printf("LABEL readDouble$end\n");
     printf("PUSHS GF@%%tmp\n"); // return value
     printf("RETURN\n");
 
