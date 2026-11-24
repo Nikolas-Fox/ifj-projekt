@@ -3,7 +3,7 @@
  * Package:		semantic
  * File:			semantic.c
  * Date:			16.11.2026
- * Last change:	19.11.2026
+ * Last change:	24.11.2026
  * Authors: 		Nikolas Fox xfoxnik00
  *
  * Description: Implementation of semantic analysis logic
@@ -483,13 +483,96 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
     }
 
     case AST_BINARY: {
-        DataType left = checkExpr(symtable, expression->data.binary.left);
-        DataType right = checkExpr(symtable, expression->data.binary.right);
+
+        AstNode *left = expression->data.binary.left;
+        AstNode *right = expression->data.binary.right;
         TokenType operator= expression->data.binary.op;
+
+        // VALMEM extension
+        // check for expr.id first, because id will not be in the symtable (checkExpr will fail)
+         if(operator == TOK_DOT)
+         {
+            if(right->class != AST_ID)
+            {
+                exit(3); // invalid function call
+            }
+
+            char *name = right->data.id.name; // this is the name of the string after '.'
+            DataType expressionType = checkExpr(symtable,expression->data.binary.left);
+
+            if(strcmp(name, "toInt") == 0)
+            {
+                if(areCompatible(TYPE_DOUBLE, expressionType))
+                {
+                    // changing the node type
+                    AstNode *group = createNodeGroup(left, 1);
+                    expression->class = AST_CALL;
+                    expression->type = TYPE_INT;
+                    expression->data.call.group = group;
+                    expression->data.call.groupCount = 1;
+                    expression->data.call.name = copyString("toInt"); // copyString so freeAst doesn't free a constant
+                    AstFree(right);
+                    return TYPE_INT;
+                }
+                exit(5); // invalid argument type 
+            } 
+            else if(strcmp(name, "toString") == 0)
+            {
+                if(areCompatible(TYPE_ANY, expressionType))
+                {
+                    // changing the node type
+                    AstNode *group = createNodeGroup(left, 1);
+                    expression->class = AST_CALL;
+                    expression->type = TYPE_STRING;
+                    expression->data.call.group = group;
+                    expression->data.call.groupCount = 1;
+                    expression->data.call.name = copyString("toStr");
+                    AstFree(right);
+                    return TYPE_STRING;
+                }
+                exit(5); // invalid argument type 
+            }
+            else if(strcmp(name, "floor") == 0)
+            {
+                if(areCompatible(TYPE_DOUBLE, expressionType))
+                {
+                    // chaning the node type
+                    AstNode *group = createNodeGroup(left, 1);
+                    expression->class = AST_CALL;
+                    expression->type = TYPE_DOUBLE;
+                    expression->data.call.group = group;
+                    expression->data.call.groupCount = 1;
+                    expression->data.call.name = copyString("floor");
+                    AstFree(right);
+                    return TYPE_DOUBLE;
+                }
+                exit(5); // invalid argument type 
+            }
+            else if(strcmp(name, "length") == 0)
+            {
+                if(areCompatible(TYPE_STRING, expressionType))
+                {
+                    // changing the node type
+                    AstNode *group = createNodeGroup(left, 1);
+                    expression->class = AST_CALL;
+                    expression->type = TYPE_INT;
+                    expression->data.call.group = group;
+                    expression->data.call.groupCount = 1;
+                    expression->data.call.name = copyString("strLength");
+                    AstFree(right);
+                    return TYPE_INT;
+                }
+                exit(5); // invalid argument type 
+            }
+            exit(3); // invalid function call (this call isn't defined in VALMEM)
+        }
+
+        DataType leftType = checkExpr(symtable, left);
+        DataType rightType = checkExpr(symtable, right);
 
         switch (operator) {
         case TOK_PLUS:
-            if (left == TYPE_STRING && right == TYPE_STRING) {
+            if (leftType == TYPE_STRING && rightType == TYPE_STRING) {
                 expression->type = TYPE_STRING;
                 return TYPE_STRING;
             }
@@ -497,10 +580,10 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
         case TOK_MINUS:
         case TOK_DIV:
         case TOK_MUL: {
-            if ((isNumber(left) && isNumber(right)) == false) {
+            if ((isNumber(leftType) && isNumber(rightType)) == false) {
                 exit(6); // unallowed type in +-*/
             }
-            if (left == TYPE_INT && right == TYPE_INT) {
+            if (leftType == TYPE_INT && rightType == TYPE_INT) {
                 expression->type = TYPE_INT;
                 return TYPE_INT;
             } else // at least one of them is TYPE_DOUBLE
@@ -514,8 +597,8 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
         case TOK_LESS_EQ:
         case TOK_GREATER:
         case TOK_GREATER_EQ:
-            if ((isNumber(left) && isNumber(right)) ||
-                (left == TYPE_STRING && right == TYPE_STRING)) {
+            if ((isNumber(leftType) && isNumber(rightType)) ||
+                (leftType == TYPE_STRING && rightType == TYPE_STRING)) {
                 expression->type = TYPE_BOOL;
                 return TYPE_BOOL;
             }
@@ -523,9 +606,9 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
 
         case TOK_EQ:
         case TOK_NEQ:
-            if ((isNumber(left) && isNumber(right)) ||
-                (left != TYPE_NONE &&
-                 left == right)) // TYPE_NONE would mean they aren't defined
+            if ((isNumber(leftType) && isNumber(rightType)) ||
+                (leftType != TYPE_NONE &&
+                 leftType == rightType)) // TYPE_NONE would mean they aren't defined
             {
                 expression->type = TYPE_BOOL;
                 return TYPE_BOOL;
@@ -534,13 +617,13 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
 
         case TOK_AND:
         case TOK_OR:
-            if (left == TYPE_BOOL && right == TYPE_BOOL) {
+            if (leftType == TYPE_BOOL && rightType == TYPE_BOOL) {
                 expression->type = TYPE_BOOL;
                 return TYPE_BOOL;
             }
             exit(6);
 
-        // TODO: case TOK_DOT
+
         default:
             exit(99); // TOK_DOT is not defined yet
         }
