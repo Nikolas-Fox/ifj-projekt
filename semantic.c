@@ -63,10 +63,7 @@ static bool areCompatible(DataType destination, DataType source) {
 }
 
 static bool isNumber(DataType type) {
-    if (type == TYPE_INT || type == TYPE_DOUBLE) {
-        return true;
-    }
-    return false;
+    return type == TYPE_INT || type == TYPE_DOUBLE;
 }
 
 static void stInsertFunctions(Symtable *symtable, AstNode *whole) {
@@ -96,9 +93,9 @@ static void stInsertFunctions(Symtable *symtable, AstNode *whole) {
             group = group->next;
         }
 
-        if (node->data.func.isMain == true) {
+        if (node->data.func.isMain) {
             mainCount++;
-            if (hasParams(node->data.func.group) == true) {
+            if (hasParams(node->data.func.group)) {
                 exit(5);
             }
             if (node->type != TYPE_UNIT && hasType) {
@@ -266,7 +263,7 @@ static void checkFunction(Symtable *symtable, AstNode *function) {
             exit(6);
         }
 
-        if (function->data.func.isMain == true && blockType != TYPE_UNIT) {
+        if (function->data.func.isMain && blockType != TYPE_UNIT) {
             exit(6); // main is not TYPE_UNIT
         }
 
@@ -278,7 +275,7 @@ static void checkFunction(Symtable *symtable, AstNode *function) {
             blockType; // updating symtable with function type
     } else {
         if (function->type != TYPE_UNIT) {
-            if (areCompatible(function->type, blockType) == false &&
+            if ( !areCompatible(function->type, blockType) &&
                 blockType != TYPE_RETURNED) {
                 exit(6); // the block type isn't compatible with the return type
             }
@@ -318,7 +315,7 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement,
         destination->type = symbol->dtype;
         expression->type = checkExpr(symtable, expression);
 
-        if (areCompatible(destination->type, expression->type) == false) {
+        if (!areCompatible(destination->type, expression->type)) {
             exit(6); // error of type compatibility
         }
 
@@ -340,7 +337,7 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement,
             statement->type = expressionType; // the declared value/variable
                                               // takes on the expression type
         } else {
-            if (areCompatible(statement->type, expressionType) == false) {
+            if (!areCompatible(statement->type, expressionType)) {
                 exit(6); // error of type compatibility
             }
         }
@@ -489,7 +486,7 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
                 exit(6); // NOT must be followed by bool type
             }
         } else {
-            if (isNumber(type) == false) // everything else is sign (so it must
+            if (!isNumber(type)) // everything else is sign (so it must
                                          // be followed by int or double)
             {
                 exit(6);
@@ -565,7 +562,7 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
         case TOK_MINUS:
         case TOK_DIV:
         case TOK_MUL: {
-            if ((isNumber(leftType) && isNumber(rightType)) == false) {
+            if (!(isNumber(leftType) && isNumber(rightType))) {
                 exit(6); // unallowed type in +-*/
             }
             if (leftType == TYPE_INT && rightType == TYPE_INT) {
@@ -645,7 +642,7 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
                 DataType argType = checkExpr(symtable, arg);
 
                 // parameter type is the destination
-                if (areCompatible(parameterType, argType) == false) {
+                if (!areCompatible(parameterType, argType)) {
                     exit(5); // invalid argument type
                 }
 
