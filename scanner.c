@@ -171,7 +171,7 @@ static void lexError(Scanner *sc, const char *message) {
 // character, and creates the token
 static Token endNumber(Scanner *sc, TokenType type, int character) {
     if (isalnum(character) || character == '_') {
-        fprintf(sc, stderr,
+        fprintf(stderr,
                     "invalid character after numeric literal");
         exit(2);
     }
@@ -431,7 +431,7 @@ static Token readToken(Scanner *sc) {
                 bufAdd(sc, character);
                 state = ST_ID;
             } else {
-                fprintf(sc, stderr, "A standalone underscore is not an identifier");
+                fprintf(stderr, "A standalone underscore is not an identifier");
                 exit(2);
             }
             break;
@@ -864,7 +864,7 @@ static Token readToken(Scanner *sc) {
                 indentCount = 0;
             } else {
                 if (character != EOF && indentCount <= sc->lineIndent) {
-                    fprintf(sc, stderr,
+                    fprintf(stderr,
                     "The code inside the parentheses must be indented "
                              "further than the start of the command.");
                     exit(2);        
