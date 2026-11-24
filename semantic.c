@@ -400,7 +400,7 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement,
     case AST_RETURN: {
         AstNode *expression = statement->data.returnStat.expression;
         if (retType == TYPE_NONE) {
-            exit(10); // you can't have return if no retType is stated
+            exit(6); // you can't have return if no retType is stated, changed exit code from 10 to 6 due to test case 137 and 138 in ifj26-pokusne
         }
         if (expression == NULL) {
             if (retType != TYPE_UNIT) {
