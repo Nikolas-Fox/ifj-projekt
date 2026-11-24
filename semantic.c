@@ -215,7 +215,11 @@ static void findCalls(Symtable *symtable, AstNode *whole, AstNode *function,
 
         case AST_BINARY:
             findCalls(symtable, whole, function, statement->data.binary.left);
-            findCalls(symtable, whole, function, statement->data.binary.right);
+
+            if(statement->data.binary.op != TOK_DOT) // I need to guard the right call, because it won't be a function in the symtable
+            {
+                findCalls(symtable, whole, function, statement->data.binary.right);
+            }
             break;
 
         default:
@@ -426,6 +430,19 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement,
     }
 }
 
+static DataType dotToCall(AstNode *expression, AstNode *parameter,  AstNode *callId, DataType returnType, const char *name)
+{
+ // changing the node type
+    AstNode *group = createNodeGroup(parameter, 1);
+    expression->class = AST_CALL;
+    expression->type = returnType;
+    expression->data.call.group = group;
+    expression->data.call.groupCount = 1;
+    expression->data.call.name = copyString(name); // copyString so freeAst doesn't free a constant
+    AstFree(callId);
+    return returnType;
+} 
+
 static DataType checkExpr(Symtable *symtable, AstNode *expression) {
     switch (expression->class) {
     case AST_LITERAL:
@@ -498,21 +515,13 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
             }
 
             char *name = right->data.id.name; // this is the name of the string after '.'
-            DataType expressionType = checkExpr(symtable,expression->data.binary.left);
+            DataType expressionType = checkExpr(symtable, expression->data.binary.left);
 
             if(strcmp(name, "toInt") == 0)
             {
                 if(areCompatible(TYPE_DOUBLE, expressionType))
                 {
-                    // changing the node type
-                    AstNode *group = createNodeGroup(left, 1);
-                    expression->class = AST_CALL;
-                    expression->type = TYPE_INT;
-                    expression->data.call.group = group;
-                    expression->data.call.groupCount = 1;
-                    expression->data.call.name = copyString("toInt"); // copyString so freeAst doesn't free a constant
-                    AstFree(right);
-                    return TYPE_INT;
+                    return dotToCall(expression, left, right, TYPE_INT, "toInt");
                 }
                 exit(5); // invalid argument type 
             } 
@@ -520,15 +529,7 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
             {
                 if(areCompatible(TYPE_ANY, expressionType))
                 {
-                    // changing the node type
-                    AstNode *group = createNodeGroup(left, 1);
-                    expression->class = AST_CALL;
-                    expression->type = TYPE_STRING;
-                    expression->data.call.group = group;
-                    expression->data.call.groupCount = 1;
-                    expression->data.call.name = copyString("toStr");
-                    AstFree(right);
-                    return TYPE_STRING;
+                   return dotToCall(expression, left, right, TYPE_STRING, "toStr");
                 }
                 exit(5); // invalid argument type 
             }
@@ -536,15 +537,7 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
             {
                 if(areCompatible(TYPE_DOUBLE, expressionType))
                 {
-                    // chaning the node type
-                    AstNode *group = createNodeGroup(left, 1);
-                    expression->class = AST_CALL;
-                    expression->type = TYPE_DOUBLE;
-                    expression->data.call.group = group;
-                    expression->data.call.groupCount = 1;
-                    expression->data.call.name = copyString("floor");
-                    AstFree(right);
-                    return TYPE_DOUBLE;
+                    return dotToCall(expression, left, right, TYPE_DOUBLE, "floor");
                 }
                 exit(5); // invalid argument type 
             }
@@ -552,15 +545,7 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
             {
                 if(areCompatible(TYPE_STRING, expressionType))
                 {
-                    // changing the node type
-                    AstNode *group = createNodeGroup(left, 1);
-                    expression->class = AST_CALL;
-                    expression->type = TYPE_INT;
-                    expression->data.call.group = group;
-                    expression->data.call.groupCount = 1;
-                    expression->data.call.name = copyString("strLength");
-                    AstFree(right);
-                    return TYPE_INT;
+                    return dotToCall(expression, left, right, TYPE_INT, "strLength");
                 }
                 exit(5); // invalid argument type 
             }
@@ -625,7 +610,7 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
 
 
         default:
-            exit(99); // TOK_DOT is not defined yet
+            exit(99); // undefined binary operator
         }
     }
 
