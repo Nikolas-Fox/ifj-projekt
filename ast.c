@@ -137,6 +137,12 @@ AstNode *createNodeFunc(char *name, size_t groupCount, AstNode *group,
 
 // there is no need to define createNodeWhole as it is empty at first
 
+/**
+ * @brief Inserts statement into a linked list of statements
+ * @param head Pointer to the first element of the linked list of statements
+ * @param newStat Pointer to node of the statement to be inserted 
+ * @return Pointer to the head of the list of statements.
+ */
 AstNode *insertStat(AstNode *head, AstNode *newStat) {
     if (newStat == NULL) {
         return head;
@@ -155,6 +161,12 @@ AstNode *insertStat(AstNode *head, AstNode *newStat) {
     return head;
 }
 
+/**
+ * @brief Inserts function into a linked list of functions
+ * @param head Pointer to the first element of the linked list of functions
+ * @param newFunc Pointer to node of the function to be inserted 
+ * @return Pointer to the head of the list of functions.
+ */
 AstNode *insertFunc(AstNode *head, AstNode *newFunc) {
     if (newFunc == NULL) {
         return head;
@@ -185,6 +197,10 @@ static void astFreeList(AstNode *head) {
     }
 }
 
+/**
+ * @brief Free the whole AST tree
+ * @param node Pointer to the root of the tree
+ */
 void astFree(AstNode *node) {
     if (node == NULL) {
         return;
