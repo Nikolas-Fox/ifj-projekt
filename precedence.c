@@ -109,6 +109,8 @@ static void precReduce(PrecStack *stack);
 static AstNode *parseLoa(ParsedToken *p, size_t *groupCount);
 static AstNode *parseArgList(ParsedToken *p, size_t *count);
 static AstNode *parseArgEnd(ParsedToken *p, size_t *count);
+static AstNode *parseInterpolated(ParsedToken *p);
+
 
 /**
  * @brief Initialises an empty precedence stack
@@ -258,6 +260,68 @@ static void precStackShiftAfterFirstTerm(PrecStack *stack) {
     exit(99);
 }
 
+
+/**
+ * @brief Building a tree of concatenations (strings, identifiers, and expressions) for the extension INTERPOLATEDS
+ *  The identifiers and expressions will be built into a call on toStr
+ * @param p Pointer to the parsed token
+ * @return Ast node of the tree of concatenations
+ */
+static AstNode *parseInterpolated(ParsedToken *p)
+{
+    getNextToken(p); // consume TOK_INTERP_START
+    AstNode *interpolated = NULL;
+
+    while(p->currentToken.type != TOK_INTERP_END)
+    {
+        AstNode *next = NULL;
+        if(p->currentToken.type == TOK_STRING)
+        {
+            next = createNodeLiteral(TYPE_STRING, p->currentToken.str);
+            getNextToken(p);
+        }
+        else
+        {
+            if(p->currentToken.type == TOK_ID)
+            {
+                AstNode *id = createNodeID(p->currentToken.str);
+
+                // group with the only parameter expression
+                AstNode *argument = createNodeGroup(id, 1);
+                next = createNodeCall(copyString("toStr"), 1, argument);
+
+                getNextToken(p);
+            }
+            else
+            {
+                if(p->currentToken.type == TOK_INTERP_EXPR_START)
+                {
+                    getNextToken(p); // consume TOK_INTERP_EXPR_START
+                    AstNode *expression = parseExpression(p);
+                    checkToken(p, TOK_INTERP_EXPR_END); // this eats the token
+
+                    // group with the only parameter expression
+                    AstNode *argument = createNodeGroup(expression, 1); 
+                    next = createNodeCall(copyString("toStr"), 1, argument);
+                }
+                else
+                {
+                    exit(2); // expected idenitifier, string literal, expression or end of interpolation expression
+                }
+            }
+        }
+        if(interpolated == NULL) // the concatenation is empty so far
+        {
+            interpolated = next;
+        }
+        else
+        {
+            interpolated = createNodeBinary(TOK_PLUS, interpolated, next); // concatenation
+        }
+    }
+    return interpolated;
+}
+
 /**
  * @brief returns the precedencial symbol equivalent of a token and builds an
  * AST node if it is an ID or literal
@@ -355,7 +419,11 @@ static PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand,
         return PREC_END; //')' is PREC_END when openParCnt == 0, because an
                          //expression can be inside parentheses: 'if
                          //(expression)'
-
+    
+    case TOK_INTERP_START:
+        *node = parseInterpolated(p);
+        return PREC_ID;
+        
     default:
         return PREC_END; // everything else is an end (the parser will take care
                          // of it if it's not valid)
