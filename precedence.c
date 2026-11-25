@@ -3,7 +3,7 @@
  * Package:		precedence
  * File:			precedence.c
  * Date:			5.11.2026
- * Last change:	19.11.2026
+ * Last change:	25.11.2026
  * Authors: 		Nikolas Fox xfoxnik00
  *
  * Description: Implementation of precedence syntactic analysis logic
@@ -319,6 +319,11 @@ static AstNode *parseInterpolated(ParsedToken *p)
             interpolated = createNodeBinary(TOK_PLUS, interpolated, next); // concatenation
         }
     }
+        // the input was s""
+        if(interpolated == NULL)
+        {
+            return createNodeLiteral(TYPE_STRING, copyString(""));
+        }
     return interpolated;
 }
 
