@@ -7,6 +7,11 @@
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{hyperref}
+\usepackage{longtable}
+\newcommand{\nt}[1]{\ensuremath{\langle\mathit{#1}\rangle}}
+\newcommand{\tk}[1]{\texttt{#1}}
+\newcommand{\eps}{\ensuremath{\varepsilon}}
+\renewcommand{\to}{\ensuremath{\rightarrow}}
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt}
@@ -66,7 +71,72 @@ Zvolili jsme styl formátování \texttt{LLVM} v nástroji \texttt{clang-format}
 
 \section{Syntaktická analýza}
 \subsection{LL gramatika a LL tabulka}
-...
+ 
+\begin{small}
+\begin{longtable}{@{}r@{\hspace{1em}}p{0.88\textwidth}@{}}
+1.  & \nt{prog} \to \tk{import} \nt{opt\_NL} \tk{ifj26} \nt{opt\_NL} \tk{.} \nt{opt\_NL} \tk{*} \tk{NL} \nt{definition} \tk{EOF} \\
+2.  & \nt{definition} \to \tk{@main} \nt{opt\_NL} \tk{def} \tk{id} \nt{lop} \nt{ret\_type} \tk{=} \nt{def\_body} \nt{definition} \\
+3.  & \nt{definition} \to \tk{def} \tk{id} \nt{lop} \nt{ret\_type} \tk{=} \nt{def\_body} \nt{definition} \\
+4.  & \nt{definition} \to \tk{extension} \tk{(} \tk{id} \tk{:} \nt{type} \tk{)} \nt{def\_block} \nt{definition} \\
+5.  & \nt{definition} \to \eps \\
+6.  & \nt{def\_body} \to \nt{block} \\
+7.  & \nt{def\_body} \to \nt{stat} \\
+8.  & \nt{def\_block} \to \tk{NL} \tk{INDENT} \nt{extension\_def} \tk{DEDENT} \\
+9.  & \nt{extension\_def} \to \tk{def} \tk{id} \nt{lop} \nt{ret\_type} \tk{=} \nt{def\_body} \nt{extension\_def} \\
+10. & \nt{extension\_def} \to \eps \\
+11. & \nt{opt\_NL} \to \tk{NL} \\
+12. & \nt{opt\_NL} \to \eps \\
+13. & \nt{block} \to \tk{NL} \tk{INDENT} \nt{stat} \nt{st\_list} \tk{DEDENT} \\
+14. & \nt{st\_list} \to \nt{stat} \nt{st\_list} \\
+15. & \nt{st\_list} \to \eps \\
+16. & \nt{stat} \to \nt{line} \nt{line\_end} \\
+17. & \nt{stat} \to \tk{if} \nt{expression} \tk{then} \nt{block} \nt{else\_choice} \\
+18. & \nt{stat} \to \tk{while} \nt{expression} \tk{do} \nt{block} \\
+19. & \nt{line} \to \nt{expression} \\
+20. & \nt{line} \to \tk{val} \tk{id} \nt{ret\_type} \tk{=} \nt{expression} \\
+21. & \nt{line} \to \tk{var} \tk{id} \nt{ret\_type} \tk{=} \nt{expression} \\
+22. & \nt{line} \to \tk{return} \nt{return} \\
+23. & \nt{line\_end} \to \tk{;} \nt{line\_semi} \\
+24. & \nt{line\_end} \to \tk{NL} \\
+25. & \nt{line\_semi} \to \nt{stat} \\
+26. & \nt{line\_semi} \to \tk{NL} \\
+27. & \nt{else\_choice} \to \tk{else} \nt{else} \\
+28. & \nt{else\_choice} \to \eps \\
+29. & \nt{else} \to \nt{block} \\
+30. & \nt{else} \to \tk{if} \nt{expression} \tk{then} \nt{block} \nt{else\_choice} \\
+31. & \nt{ret\_type} \to \tk{:} \nt{type} \\
+32. & \nt{ret\_type} \to \eps \\
+33. & \nt{type} \to \tk{Int} \\
+34. & \nt{type} \to \tk{Double} \\
+35. & \nt{type} \to \tk{String} \\
+36. & \nt{type} \to \tk{Unit} \\
+37. & \nt{type} \to \tk{Boolean} \\
+38. & \nt{return} \to \nt{expression} \\
+39. & \nt{return} \to \eps \\
+40. & \nt{param\_list} \to \tk{id} \tk{:} \nt{type} \nt{param\_end} \\
+41. & \nt{param\_list} \to \eps \\
+42. & \nt{param\_end} \to \tk{,} \nt{param\_list} \\
+43. & \nt{param\_end} \to \eps \\
+44. & \nt{lop} \to \tk{(} \nt{param\_list} \tk{)} \nt{lop} \\
+45. & \nt{lop} \to \eps \\
+46. & \nt{loa} \to \tk{(} \nt{arg\_list} \tk{)} \nt{loa} \\
+47. & \nt{loa} \to \eps \\
+48. & \nt{arg\_list} \to \nt{expression} \nt{arg\_end} \\
+49. & \nt{arg\_list} \to \eps \\
+50. & \nt{arg\_end} \to \tk{,} \nt{arg\_list} \\
+51. & \nt{arg\_end} \to \eps \\
+52. & \nt{func} \to \tk{id} \nt{loa} \\
+53. & \nt{assign} \to \tk{id} \tk{=} \nt{expression} \\
+54. & \nt{expression} \to \nt{func} \\
+55. & \nt{expression} \to \nt{assign} \\
+56. & \nt{expression} \to \textit{výraz zpracovaný precedenční analýzou} \\
+\end{longtable}
+\end{small}
+ 
+\noindent Výrazy zpracovává precedenční syntaktická analýza; parser jí předává řízení
+při prvním tokenu výrazu a po jejím skončení přebírá návratovou hodnotu.
+Prázdný blok \tk{()} je zpracován jako výraz.
+
 
 \subsection{Precedenční syntaktická analýza}
 ...
