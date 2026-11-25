@@ -34,7 +34,22 @@
 \newpage
 
 \section{Rozdělení práce, spolupráce a testování}
-...
+\begin{table}[htbp]
+    \centering
+    \small
+    \begin{tabularx}{\textwidth}{@{} l X @{}}
+        \toprule
+        \textbf{Člen týmu} & \textbf{Podíl na projektu} \\
+        \midrule
+        Nikolas Fox & Abstraktní syntaktický strom (AST), syntaktická analýza (\texttt{parser} - uvolňování řetězců tokenů), LL gramatika, precedenční analýza, sémantická analýza. \\
+        Eliška Holá & Generování cílového kódu, \texttt{main}, syntaktická analýza (\texttt{parser} -- rekurzivní sestup, práce s tokeny), LL gramatika. \\
+        Eliška Opršalová & Lexikální analyzátor (\texttt{scanner}), konečný automat. \\
+        Alexandra Povalová & Tabulka symbolů, \texttt{Makefile}, generování testů. \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Rozdělení práce mezi členy řešitelského týmu.}
+    \label{tab:rozdeleni}
+\end{table}
 
 \section{Architektura překladače}
 ...
