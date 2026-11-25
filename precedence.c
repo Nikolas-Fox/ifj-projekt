@@ -101,7 +101,7 @@ static AstNode *parseLoa(ParsedToken *p, size_t *groupCount);
 static AstNode *parseArgList(ParsedToken *p, size_t *count);
 static AstNode *parseArgEnd(ParsedToken *p, size_t *count);
 static AstNode *parseInterpolated(ParsedToken *p);
-
+static AstNode *parseId(ParsedToken *p);
 
 /**
  * @brief Initialises an empty precedence stack
@@ -251,6 +251,32 @@ static void precStackShiftAfterFirstTerm(PrecStack *stack) {
     exit(99);
 }
 
+/**
+ * @brief parse identifiers and categorize them into functions or ID
+ * @param p Pointer to the parsed token
+ * @return pointer to the created node; AST_ID for variables, values, soft keywords, parameterless functions; AST_CALL if a trailing '(' is found
+ */
+static AstNode *parseId(ParsedToken *p)
+{
+    getTokenAhead(p);
+    AstNode *returnNode;
+
+    if (p->aheadToken.type == TOK_LPAR) {
+        returnNode = createNodeCall(p->currentToken.str, 0, NULL);
+        getNextToken(p);
+        // getNextToken because parseLoa expects '(', not the called function id
+        size_t groupCount = 0;
+        returnNode->data.call.group = parseLoa(p, &groupCount);
+        returnNode->data.call.groupCount = groupCount;
+    } 
+    else
+    {
+    returnNode = createNodeID(p->currentToken.str);
+    // soft keywords and functions without parameter lists get classified in semantic analysis
+    }
+    return returnNode;
+}
+
 
 /**
  * @brief Building a tree of concatenations (strings, identifiers, and expressions) for the extension INTERPOLATEDS
@@ -310,7 +336,7 @@ static AstNode *parseInterpolated(ParsedToken *p)
             interpolated = createNodeBinary(TOK_PLUS, interpolated, next); // concatenation
         }
     }
-        // the input was s""
+        // the input was ' s"" '
         if(interpolated == NULL)
         {
             return createNodeLiteral(TYPE_STRING, copyString(""));
@@ -370,31 +396,8 @@ static PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand,
         return PREC_LPAR;
 
     case TOK_ID:
-        getTokenAhead(p);
-
-        if (p->aheadToken.type == TOK_LPAR) {
-            AstNode *call = createNodeCall(p->currentToken.str, 0,
-                                           NULL); // we will free the string
-            getNextToken(
-                p); // parseLoa expects the first symbol to be '(', not id
-
-            size_t groupCount = 0;
-            call->data.call.group = parseLoa(p, &groupCount);
-            call->data.call.groupCount = groupCount;
-
-            *node = call;
-            return PREC_ID; // functions are simplified to ID
-        } else {
-            *node = createNodeID(
-                p->currentToken.str); // this also has true/false, type checker
-                                      // will take care of this
-            return PREC_ID;
-        }
-
-        // all other identifier tokens are valid
-        // true and false are soft keywords,
-        // they don't show up in the symtable but are clasified as TOK_ID by the
-        // lexer
+        *node = parseId(p);
+        return PREC_ID;
 
     case TOK_INT:
         *node = createNodeLiteral(TYPE_INT, p->currentToken.str);
