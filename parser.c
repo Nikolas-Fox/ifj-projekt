@@ -216,6 +216,7 @@ static AstNode *parseProg(ParsedToken *p) {
 
     return functions;
 }
+
 static AstNode *parseFunction(ParsedToken *p) {
     AstNode *function =
         createNodeFunc(p->currentToken.str, 0, NULL, NULL,
@@ -225,6 +226,7 @@ static AstNode *parseFunction(ParsedToken *p) {
     function->data.func.group = parseLop(p, &groupCount);
     if (p->error != 0)
     {
+        astFree(function);
         return NULL;
     }
     function->data.func.groupCount = groupCount;
@@ -232,6 +234,7 @@ static AstNode *parseFunction(ParsedToken *p) {
     function->type = parseRetType(p);
     if (p->error != 0)
     {
+        astFree(function);
         return NULL;
     }
 
@@ -239,6 +242,7 @@ static AstNode *parseFunction(ParsedToken *p) {
     function->data.func.body = parseDefBody(p);
     if (p->error != 0)
     {
+        astFree(function);
         return NULL;
     }
     return function;
@@ -258,6 +262,10 @@ static AstNode *parseDefinition(ParsedToken *p) {
         checkToken(p, TOK_KW_DEF);
 
         AstNode *function = parseFunction(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         function->data.func.isMain = true;
         insertFunc(function, parseDefinition(p));
         if (p->error != 0)
@@ -272,6 +280,10 @@ static AstNode *parseDefinition(ParsedToken *p) {
     {
         checkToken(p, TOK_KW_DEF);
         AstNode *function = parseFunction(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         insertFunc(function, parseDefinition(p));
         if (p->error != 0)
         {
@@ -466,6 +478,10 @@ static AstNode *parseStat(ParsedToken *p) {
             AstNode *condition = parseExpression(p);
             checkToken(p, TOK_KW_THEN);
             AstNode *thenBody = parseBlock(p);
+            if (p->error != 0)
+            {
+                return NULL;
+            }
             AstNode *elseBody = parseElseChoice(p);
             if (p->error != 0)
             {
@@ -480,6 +496,10 @@ static AstNode *parseStat(ParsedToken *p) {
             AstNode *condition = parseExpression(p);
             checkToken(p, TOK_KW_DO);
             AstNode *body = parseBlock(p);
+            if (p->error != 0)
+            {
+                return NULL;
+            }
             return createNodeWhile(condition, body);
         }
 
@@ -510,6 +530,7 @@ static AstNode *parseLine(ParsedToken *p) {
         declaration->type = parseRetType(p);
         if (p->error != 0)
         {
+            astFree(declaration);
             return NULL;
         }
         checkToken(p, TOK_ASSIGN);
@@ -525,6 +546,7 @@ static AstNode *parseLine(ParsedToken *p) {
         declaration->type = parseRetType(p);
         if (p->error != 0)
         {
+            astFree(declaration);
             return NULL;
         }
         checkToken(p, TOK_ASSIGN);
@@ -603,6 +625,10 @@ static AstNode *parseElse(ParsedToken *p) {
     {
         AstNode *block = parseBlock(p); // block is a pointer to the first
                                         // statement of the list of statements
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         return block;
     }
 
@@ -612,6 +638,10 @@ static AstNode *parseElse(ParsedToken *p) {
         AstNode *condition = parseExpression(p);
         checkToken(p, TOK_KW_THEN);
         AstNode *thenBody = parseBlock(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         AstNode *elseBody = parseElseChoice(p);
         if (p->error != 0)
         {
