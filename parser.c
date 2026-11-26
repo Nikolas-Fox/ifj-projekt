@@ -123,6 +123,7 @@ bool startsExpression(TokenType type) {
     case TOK_INT:
     case TOK_DOUBLE:
     case TOK_STRING:
+    case TOK_INTERP_START:
         return true;
     default:
         return false;
