@@ -8,7 +8,7 @@
 
 COMPILER="./compiler"
 INTERPRETER="./ic26int"
-TEST_DIR="e2e_tests/e2e"
+TEST_DIR="tests/e2e_tests/e2e"
 
 USE_VALGRIND=0
 if [ "$1" == "--valgrind" ]; then
