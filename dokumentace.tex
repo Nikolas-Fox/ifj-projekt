@@ -264,9 +264,64 @@ Prázdný blok \tk{()} je zpracován jako výraz.
     \label{tab:ll-mriezka-2}
 \end{table}
 
-
+\newpage
 \subsection{Precedenční syntaktická analýza}
-...
+\begin{table}[htbp]
+    \centering
+    \scriptsize
+    \setlength{\tabcolsep}{3.5pt}
+    \renewcommand{\arraystretch}{1.25}
+    \definecolor{headerblue}{HTML}{AEEEEE}
+    \definecolor{cRed}{HTML}{E06C75}
+    \definecolor{cOrange}{HTML}{F0932B}
+    \definecolor{cGreen}{HTML}{27AE60}
+    \definecolor{cBlack}{HTML}{222222}
+
+    \newcommand{\kRed}{\textcolor{cRed}{$<$}}
+    \newcommand{\vRed}{\textcolor{cRed}{$>$}}
+    \newcommand{\kOra}{\textcolor{cOrange}{$<$}}
+    \newcommand{\vOra}{\textcolor{cOrange}{$>$}}
+    \newcommand{\kGrn}{\textcolor{cGreen}{$<$}}
+    \newcommand{\vGrn}{\textcolor{cGreen}{$>$}}
+    \newcommand{\eGrn}{\textcolor{cGreen}{$=$}}
+    \newcommand{\kBlk}{\textcolor{cBlack}{$<$}}
+    \newcommand{\vBlk}{\textcolor{cBlack}{$>$}}
+
+    \begin{tabular}{|>{\columncolor{headerblue}}c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+        \hline
+        \rowcolor{headerblue}
+        & \textbf{\texttt{E.E}} & \textbf{\texttt{+-P}} & \textbf{\texttt{!}} & \textbf{\texttt{* /}} & \textbf{\texttt{+ -}} & \textbf{\texttt{REL}} & \textbf{\texttt{EQ NE}} & \textbf{\texttt{\&\&}} & \textbf{\texttt{||}} & \textbf{\texttt{(}} & \textbf{\texttt{)}} & \textbf{\texttt{i}} & \textbf{\texttt{\$}} \\
+        \hline
+        \textbf{\texttt{E.E}} & \vRed & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{+-P}} & \kBlk & \kRed & \kBlk & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{!}} & \kBlk & \kBlk & \kRed & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{* /}} & \kBlk & \kBlk & \kBlk & \vRed & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{+ -}} & \kBlk & \kBlk & \kBlk & \kBlk & \vRed & \vBlk & \vBlk & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{REL}} & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & & \vBlk & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{EQ NE}} & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{\&\&}} & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{||}} & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{(}} & \kOra & \kOra & \kOra & \kOra & \kOra & \kOra & \kOra & \kOra & \kOra & \kOra & \eGrn & \kGrn & \\
+        \hline
+        \textbf{\texttt{)}} & \vOra & & & \vOra & \vOra & \vOra & \vOra & \vOra & \vOra & & \vOra & & \vBlk \\
+        \hline
+        \textbf{\texttt{i}} & \vGrn & & & \vGrn & \vGrn & \vGrn & \vGrn & \vGrn & \vGrn & & \vGrn & & \vGrn \\
+        \hline
+        \textbf{\texttt{\$}} & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & & \kGrn & \\
+        \hline
+    \end{tabular}
+    \caption{Precedenčná tabuľka pre analýzu výrazov v jazyku IFJ26.}
+    \label{tab:precedencna}
+\end{table}
 
 \section{Přehled modulů}
 
