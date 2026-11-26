@@ -8,10 +8,17 @@ CORE_SRC = ast.c codegen.c hashtable.c parser.c precedence.c scanner.c semantic.
 FORMAT_FILES = $(wildcard *.c *.h)
 E2E_SCRIPT   = ./tests/e2e_tests/e2e/run_e2e.sh
 
-build: $(TARGET)
+build: install-cc $(TARGET)
 
 $(TARGET): $(MAIN_SRC) $(CORE_SRC)
 	$(CC) $(CFLAGS) $(MAIN_SRC) $(CORE_SRC) -o $(TARGET)
+
+install-cc:
+	@command -v $(CC) > /dev/null 2>&1 || ( \
+		echo "$(CC) nenájdený. Inštalujem..." && \
+		sudo apt-get update && \
+		sudo apt-get install -y build-essential \
+	)
 
 install-clang-format:
 	@command -v clang-format > /dev/null 2>&1 || ( \
@@ -36,4 +43,4 @@ format: install-clang-format
 clean:
 	rm -f $(TARGET)
 
-.PHONY: build install-clang-format check build-check tests format-check format clean
+.PHONY: build install-cc install-clang-format check build-check tests format-check format clean
