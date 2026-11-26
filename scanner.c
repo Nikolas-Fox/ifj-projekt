@@ -163,7 +163,7 @@ static Token makeToken(Scanner *sc, TokenType type, char *str) {
 }
 
 /**
- * @brief Prints error message and exits with code 2 (syntax analysis error).
+ * @brief Prints error message.
  * @param message Error message to print.
  */
 static void printError(char *message) {

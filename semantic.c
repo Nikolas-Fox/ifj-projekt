@@ -591,7 +591,7 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement,
         if (expression == NULL) { // a blank 'return' defaults to TYPE_UNIT 
             if (retType != TYPE_UNIT) {
                 *error = 6;
-                printError("a blank 'return' wasn't TYPE_UNIT");
+                printError("incompatible return type (a blank return is TYPE_UNIT)");
                 return TYPE_NONE;
             }
             return TYPE_RETURNED; // TYPE_RETURNED means that the keyword RETURN was used
@@ -607,7 +607,7 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement,
         if (retType != TYPE_UNIT && !areCompatible(retType, expressionType))
         {
             *error = 6;
-            printError("the type of the returned expression is incompatible with the return type of the function");
+            printError("incompatible return type");
             return TYPE_NONE;
         }
         return TYPE_RETURNED; // TYPE_RETURNED tells the function that keyword
