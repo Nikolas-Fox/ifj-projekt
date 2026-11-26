@@ -3,7 +3,7 @@
  * Package:		codegen
  * File:			codegen.c
  * Date:			15.11.2026
- * Last change:	19.11.2026
+ * Last change:	24.11.2026
  * Authors: 		Eliška Holá xholael00
  *
  * Description:  Implementation of code generation
@@ -807,6 +807,9 @@ static void printBuiltins() {
     // readInt(): Int
     printf("LABEL readInt\n");
     printf("READ GF@%%tmp int\n");
+    printf("JUMPIFNEQ readInt$end GF@%%tmp nil@nil\n");
+    printf("MOVE GF@%%tmp int@0\n");
+    printf("LABEL readInt$end\n");
     printf("PUSHS GF@%%tmp\n"); // return value
     printf("RETURN\n");
 
@@ -819,6 +822,9 @@ static void printBuiltins() {
     // readDouble(): Double
     printf("LABEL readDouble\n");
     printf("READ GF@%%tmp float\n");
+    printf("JUMPIFNEQ readDouble$end GF@%%tmp nil@nil\n");
+    printf("MOVE GF@%%tmp float@%a\n", 0.0);
+    printf("LABEL readDouble$end\n");
     printf("PUSHS GF@%%tmp\n"); // return value
     printf("RETURN\n");
 
@@ -966,6 +972,26 @@ static void printBuiltins() {
     // chr(code: Int): String
     printf("LABEL chr\n");
     printf("INT2CHARS\n");
+    printf("RETURN\n");
+
+    // floor
+    printf("LABEL floor\n");
+    printf("CREATEFRAME\n");
+    printf("PUSHFRAME\n");
+    printf("DEFVAR LF@condition\n");
+
+    printf("POPS GF@%%tmp\n"); //original in tmp
+    printf("FLOAT2INT GF@%%tmp2 GF@%%tmp\n");
+    printf("INT2FLOAT GF@%%tmp2 GF@%%tmp2\n"); //floored in tmp2
+
+    printf("LT LF@condition GF@%%tmp GF@%%tmp2\n"); // original < floored
+    printf("JUMPIFEQ floor$end LF@condition bool@false\n");
+    printf("SUB GF@%%tmp2 GF@%%tmp2 float@%a\n", 1.0);
+
+    printf("LABEL floor$end\n");
+    printf("PUSHS GF@%%tmp2\n");
+
+    printf("POPFRAME\n");
     printf("RETURN\n");
 }
 /*** End of file codegen.c ***/
