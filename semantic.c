@@ -3,7 +3,7 @@
  * Package:		semantic
  * File:			semantic.c
  * Date:			16.11.2026
- * Last change:	25.11.2026
+ * Last change:	26.11.2026
  * Authors: 		Nikolas Fox xfoxnik00
  *
  * Description: Implementation of semantic analysis logic
@@ -21,21 +21,41 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
-static void stInsertFunctions(Symtable *, AstNode *);
-static void findCalls(Symtable *, AstNode *, AstNode *);
-static void checkFunctionList(Symtable *, AstNode *);
-static void checkFunction(Symtable *, AstNode *);
-static DataType checkStatementList(Symtable *, AstNode *, DataType);
-static DataType checkStatement(Symtable *, AstNode *, DataType);
-static DataType checkExpr(Symtable *, AstNode *);
+static void stInsertFunctions(Symtable *, AstNode *, int *error);
+static void findCalls(Symtable *, AstNode *, AstNode *, int *error);
+static void checkFunctionList(Symtable *, AstNode *, int *error);
+static void checkFunction(Symtable *, AstNode *, int *error);
+static DataType checkStatementList(Symtable *, AstNode *, DataType, int *error);
+static DataType checkStatement(Symtable *, AstNode *, DataType, int *error);
+static DataType checkExpr(Symtable *, AstNode *, int *error);
 
-void semanticAnalysis(AstNode *whole) {
+/**
+ * @brief Prints error message.
+ * @param message Error message to print.
+ */
+static void printError(char *message) {
+    fprintf(stderr, "Semantic analysis error: %s\n", message);
+}
+
+void semanticAnalysis(AstNode *whole, int *error) {
     Symtable *symtable = symtableInit();
-    stInsertFunctions(symtable, whole);
+    *error = 0;
+    stInsertFunctions(symtable, whole, error);
+    if (*error != 0) //return from stInsertFunctions
+    {
+        symtableFree(symtable);
+        return;
+    }
     checkFunctionList(symtable,
-                      whole); // this will pass into every function and then
+                      whole, error); // this will pass into every function and then
                               // check the functions statements...
+    if (*error != 0) //return from checkFunctionList
+    {
+        symtableFree(symtable);
+        return;
+    }
     symtableFree(symtable);
 }
 
@@ -87,7 +107,7 @@ static bool isNumber(DataType type) {
  * @param symtable Pointer to the symtable
  * @param whole Pointer to the first function (root of the tree)
  */
-static void stInsertFunctions(Symtable *symtable, AstNode *whole) {
+static void stInsertFunctions(Symtable *symtable, AstNode *whole, int *error) {
     size_t mainCount = 0;
     AstNode *node = whole->data.whole.func;
 
@@ -96,6 +116,11 @@ static void stInsertFunctions(Symtable *symtable, AstNode *whole) {
 
         SymbolData *function = symtableInsertFunction(
             symtable, node->data.func.name, node->type, true);
+            if (function == NULL)
+            {
+                *error = 4;
+                return;
+            }
         AstNode *group = node->data.func.group;
 
         // inserting the parameters into the symtable (first activate a list -
@@ -117,19 +142,27 @@ static void stInsertFunctions(Symtable *symtable, AstNode *whole) {
         if (node->data.func.isMain) {
             mainCount++;
             if (hasParams(node->data.func.group)) {
-                exit(5);
+                *error = 5;
+                printError("");
+                return;
             }
             if (node->type != TYPE_UNIT && hasType) {
-                exit(6);
+                *error = 6;
+                printError("");
+                return;
             }
         }
         node = node->next;
     }
 
     if (mainCount == 0) {
-        exit(3);
+        *error = 3;
+        printError("");
+        return;
     } else if (mainCount > 1) {
-        exit(4);
+        *error = 4;
+        printError("");
+        return;
     }
 }
 
@@ -142,14 +175,16 @@ static void stInsertFunctions(Symtable *symtable, AstNode *whole) {
  * @param whole Pointer to the first function (root of the tree)
  * @param function Pointer to the function to be visited
  */
-static void visit(Symtable *symtable, AstNode *whole, AstNode *function) {
+static void visit(Symtable *symtable, AstNode *whole, AstNode *function, int *error) {
     if (function->data.func.state == DONE) {
         return;
     }
 
     if (function->data.func.state == PROCESSING) {
         if (function->type == TYPE_NONE) {
-            exit(6); // this creates a cycle of untyped functions
+            *error = 6;
+            printError("a cycle of untyped functions");
+            return;
         }
         return; // skip typed functions
     }
@@ -159,8 +194,12 @@ static void visit(Symtable *symtable, AstNode *whole, AstNode *function) {
     // this function will pass through the body of a function, when it finds a
     // function without a return type, it passes through the body of that
     // function
-    findCalls(symtable, whole, function->data.func.body);
-    checkFunction(symtable, function);
+    findCalls(symtable, whole, function->data.func.body, error);
+    checkFunction(symtable, function, error);
+    if (*error != 0) //return from checkFunction
+    {
+        return;
+    }
     function->data.func.state = DONE;
 }
 
@@ -187,20 +226,24 @@ static AstNode *findFunction(AstNode *whole, char *name) {
  * @param whole Pointer to the first function in a linked list of functions
  * @param statement Pointer to the first statement in a statement list
  */
-static void findCalls(Symtable *symtable, AstNode *whole, AstNode *statement) {
+static void findCalls(Symtable *symtable, AstNode *whole, AstNode *statement, int *error) {
     while (statement != NULL) {
         switch (statement->class) {
         case AST_CALL: {
             AstNode *calledFunction =
                 findFunction(whole, statement->data.call.name); // built in functions are skipped (we already know their return type)
             if (calledFunction != NULL && calledFunction->type == TYPE_NONE) {
-                visit(symtable, whole, calledFunction);
+                visit(symtable, whole, calledFunction, error);
+            }
+            if (*error != 0) //return from visit                                                                                                                                                                                                                                                                                                                                                                                                       
+            {
+                return;
             }
 
             AstNode *group = statement->data.call.group;
             while (group != NULL) // finding function calls in parameters
             {
-                findCalls(symtable, whole, group->data.group.items);
+                findCalls(symtable, whole, group->data.group.items, error);
                 group = group->next;
             }
             break;
@@ -210,44 +253,44 @@ static void findCalls(Symtable *symtable, AstNode *whole, AstNode *statement) {
             AstNode *calledFunction =
                 findFunction(whole, statement->data.id.name);
             if (calledFunction != NULL && calledFunction->type == TYPE_NONE) {
-                visit(symtable, whole, calledFunction);
+                visit(symtable, whole, calledFunction, error);
             }
             break;
         }
 
         case AST_ASSIGN:
-            findCalls(symtable, whole, statement->data.assign.expression);
+            findCalls(symtable, whole, statement->data.assign.expression, error);
             break;
 
         case AST_DECLARATION:
-            findCalls(symtable, whole, statement->data.declaration.expression);
+            findCalls(symtable, whole, statement->data.declaration.expression, error);
             break;
 
         case AST_RETURN:
-            findCalls(symtable, whole, statement->data.returnStat.expression);
+            findCalls(symtable, whole, statement->data.returnStat.expression, error);
             break;
 
         case AST_IF:
-            findCalls(symtable, whole, statement->data.ifStat.condition);
-            findCalls(symtable, whole, statement->data.ifStat.thenBody);
-            findCalls(symtable, whole, statement->data.ifStat.elseBody);
+            findCalls(symtable, whole, statement->data.ifStat.condition, error);
+            findCalls(symtable, whole, statement->data.ifStat.thenBody, error);
+            findCalls(symtable, whole, statement->data.ifStat.elseBody, error);
             break;
 
         case AST_WHILE:
-            findCalls(symtable, whole, statement->data.whileStat.condition);
-            findCalls(symtable, whole, statement->data.whileStat.body);
+            findCalls(symtable, whole, statement->data.whileStat.condition, error);
+            findCalls(symtable, whole, statement->data.whileStat.body, error);
             break;
 
         case AST_UNARY:
-            findCalls(symtable, whole, statement->data.unary.operand);
+            findCalls(symtable, whole, statement->data.unary.operand, error);
             break;
 
         case AST_BINARY:
-            findCalls(symtable, whole, statement->data.binary.left);
+            findCalls(symtable, whole, statement->data.binary.left, error);
 
             if(statement->data.binary.op != TOK_DOT) // I need to guard the right call, because it won't be a function in the symtable
             {
-                findCalls(symtable, whole, statement->data.binary.right);
+                findCalls(symtable, whole, statement->data.binary.right, error);
             }
             break;
 
@@ -263,10 +306,15 @@ static void findCalls(Symtable *symtable, AstNode *whole, AstNode *statement) {
  * @param symtable Pointer to the table of symbols
  * @param whole Pointer to the first function in a linked list of functions
  */
-static void checkFunctionList(Symtable *symtable, AstNode *whole) {
+static void checkFunctionList(Symtable *symtable, AstNode *whole, int *error) {
+
     AstNode *function = whole->data.whole.func;
     while (function != NULL) {
-        visit(symtable, whole, function);
+        visit(symtable, whole, function, error);
+        if (*error != 0) //return from visit
+        {
+            return;
+        }
         function = function->next;
     }
 }
@@ -276,7 +324,7 @@ static void checkFunctionList(Symtable *symtable, AstNode *whole) {
  * @param symtable Pointer to the table of symbols
  * @param function Pointer to the function whose parameters should be inserted
  */
-static void stInsertParameters(Symtable *symtable, AstNode *function)
+static void stInsertParameters(Symtable *symtable, AstNode *function, int *error)
 {
     AstNode *group = function->data.func.group;
     while (group != NULL) {
@@ -285,7 +333,11 @@ static void stInsertParameters(Symtable *symtable, AstNode *function)
             param->data.param.scope = symtableScopeID(symtable);
             symtableInsertVal(symtable, param->data.param.name, param->type,
                               true);
-
+            if (function == NULL)
+            {
+                *error = 4;
+                return;
+            }
             param = param->next;
         }
         group = group->next;
@@ -297,23 +349,35 @@ static void stInsertParameters(Symtable *symtable, AstNode *function)
  * @param symtable Pointer to the table of symbols
  * @param function Pointer to the function to be checked
  */
-static void checkFunction(Symtable *symtable, AstNode *function) 
+static void checkFunction(Symtable *symtable, AstNode *function, int *error) 
 {
     symtablePushScope(symtable);
-    stInsertParameters(symtable, function);
+    stInsertParameters(symtable, function, error);
+    if (*error != 0) //return from stInsertParameters
+    {
+        return;
+    }
 
-    DataType blockType = checkStatementList(symtable, function->data.func.body, function->type); // function->type to check compatibility
+    DataType blockType = checkStatementList(symtable, function->data.func.body, function->type, error); // function->type to check compatibility
+    if (*error != 0) //return from checkStatementList
+    {
+        return;
+    }
     symtablePopScope(symtable);
 
     if (function->type == TYPE_NONE) // TYPE_NONE means return type is inferred
     {
         if (blockType == TYPE_NONE) 
         {
-            exit(6); // function type can't be deduced, return type is inferred and the body doesn't have a type
+            *error = 6;
+            printError("function type can't be deduced, return type is inferred and the body doesn't have a type");
+            return;
         }
 
         if (function->data.func.isMain && blockType != TYPE_UNIT) {
-            exit(6); // deduced main type is not TYPE_UNIT
+            *error = 6;
+            printError("deduced main type is not TYPE_UNIT");
+            return;
         }
 
         function->type = blockType; // updating AST with deduced function type
@@ -326,7 +390,9 @@ static void checkFunction(Symtable *symtable, AstNode *function)
         if (function->type != TYPE_UNIT) {
             if ( !areCompatible(function->type, blockType) &&
                 blockType != TYPE_RETURNED) {
-                exit(6); // the block type isn't compatible with the return type
+                *error = 6;
+                printError("the block type isn't compatible with the return type");
+                return;
             }
         }
     }
@@ -340,10 +406,14 @@ static void checkFunction(Symtable *symtable, AstNode *function)
  * @param retType The functions declared return type (TYPE_NONE if it relies on inferrence)
  */
 static DataType checkStatementList(Symtable *symtable, AstNode *statement,
-                                   DataType retType) {
+                                   DataType retType, int *error) {
     DataType last = TYPE_UNIT;
     while (statement != NULL) {
-        last = checkStatement(symtable, statement, retType);
+        last = checkStatement(symtable, statement, retType, error);
+        if (*error != 0) //return from checkStatement
+        {
+            return TYPE_NONE;
+        }
         statement = statement->next;
     }
     return last; // the type of the last statement of a block (it must correspond with the declared return type)
@@ -358,7 +428,7 @@ static DataType checkStatementList(Symtable *symtable, AstNode *statement,
  * @return The deduced type of the statement
  */
 static DataType checkStatement(Symtable *symtable, AstNode *statement,
-                               DataType retType) {
+                               DataType retType, int *error) {
     switch (statement->class) {
     case AST_ASSIGN: {
         AstNode *destination = statement->data.assign.destination;
@@ -367,19 +437,29 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement,
             symtableSearch(symtable, destination->data.id.name);
 
         if (symbol == NULL || symbol->sType == FUNCTION) {
-            exit(3); // the destination isn't defined yet or the destination is a function
+            *error = 3;
+            printError("the destination isn't defined yet or the destination is a function");
+            return TYPE_NONE;
         }
 
         if (symbol->sType == VAL) 
         {
-            exit(7); // assigning a value to a VAL or parameter is forbidden
+            *error = 7;
+            printError("assigning a value to val or parameter is forbidden");
+            return TYPE_NONE;
         }
 
         destination->type = symbol->dtype;
-        expression->type = checkExpr(symtable, expression);
+        expression->type = checkExpr(symtable, expression, error);
+        if (*error != 0) //return from checkExpr
+        {
+            return TYPE_NONE;
+        }
 
         if (!areCompatible(destination->type, expression->type)) {
-            exit(6); // error of type compatibility in assign
+            *error = 6;
+            printError("error of type compatibility in assign");
+            return TYPE_NONE;
         }
 
         destination->data.id.scope = symbol->scopeID;
@@ -388,27 +468,48 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement,
 
     case AST_DECLARATION: {
         DataType expressionType =
-            checkExpr(symtable, statement->data.declaration.expression);
+            checkExpr(symtable, statement->data.declaration.expression, error);
         // statement->type represents the variables declared type
+        if (*error != 0) //return from checkExpr
+        {
+            return TYPE_NONE;
+        }
+
         if (statement->type == TYPE_NONE) // inferred type
         {
             if (expressionType == TYPE_NONE) {
-                exit(6); // type cannot be inferred
+                *error = 6;
+                printError("type cannot be inferred");
+                return TYPE_NONE;
             }
             statement->type = expressionType; // the declared value/variable
                                               // acquires the expression type
         } else {
             if (!areCompatible(statement->type, expressionType)) {
-                exit(6); // error of type compatibility
+                *error = 6;
+                printError("error of type compatibility");
+                return TYPE_NONE;
             }
         }
 
+        SymbolData *inserted;
+
         if (statement->data.declaration.isVar) {
-            symtableInsertVar(symtable, statement->data.declaration.name,
+            inserted = symtableInsertVar(symtable, statement->data.declaration.name,
                               statement->type, true);
+            if (inserted == NULL)
+            {
+                *error = 4;
+                return TYPE_NONE;
+            }
         } else {
-            symtableInsertVal(symtable, statement->data.declaration.name,
+            inserted = symtableInsertVal(symtable, statement->data.declaration.name,
                               statement->type, true);
+            if (inserted == NULL)
+            {
+                *error = 4;
+                return TYPE_NONE;
+            }
         }
         statement->data.declaration.scope = symtableScopeID(symtable);
         return TYPE_UNIT;
@@ -416,25 +517,41 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement,
 
     case AST_WHILE: {
         AstNode *condition = statement->data.whileStat.condition;
-        if (checkExpr(symtable, condition) != TYPE_BOOL) {
-            exit(6); // incompatible condtion type (isn't bool)
+        if (checkExpr(symtable, condition, error) != TYPE_BOOL) {
+            if (*error != 0) //return from checkExpr
+            {
+                return TYPE_NONE;
+            }
+            *error = 6;
+            printError("incompatible condition type (isn't bool)");
+            return TYPE_NONE;
         }
 
         symtablePushScope(symtable);
-        checkStatementList(symtable, statement->data.whileStat.body, retType);
+        checkStatementList(symtable, statement->data.whileStat.body, retType, error);
         symtablePopScope(symtable);
         return TYPE_UNIT;
     }
 
     case AST_IF: {
         AstNode *condition = statement->data.ifStat.condition;
-        if (checkExpr(symtable, condition) != TYPE_BOOL) {
-            exit(6); // incompatible condtion type (isn't bool)
+        if (checkExpr(symtable, condition, error) != TYPE_BOOL) {
+            if (*error != 0) //return from checkExpr
+            {
+                return TYPE_NONE;
+            }
+            *error = 6;
+            printError("incompatible condition type (isn't bool)");
+            return TYPE_NONE;
         }
 
         symtablePushScope(symtable);
         DataType thenType = checkStatementList(
-            symtable, statement->data.ifStat.thenBody, retType);
+            symtable, statement->data.ifStat.thenBody, retType, error);
+            if (*error != 0) //return from checkStatementList
+            {
+                return TYPE_NONE;
+            }
 
         symtablePopScope(symtable);
 
@@ -444,7 +561,11 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement,
         if (statement->data.ifStat.elseBody != NULL) {
             symtablePushScope(symtable);
             elseType = checkStatementList(
-                symtable, statement->data.ifStat.elseBody, retType);
+                symtable, statement->data.ifStat.elseBody, retType, error);
+            if (*error != 0) //return from checkStatementList
+            {
+                return TYPE_NONE;
+            }
             symtablePopScope(symtable);
         }
 
@@ -463,29 +584,38 @@ static DataType checkStatement(Symtable *symtable, AstNode *statement,
     case AST_RETURN: {
         AstNode *expression = statement->data.returnStat.expression;
         if (retType == TYPE_NONE) {
-            exit(6); // return is forbidden if the function type is inferred, changed exit code from 10 to 6 due to test case 137 and 138 in ifj26-pokusne
+            *error = 6;
+            printError("return is forbidden if the function type is inferred"); //changed exit code from 10 to 6 due to test case 137 and 138 in ifj26-pokusne
+            return TYPE_NONE;
         }
         if (expression == NULL) { // a blank 'return' defaults to TYPE_UNIT 
             if (retType != TYPE_UNIT) {
-                exit(6);
+                *error = 6;
+                printError("a blank 'return' wasn't TYPE_UNIT");
+                return TYPE_NONE;
             }
             return TYPE_RETURNED; // TYPE_RETURNED means that the keyword RETURN was used
         }
 
-        DataType expressionType = checkExpr(symtable, expression);
+        DataType expressionType = checkExpr(symtable, expression, error);
+        if (*error != 0) //return from checkExpr
+        {
+            return TYPE_NONE;
+        }
 
         // if retType is TYPE_UNIT the result is disregarded (but valid)
         if (retType != TYPE_UNIT && !areCompatible(retType, expressionType))
         {
-            exit(6); // the type of the returned expression is incompatible with
-                     // the return type of the function
+            *error = 6;
+            printError("the type of the returned expression is incompatible with the return type of the function");
+            return TYPE_NONE;
         }
         return TYPE_RETURNED; // TYPE_RETURNED tells the function that keyword
                               // RETURN was used
     }
 
     default: // this is just a bare expression
-        return checkExpr(symtable, statement);
+        return checkExpr(symtable, statement, error);
     }
 }
 
@@ -518,18 +648,24 @@ static DataType dotToCall(AstNode *node, AstNode *parameter, AstNode *id, DataTy
  * @param expression The node of the dot binary expression 
  * @return The return type of the called function
  */
-static DataType checkValmem(Symtable *symtable, AstNode *expression)
+static DataType checkValmem(Symtable *symtable, AstNode *expression, int *error)
 {
     AstNode *parameter = expression->data.binary.left;
     AstNode *id = expression->data.binary.right;
 
     if(id->class != AST_ID)
     {
-        exit(3); // the rightside must be an identifier
+        *error = 3;
+        printError("the rightside must be an identifier");
+        return TYPE_NONE;
     }
 
     char *name = id->data.id.name;
-    DataType parameterType = checkExpr(symtable, parameter);
+    DataType parameterType = checkExpr(symtable, parameter, error);
+    if (*error != 0) //return from checkExpr
+    {
+        return TYPE_NONE;
+    }
 
     if(strcmp(name, "toInt") == 0)
     {
@@ -537,7 +673,9 @@ static DataType checkValmem(Symtable *symtable, AstNode *expression)
         {
             return dotToCall(expression, parameter, id, TYPE_INT, "toInt");
         }
-        exit(5); // invalid argument type 
+        *error = 5;
+        printError("invalid argument type");
+        return TYPE_NONE;
     } 
     else if(strcmp(name, "toString") == 0)
     {
@@ -545,7 +683,9 @@ static DataType checkValmem(Symtable *symtable, AstNode *expression)
         {
             return dotToCall(expression, parameter, id, TYPE_STRING, "toStr");
         }
-        exit(5); // invalid argument type 
+        *error = 5;
+        printError("invalid argument type");
+        return TYPE_NONE;
     }
     else if(strcmp(name, "floor") == 0)
     {
@@ -553,7 +693,9 @@ static DataType checkValmem(Symtable *symtable, AstNode *expression)
         {
             return dotToCall(expression, parameter, id, TYPE_DOUBLE, "floor");
         }
-        exit(5); // invalid argument type 
+        *error = 5;
+        printError("invalid argument type");
+        return TYPE_NONE; 
     }
     else if(strcmp(name, "length") == 0)
     {
@@ -561,9 +703,13 @@ static DataType checkValmem(Symtable *symtable, AstNode *expression)
         {
             return dotToCall(expression, parameter, id, TYPE_INT, "strLength");
         }
-        exit(5); // invalid argument type 
+        *error = 5;
+        printError("invalid argument type");
+        return TYPE_NONE; 
     }
-    exit(3); // invalid function call (this call isn't defined in VALMEM)
+    *error = 3;
+    printError("invalid function call (this call isn't defined in VALMEM)");
+    return TYPE_NONE;
 }
 
 
@@ -574,7 +720,7 @@ static DataType checkValmem(Symtable *symtable, AstNode *expression)
  * @param statement Pointer to the expression to be checked
  * @return The deduced type of the expression
  */
-static DataType checkExpr(Symtable *symtable, AstNode *expression) {
+static DataType checkExpr(Symtable *symtable, AstNode *expression, int *error) {
     switch (expression->class) {
     case AST_LITERAL:
         return expression->type;
@@ -589,7 +735,9 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
                 expression->type = TYPE_BOOL;
                 return TYPE_BOOL;
             }
-            exit(3); // no such value/variable/ parameterless function exists
+            *error = 3;
+            printError("no such value/variable/parameterless function exists");
+            return TYPE_NONE;
         }
 
         // a function without a parameter list gets clasified as ID ('foo')
@@ -597,7 +745,9 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
         {
             if (symbol->value.funcData.listCount >0)
             {
-                exit(5); // the parameter count should be greater than 0
+                *error = 5;
+                printError("the parameter count should be greater than 0");
+                return TYPE_NONE;
             }
             // retype the ID to a function call
             expression->class = AST_CALL;
@@ -612,15 +762,23 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
     }
 
     case AST_UNARY: {
-        DataType type = checkExpr(symtable, expression->data.unary.operand);
+        DataType type = checkExpr(symtable, expression->data.unary.operand, error);
+        if (*error != 0) //return from checkExpr
+        {
+            return TYPE_NONE;
+        }
         if (expression->data.unary.op == TOK_NOT) {
             if (type != TYPE_BOOL) {
-                exit(6); // NOT must be followed by bool type
+                *error = 6;
+                printError("NOT must be followed by bool type");
+                return TYPE_NONE;
             }
         } else {
             if (!isNumber(type))
             {
-                exit(6); // unary +- must be followed by a number
+                *error = 6;
+                printError("unary +/- must be followed by a number");
+                return TYPE_NONE;
             }
         }
         expression->type = type;
@@ -632,13 +790,21 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
 
         if(operator == TOK_DOT)
         {
-            return checkValmem(symtable, expression);
+            return checkValmem(symtable, expression, error);
         }
 
         AstNode *left = expression->data.binary.left;
         AstNode *right = expression->data.binary.right;
-        DataType leftType = checkExpr(symtable, left);
-        DataType rightType = checkExpr(symtable, right);
+        DataType leftType = checkExpr(symtable, left, error);
+        if (*error != 0) //return from checkExpr
+        {
+            return TYPE_NONE;
+        }
+        DataType rightType = checkExpr(symtable, right, error);
+        if (*error != 0) //return from checkExpr
+        {
+            return TYPE_NONE;
+        }
 
         switch (operator) {
         case TOK_PLUS:
@@ -651,7 +817,9 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
         case TOK_DIV:
         case TOK_MUL: {
             if (!(isNumber(leftType) && isNumber(rightType))) {
-                exit(6); // unallowed type in +-*/
+                *error = 6;
+                printError("unallowed type in +-*/");
+                return TYPE_NONE;
             }
             if (leftType == TYPE_INT && rightType == TYPE_INT) {
                 expression->type = TYPE_INT;
@@ -672,7 +840,9 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
                 expression->type = TYPE_BOOL;
                 return TYPE_BOOL;
             }
-            exit(6);
+            *error = 6;
+            printError("");
+            return TYPE_NONE;
 
         case TOK_EQ:
         case TOK_NEQ:
@@ -683,7 +853,9 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
                 expression->type = TYPE_BOOL;
                 return TYPE_BOOL;
             }
-            exit(6);
+            *error = 6;
+            printError("");
+            return TYPE_NONE;
 
         case TOK_AND:
         case TOK_OR:
@@ -691,10 +863,14 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
                 expression->type = TYPE_BOOL;
                 return TYPE_BOOL;
             }
-            exit(6); // AND, OR must have bool operands
+            *error = 6;
+            printError("AND, OR must have bool operands");
+            return TYPE_NONE;
 
         default:
-            exit(99); // undefined binary operator
+            *error = 99;
+            printError("undefined binary operator");
+            return TYPE_NONE;
         }
     }
 
@@ -702,12 +878,16 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
         SymbolData *function =
             symtableSearch(symtable, expression->data.call.name);
         if (function == NULL || function->sType != FUNCTION) {
-            exit(3); // undefined function
+            *error = 3;
+            printError("undefined function");
+            return TYPE_NONE;
         }
 
         if (function->value.funcData.listCount !=
             expression->data.call.groupCount) {
-            exit(5); // the number of defined parameter lists and argument lists differs
+            *error = 5;
+            printError("the number of defined parameter lists and argument lists differs");
+            return TYPE_NONE;
         }
 
         size_t list = 0; // the symtable uses an array for parameters
@@ -718,7 +898,9 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
         while (group != NULL) {
             if (group->data.group.count !=
                 symtableParamListSize(function, list)) {
-                exit(5); // argument count mismatch
+                    *error = 5;
+                    printError("argument count mismatch");
+                    return TYPE_NONE;
             }
 
             AstNode *arg = group->data.group.items;
@@ -728,10 +910,16 @@ static DataType checkExpr(Symtable *symtable, AstNode *expression) {
                     symtableGetParam(function, list, parameterIndex);
                 DataType parameterType = parameter->dType;
 
-                DataType argType = checkExpr(symtable, arg);
+                DataType argType = checkExpr(symtable, arg, error);
+                if (*error != 0) //return from checkExpr
+                {
+                    return TYPE_NONE;
+                }
 
                 if (!areCompatible(parameterType, argType)) {
-                    exit(5); // incompatible argument type
+                    *error = 5;
+                    printError("incompatible argument type");
+                    return TYPE_NONE;
                 }
 
                 arg = arg->next;
