@@ -38,6 +38,7 @@
 \vspace*{\fill}
 \newpage
 
+
 \section{Rozdělení práce, spolupráce a testování}
 \begin{table}[htbp]
     \centering
@@ -67,7 +68,7 @@ Zvolili jsme styl formátování \texttt{LLVM} v nástroji \texttt{clang-format}
 ...
 
 \section{Lexikální analýza}
-...
+...baf
 
 \section{Syntaktická analýza}
 \subsection{LL gramatika a LL tabulka}
@@ -136,6 +137,132 @@ Zvolili jsme styl formátování \texttt{LLVM} v nástroji \texttt{clang-format}
 \noindent Výrazy zpracovává precedenční syntaktická analýza; parser jí předává řízení
 při prvním tokenu výrazu a po jejím skončení přebírá návratovou hodnotu.
 Prázdný blok \tk{()} je zpracován jako výraz.
+
+% ČASŤ 1: Kľúčové slová, typy a EOF (1 + 18 = 19 stĺpcov)
+\begin{table}[htbp]
+    \centering
+    \scriptsize
+    \setlength{\tabcolsep}{2.8pt}
+    \renewcommand{\arraystretch}{1.25}
+    \begin{tabular}{|l|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+        \hline
+        \textbf{Neterminál} & \texttt{import} & \texttt{ifj26} & \texttt{@main} & \texttt{def} & \texttt{if} & \texttt{then} & \texttt{else} & \texttt{while} & \texttt{do} & \texttt{val} & \texttt{var} & \texttt{ret.} & \texttt{Int} & \texttt{Dbl.} & \texttt{Str.} & \texttt{Unit} & \texttt{Bool.} & \texttt{EOF} \\
+        \hline
+        $\langle \text{prog} \rangle$ & 1 & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{definition} \rangle$ & & & 2 & 3 & & & & & & & & & & & & & & 4 \\
+        \hline
+        $\langle \text{def\_body} \rangle$ & & & & & 6 & & & 6 & & 6 & 6 & 6 & & & & & & \\
+        \hline
+        $\langle \text{opt\_NL} \rangle$ & & 8 & & 8 & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{block} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{st\_list} \rangle$ & & & & & 10 & & & 10 & & 10 & 10 & 10 & & & & & & \\
+        \hline
+        $\langle \text{stat} \rangle$ & & & & & 13 & & & 14 & & 12 & 12 & 12 & & & & & & \\
+        \hline
+        $\langle \text{line} \rangle$ & & & & & & & & & & 17 & 18 & 19 & & & & & & \\
+        \hline
+        $\langle \text{line\_end} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{line\_semi} \rangle$ & & & & & 22 & & & 22 & & 22 & 22 & 22 & & & & & & \\
+        \hline
+        $\langle \text{else\_choice} \rangle$ & & & 25 & 25 & 25 & & 24 & 25 & & 25 & 25 & 25 & & & & & & 25 \\
+        \hline
+        $\langle \text{else} \rangle$ & & & & & 27 & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{ret\_type} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{type} \rangle$ & & & & & & & & & & & & & 30 & 31 & 32 & 33 & 34 & \\
+        \hline
+        $\langle \text{return} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{param\_list} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{param\_end} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{lop} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{loa} \rangle$ & & & & & & 44 & & & 44 & & & & & & & & & \\
+        \hline
+        $\langle \text{arg\_list} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{arg\_end} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{func} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{assign} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{expression} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+    \end{tabular}
+    \caption{LL tabulka gramatiky IFJ26 -- část 1 (klíčová slova, typy a \texttt{EOF}).}
+    \label{tab:ll-mriezka-1}
+\end{table}
+
+% ČASŤ 2: Literály, operátory, interpunkcia, NL a DEDENT (1 + 18 = 19 stĺpcov)
+\begin{table}[htbp]
+    \centering
+    \scriptsize
+    \setlength{\tabcolsep}{2.8pt}
+    \renewcommand{\arraystretch}{1.25}
+    \begin{tabular}{|l|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+        \hline
+        \textbf{Neterminál} & \texttt{id} & \texttt{int} & \texttt{dbl} & \texttt{str} & \texttt{interp.} & \texttt{+} & \texttt{-} & \texttt{!} & \texttt{(} & \texttt{)} & \texttt{,} & \texttt{;} & \texttt{:} & \texttt{=} & \texttt{.} & \texttt{*} & \texttt{NL} & \texttt{DED.} \\
+        \hline
+        $\langle \text{prog} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{definition} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{def\_body} \rangle$ & 6 & 6 & 6 & 6 & 6 & 6 & 6 & 6 & 6 & & & & & & & & 5 & \\
+        \hline
+        $\langle \text{opt\_NL} \rangle$ & & & & & & & & & & & & & & & 8 & 8 & 7 & \\
+        \hline
+        $\langle \text{block} \rangle$ & & & & & & & & & & & & & & & & & 9 & \\
+        \hline
+        $\langle \text{st\_list} \rangle$ & 10 & 10 & 10 & 10 & 10 & 10 & 10 & 10 & 10 & & & & & & & & & 11 \\
+        \hline
+        $\langle \text{stat} \rangle$ & 12 & 12 & 12 & 12 & 12 & 12 & 12 & 12 & 12 & & & & & & & & & \\
+        \hline
+        $\langle \text{line} \rangle$ & 15,16 & 15 & 15 & 15 & 15 & 15 & 15 & 15 & 15 & & & & & & & & & \\
+        \hline
+        $\langle \text{line\_end} \rangle$ & & & & & & & & & & & & 20 & & & & & 21 & \\
+        \hline
+        $\langle \text{line\_semi} \rangle$ & 22 & 22 & 22 & 22 & 22 & 22 & 22 & 22 & 22 & & & & & & & & 23 & \\
+        \hline
+        $\langle \text{else\_choice} \rangle$ & 25 & 25 & 25 & 25 & 25 & 25 & 25 & 25 & 25 & & & & & & & & & 25 \\
+        \hline
+        $\langle \text{else} \rangle$ & & & & & & & & & & & & & & & & & 26 & \\
+        \hline
+        $\langle \text{ret\_type} \rangle$ & & & & & & & & & & & & & 28 & 29 & & & & \\
+        \hline
+        $\langle \text{type} \rangle$ & & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{return} \rangle$ & 35 & 35 & 35 & 35 & 35 & 35 & 35 & 35 & 35 & & & 36 & & & & & 36 & \\
+        \hline
+        $\langle \text{param\_list} \rangle$ & 37 & & & & & & & & & 38 & & & & & & & & \\
+        \hline
+        $\langle \text{param\_end} \rangle$ & & & & & & & & & & 40 & 39 & & & & & & & \\
+        \hline
+        $\langle \text{lop} \rangle$ & & & & & & & & & 41 & & & & 42 & 42 & & & & \\
+        \hline
+        $\langle \text{loa} \rangle$ & & & & & & & & & 43 & 44 & 44 & 44 & & & & & 44 & \\
+        \hline
+        $\langle \text{arg\_list} \rangle$ & 45 & 45 & 45 & 45 & 45 & 45 & 45 & 45 & 45 & 46 & & & & & & & & \\
+        \hline
+        $\langle \text{arg\_end} \rangle$ & & & & & & & & & & 48 & 47 & & & & & & & \\
+        \hline
+        $\langle \text{func} \rangle$ & 49 & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{assign} \rangle$ & 50 & & & & & & & & & & & & & & & & & \\
+        \hline
+        $\langle \text{expression} \rangle$ & 51,52 & 52 & 52 & 52 & 52 & 52 & 52 & 52 & 52 & & & & & & & & & \\
+        \hline
+    \end{tabular}
+    \caption{LL tabulka gramatiky IFJ26 -- část 2 (literály, operátory, interpunkce, \texttt{NL} a \texttt{DEDENT}).}
+    \label{tab:ll-mriezka-2}
+\end{table}
 
 
 \subsection{Precedenční syntaktická analýza}
