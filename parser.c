@@ -476,6 +476,10 @@ static AstNode *parseStat(ParsedToken *p) {
         {
             checkToken(p, TOK_KW_IF);
             AstNode *condition = parseExpression(p);
+            if (p->error != 0)
+            {
+                return NULL;
+            }
             checkToken(p, TOK_KW_THEN);
             AstNode *thenBody = parseBlock(p);
             if (p->error != 0)
@@ -494,6 +498,10 @@ static AstNode *parseStat(ParsedToken *p) {
         {
             checkToken(p, TOK_KW_WHILE);
             AstNode *condition = parseExpression(p);
+            if (p->error != 0)
+            {
+                return NULL;
+            }
             checkToken(p, TOK_KW_DO);
             AstNode *body = parseBlock(p);
             if (p->error != 0)
@@ -535,6 +543,11 @@ static AstNode *parseLine(ParsedToken *p) {
         }
         checkToken(p, TOK_ASSIGN);
         declaration->data.declaration.expression = parseExpression(p);
+        if (p->error != 0)
+        {
+            astFree(declaration);
+            return NULL;
+        }
         return declaration;
     }
     // 21: ⟨line⟩ → var id ⟨ret_type⟩ = ⟨expression⟩
@@ -551,6 +564,11 @@ static AstNode *parseLine(ParsedToken *p) {
         }
         checkToken(p, TOK_ASSIGN);
         declaration->data.declaration.expression = parseExpression(p);
+        if (p->error != 0)
+        {
+            astFree(declaration);
+            return NULL;
+        }
         return declaration;
     }
     // 22: ⟨line⟩ → return ⟨return⟩
@@ -636,6 +654,10 @@ static AstNode *parseElse(ParsedToken *p) {
     {
         checkToken(p, TOK_KW_IF);
         AstNode *condition = parseExpression(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         checkToken(p, TOK_KW_THEN);
         AstNode *thenBody = parseBlock(p);
         if (p->error != 0)
@@ -799,6 +821,11 @@ static AstNode *parseId(ParsedToken *p) {
         checkToken(p, TOK_ASSIGN);
 
         AstNode *expression = parseExpression(p);
+        if (p->error != 0)
+        {
+            astFree(destination);
+            return NULL;
+        }
         return createNodeAssign(destination, expression);
     } else {
         return parseExpression(p);

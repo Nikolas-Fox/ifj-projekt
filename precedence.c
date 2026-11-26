@@ -3,7 +3,7 @@
  * Package:		precedence
  * File:			precedence.c
  * Date:			5.11.2026
- * Last change:	25.11.2026
+ * Last change:	26.11.2026
  * Authors: 		Nikolas Fox xfoxnik00
  *
  * Description: Implementation of precedence syntactic analysis logic
@@ -96,7 +96,7 @@ static PrecSymbol precStackGetFirstTerm(PrecStack *stack);
 static void precStackShiftAfterFirstTerm(PrecStack *stack);
 static PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand,
                               PrecStack *stack, AstNode **node);
-static void precReduce(PrecStack *stack);
+static void precReduce(PrecStack *stack, ParsedToken *p);
 static AstNode *parseLoa(ParsedToken *p, size_t *groupCount);
 static AstNode *parseArgList(ParsedToken *p, size_t *count);
 static AstNode *parseArgEnd(ParsedToken *p, size_t *count);
@@ -267,6 +267,11 @@ static AstNode *parseId(ParsedToken *p)
         // getNextToken because parseLoa expects '(', not the called function id
         size_t groupCount = 0;
         returnNode->data.call.group = parseLoa(p, &groupCount);
+        if (p->error != 0)
+        {
+            astFree(returnNode);
+            return NULL;
+        }
         returnNode->data.call.groupCount = groupCount;
     } 
     else
@@ -323,7 +328,8 @@ static AstNode *parseInterpolated(ParsedToken *p)
                 }
                 else
                 {
-                    exit(2); // expected idenitifier, string literal, expression or end of interpolation expression
+                    p->error = 2;
+                    return NULL; // expected idenitifier, string literal, expression or end of interpolation expression
                 }
             }
         }
@@ -433,7 +439,7 @@ static PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand,
  * @brief Reduces rules on the stack (all elements after '<')
  * @param stack Pointer to stack
  */
-static void precReduce(PrecStack *stack) {
+static void precReduce(PrecStack *stack, ParsedToken *p) {
     PrecStackElem poppedElements[RULE_SIZE];
     int popCnt = 0;
     PrecStackElem popped;
@@ -443,7 +449,8 @@ static void precReduce(PrecStack *stack) {
         if (popped.symbol != PREC_SHIFT) {
             if (popCnt >= RULE_SIZE) {
                 // ERROR (syntax)
-                exit(2);
+                p->error = 2;
+                return;
             }
             poppedElements[popCnt] =
                 popped; // poppedElements are saved in the oposite direction
@@ -524,7 +531,8 @@ static void precReduce(PrecStack *stack) {
     }
     // ERROR (syntax)
     // if we reach this point no valid rule to reduce was used
-    exit(2);
+    p->error = 2;
+    return;
 }
 
 /**
@@ -545,7 +553,8 @@ static AstNode *parseLoa(ParsedToken *p, size_t *groupCount) {
 
         if (p->currentToken.type != TOK_RPAR) {
             // ERROR (syntax error)
-            exit(2);
+            p->error = 2;
+            return NULL;
         }
 
         AstNode *group = createNodeGroup(items, count);
@@ -556,6 +565,10 @@ static AstNode *parseLoa(ParsedToken *p, size_t *groupCount) {
             getNextToken(p); // if the next token is another '(' we have a new
                              // group that we add to the list of groups
             group->next = parseLoa(p, groupCount);
+            if (p->error != 0)
+            {
+                return NULL;
+            }
         }
 
         // if the next token isn't a '(', then the current token stays at ')' so
@@ -578,6 +591,10 @@ static AstNode *parseArgList(ParsedToken *p, size_t *count) {
         AstNode *arg = parseExpression(p);
         (*count)++;
         arg->next = parseArgEnd(p, count);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         return arg;
     }
     // 49: ⟨arg_list⟩ → epsilon
@@ -586,7 +603,8 @@ static AstNode *parseArgList(ParsedToken *p, size_t *count) {
     }
 
     // ERROR (syntax error)
-    exit(2);
+    p->error = 2;
+    return NULL;
 }
 
 /**
@@ -607,8 +625,8 @@ static AstNode *parseArgEnd(ParsedToken *p, size_t *count) {
         return NULL;
     default:
         // ERROR (syntax error)
-        exit(2);
-        break;
+        p->error = 2;
+        return NULL;
     }
 }
 
@@ -625,6 +643,11 @@ AstNode *parseExpression(ParsedToken *p) {
 
     AstNode *node;
     PrecSymbol input = tokenToPrec(p, previousWasOperand, &stack, &node);
+    if (p->error != 0)
+    {
+        precStackFree(&stack);
+        return NULL;
+    }
     // the node will change to either AST_LITERAL, AST_ID or function call
 
     // while iterates until only $E is left on the stack and the input is
@@ -652,15 +675,27 @@ AstNode *parseExpression(ParsedToken *p) {
 
             getNextToken(p);
             input = tokenToPrec(p, previousWasOperand, &stack, &node);
+            if (p->error != 0)
+            {
+                precStackFree(&stack);
+                return NULL;
+            }
             break;
         }
 
         case '>':
-            precReduce(&stack);
+            precReduce(&stack, p);
+            if (p->error != 0)
+            {
+                precStackFree(&stack);
+                return NULL;
+            }
             break;
         default:
             // ERROR (syntax error)
-            exit(2);
+            p->error = 2;
+            precStackFree(&stack);
+            return NULL;
         }
     }
 
