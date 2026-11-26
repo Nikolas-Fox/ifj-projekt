@@ -6,7 +6,7 @@ MAIN_SRC = main.c
 CORE_SRC = ast.c codegen.c hashtable.c parser.c precedence.c scanner.c semantic.c symtable.c
 
 FORMAT_FILES = $(wildcard *.c *.h)
-E2E_SCRIPT   = ./e2e_tests/e2e/run_e2e.sh
+E2E_SCRIPT   = ./tests/e2e_tests/e2e/run_e2e.sh
 
 build: $(TARGET)
 
