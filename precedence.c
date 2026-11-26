@@ -1,14 +1,13 @@
 /******************************************************************************
- * Project:		IFJ
- * Package:		precedence
- * File:			precedence.c
- * Date:			5.11.2026
- * Last change:	26.11.2026
- * Authors: 		Nikolas Fox xfoxnik00
+ * Project:      IFJ
+ * Package:      Precedence
+ * File:         precedence.c
+ * Date:         05. 11. 2026
+ * Last change:  26. 11. 2026
+ * Authors:      Nikolas Fox xfoxnik00
  *
- * Description: Implementation of precedence syntactic analysis logic
- *
- *******************************************************************************/
+ * Description:  Implementation of precedence syntactic analysis logic
+ *****************************************************************************/
 /**
  * @file precedence.c
  *
@@ -704,5 +703,4 @@ AstNode *parseExpression(ParsedToken *p) {
     precStackFree(&stack);
     return E.node; // returning the node with the built expression
 }
-
 /*** End of file precedence.c ***/

@@ -1,19 +1,18 @@
 /******************************************************************************
- * Project:		IFJ
- * Package:		Lexical analysis
- * File:			scanner.h
- * Date:			18.10.2026
- * Last change:	12.11.2026
- * Author: 		Eliška Opršalová xoprsae00
+ * Project:      IFJ
+ * Package:      Lexical analysis
+ * File:         scanner.h
+ * Date:         18. 10. 2026
+ * Last change:  26. 11. 2026
+ * Authors:      Eliška Opršalová xoprsae00
  *
- * Description: 	header file - defines the token types, the Token
- * structure and the getToken() function
- *
- *******************************************************************************/
+ * Description:  Header file for lexical analysis: token types, the Token
+ * structure and the getToken function
+ *****************************************************************************/
 /**
  * @file scanner.h
  *
- * @brief lexer header file
+ * @brief Lexer header file
  * @author Eliška Opršalová xoprsae00
  */
 
@@ -149,5 +148,4 @@ void scannerFree(Scanner *sc);
 Token getToken(Scanner *sc);
 
 #endif
-
 /*** End of file scanner.h ***/

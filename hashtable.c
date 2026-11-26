@@ -2,8 +2,8 @@
  * Project:      IFJ
  * Package:      Symbol table
  * File:         hashtable.c
- * Date:         1. 11. 2026
- * Last change:  16. 11. 2026
+ * Date:         01. 11. 2026
+ * Last change:  26. 11. 2026
  * Authors:      Alexandra Povalová xpovala00
  *
  * Description:  Implementation of the hash table with open
@@ -261,5 +261,4 @@ void forEachData(HashTable *table, CallBackData callback) {
         }
     }
 }
-
 /*** End of file hashtable.c ***/

@@ -1,14 +1,13 @@
 /******************************************************************************
- * Project:		IFJ
- * Package:		semantic
- * File:			semantic.c
- * Date:			16.11.2026
- * Last change:	26.11.2026
- * Authors: 		Nikolas Fox xfoxnik00
+ * Project:      IFJ
+ * Package:      Semantic
+ * File:         semantic.c
+ * Date:         16. 11. 2026
+ * Last change:  26. 11. 2026
+ * Authors:      Nikolas Fox xfoxnik00
  *
- * Description: Implementation of semantic analysis logic
- *
- *******************************************************************************/
+ * Description:  Implementation of semantic analysis logic
+ *****************************************************************************/
 /**
  * @file semantic.c
  *

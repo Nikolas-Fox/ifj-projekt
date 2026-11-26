@@ -1,15 +1,14 @@
 /******************************************************************************
- * Project:		IFJ
- * Package:	    Symbol table
- * File:			hashtable.h
- * Date:			1.11.2026
- * Last change:	    16.11.026
- * Authors: 		Alexandra Povalová xpovala00
+ * Project:      IFJ
+ * Package:      Symbol table
+ * File:         hashtable.h
+ * Date:         01. 11. 2026
+ * Last change:  26. 11. 2026
+ * Authors:      Alexandra Povalová xpovala00
  *
  * Description:  Header file of the hash table - open addressing, linear
  *               probing: item and table structures, function prototypes.
- *
- *******************************************************************************/
+ *****************************************************************************/
 /**
  * @file hashtable.h
  *
@@ -134,5 +133,4 @@ size_t hashFunction(const char *key, size_t tableSize);
 void forEachData(HashTable *table, CallBackData callback);
 
 #endif
-
 /*** End of file hashtable.h ***/
