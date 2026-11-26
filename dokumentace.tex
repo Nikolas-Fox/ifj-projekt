@@ -315,7 +315,7 @@ Jak je vidět v tabulce, vyskytují se konflikty v řádcích <line> a <expressi
 \newpage
 \section{Přehled modulů}
 \begin{itemize}
-    \item \texttt{scanner.c / scanner.h}: ...
+    \item \texttt{scanner.c / scanner.h}: Implementuje lexikální analyzátor jako rozšířený deterministický automat, který čte znaky ze srtandardního vstupu a pomocí dynamického bufferu sestavuje tokeny. Nadstavbová vrstva vyhodnocuje odsazení tokenů. Model také detekuje lexikánlí chyby a spravuje paměť alokovanou pro instanci skeneru.
     \item \texttt{parser.c / parser.h}: Parser je implementován metodou rekurzivního sestupu a udržuje si stav zpracování včetně následujícího tokenu. Přebírá tokeny ze scanneru, ověřuje očekávané tokeny, zjišťuje, zda patří do množiny Predict. Spouští analýzu celého programu s výstavbou AST.
     \item \texttt{precedence.c / precedence.h}: Implementuje precedenční syntaktickou analýzu pro výrazy pomocí zásobníku. Převádí vstupní tokeny na precedenční symboly, redukuje pravidla a zpracovává argumenty volání funkcí. Hlavní funkce inicializuje zásobník se zarážkou a v cyklu čte vstup podle precedenční tabulky, přičemž provádí posuny nebo redukce.
     \item \texttt{ast.c / ast.h}: Implementuje práci s abstraktním syntaktickým stromem (AST), ve kterém si překladač ukládá strukturu zpracovaného programu (výrazy, příkazy, funkce, větvení i cykly). Vytváří jednotlivé uzly a řadí je do spojových seznamů. Rekurzivní uvolňování celé struktury.
