@@ -274,7 +274,7 @@ Jak je vidět v tabulce, vyskytují se konflikty v řádcích <line> a <expressi
     \item \texttt{ast.c / ast.h}: Implementuje práci s abstraktním syntaktickým stromem (AST), ve kterém si překladač ukládá strukturu zpracovaného programu (výrazy, příkazy, funkce, větvení i cykly). Vytváří jednotlivé uzly a řadí je do spojových seznamů. Rekurzivní uvolňování celé struktury.
     \item \texttt{symtable.c / symtable.h}: Implementace tabulky symbolů postavená na \texttt{hashtable} a řešená formou zásobníku. Při inicializaci se automaticky vytvoří globální rozsah (\emph{scope}), do kterého se předplní vestavěné funkce. Podporuje základní operace, jako je vložení nového rozsahu na zásobník, vkládání symbolů a vyprázdnění zásobníku.
     \item \texttt{hashtable.c / hashtable.h}: Obecná implementace hashovací tabulky s řešením kolizí pomocí lineárního sondování (linear probing) a podporou základních operací (vkládání, vyhledávání, mazání, uvolnění paměti); slouží jako datová struktura zejména pro tabulku symbolů
-    \item \texttt{semantic.c / semantic.h}: ...
+    \item \texttt{semantic.c / semantic.h}: Sémantická analýza, implementovaná tak, aby kontrolovala funkce, rozsahy platnosti, příkazy a výrazy.
     \item \texttt{codegen.c / codegen.h}: Vygeneruje uživatelský program a vestavěné funkce, volání funkcí implementuje s předáváním na zásobníků, který používá také pro vyhodnocování výrazů
 \end{itemize}
 
