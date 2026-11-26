@@ -4,14 +4,19 @@
 \usepackage[czech]{babel}
 \usepackage[margin=2cm]{geometry}
 \usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{rotating}
+\usepackage{array}
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{hyperref}
 \usepackage{longtable}
+\usepackage[table]{xcolor}
 \newcommand{\nt}[1]{\ensuremath{\langle\mathit{#1}\rangle}}
 \newcommand{\tk}[1]{\texttt{#1}}
 \newcommand{\eps}{\ensuremath{\varepsilon}}
 \renewcommand{\to}{\ensuremath{\rightarrow}}
+
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt}
@@ -31,8 +36,8 @@
 
     \textbf{Varianta:} \texttt{TRP-izp}\\[4pt]
     \textbf{Rozdělení bodů:} \texttt{xfoxnik00}: 25\,\%, \texttt{xholael00}: 25\,\%, \texttt{xoprsae00}: 25\,\%, \texttt{xpovala00}: 25\,\%\\[4pt]
-    \textbf{Implementovaná rozšíření:} \texttt{...}\\[4pt]
-    \textbf{Git repozitář:} \url{https://...}\\[10pt]
+    \textbf{Implementovaná rozšíření: FUNEXP, BOOLTHEN, VALMEM, INTERPOLATEDS, PARAMLISTS} \texttt{...}\\[4pt]
+    \textbf{Git repozitář:} \url{https://github.com/Nikolas-Fox/ifj-projekt}\\[10pt]
     \hrule
 \end{center}
 \vspace*{\fill}
@@ -49,8 +54,8 @@
         \midrule
         Nikolas Fox & Abstraktní syntaktický strom (AST), syntaktická analýza (\texttt{parser} - uvolňování řetězců tokenů), LL gramatika, precedenční analýza, sémantická analýza. \\
         Eliška Holá & Generování cílového kódu, \texttt{main}, syntaktická analýza (\texttt{parser} -- rekurzivní sestup, práce s tokeny), LL gramatika. \\
-        Eliška Opršalová & Lexikální analyzátor (\texttt{scanner}), konečný automat. \\
-        Alexandra Povalová & Tabulka symbolů, \texttt{Makefile}, generování testů. \\
+        Eliška Opršalová & Lexikální analyzátor (\texttt{scanner}), konečný automat, dokumentace \\
+        Alexandra Povalová & Tabulka symbolů, \texttt{Makefile}, generování testů, dokumentace \\
         \bottomrule
     \end{tabularx}
     \caption{Rozdělení práce mezi členy řešitelského týmu.}
@@ -58,85 +63,84 @@
 \end{table}
 
 Na začátku jsme si dohodli základní pravidla naší spolupráce. Jako formu komunikace jsme zvolili Discord, kde jsme si založili skupinu, a protože Discord neukazuje, zda si někdo přečetl zprávu, dohodli jsme se, že si budeme reagovat na jednotlivé zprávy. Pro sledování deadlinů a věcí, které je ještě třeba udělat, jsme používali Notion. Měli jsme několik osobních schůzek. 
-Vždy, když někdo dokončil nějakou práci a poslal pull request, dohodli jsme se, kdo to zkontroluje, psali jsme si případné komentáře k opravě a až potom mergli jednotlivé větve.
+Vždy, když někdo dokončil nějakou práci a poslal pull request, dohodli jsme se, kdo to zkontroluje, psali jsme si případné komentáře k opravě a až potom provedli merge jednotlivé větve.
 
 Každý si své části projektu nejprve testoval samostatně a následně Alexandra Povalová vygenerovala skript na spouštění testů, který spouštěl jednotlivé programy a kontroloval výstup (testovací programy i očekávané výstupy byly rovněž vygenerovány).
 
 Zvolili jsme styl formátování \texttt{LLVM} v nástroji \texttt{clang-format} (konfigurace v \texttt{.clang-format}).
 
+\newpage
 \section{Architektura překladače}
-...
 
-\section{Lexikální analýza}
-...baf
 
+\newpage
 \section{Syntaktická analýza}
-\subsection{LL gramatika a LL tabulka}
+\subsection{LL gramatika}
  
 \begin{small}
 \begin{longtable}{@{}r@{\hspace{1em}}p{0.88\textwidth}@{}}
 1.  & \nt{prog} \to \tk{import} \nt{opt\_NL} \tk{ifj26} \nt{opt\_NL} \tk{.} \nt{opt\_NL} \tk{*} \tk{NL} \nt{definition} \tk{EOF} \\
 2.  & \nt{definition} \to \tk{@main} \nt{opt\_NL} \tk{def} \tk{id} \nt{lop} \nt{ret\_type} \tk{=} \nt{def\_body} \nt{definition} \\
 3.  & \nt{definition} \to \tk{def} \tk{id} \nt{lop} \nt{ret\_type} \tk{=} \nt{def\_body} \nt{definition} \\
-4.  & \nt{definition} \to \tk{extension} \tk{(} \tk{id} \tk{:} \nt{type} \tk{)} \nt{def\_block} \nt{definition} \\
-5.  & \nt{definition} \to \eps \\
-6.  & \nt{def\_body} \to \nt{block} \\
-7.  & \nt{def\_body} \to \nt{stat} \\
-8.  & \nt{def\_block} \to \tk{NL} \tk{INDENT} \nt{extension\_def} \tk{DEDENT} \\
-9.  & \nt{extension\_def} \to \tk{def} \tk{id} \nt{lop} \nt{ret\_type} \tk{=} \nt{def\_body} \nt{extension\_def} \\
-10. & \nt{extension\_def} \to \eps \\
-11. & \nt{opt\_NL} \to \tk{NL} \\
-12. & \nt{opt\_NL} \to \eps \\
-13. & \nt{block} \to \tk{NL} \tk{INDENT} \nt{stat} \nt{st\_list} \tk{DEDENT} \\
-14. & \nt{st\_list} \to \nt{stat} \nt{st\_list} \\
-15. & \nt{st\_list} \to \eps \\
-16. & \nt{stat} \to \nt{line} \nt{line\_end} \\
-17. & \nt{stat} \to \tk{if} \nt{expression} \tk{then} \nt{block} \nt{else\_choice} \\
-18. & \nt{stat} \to \tk{while} \nt{expression} \tk{do} \nt{block} \\
-19. & \nt{line} \to \nt{expression} \\
-20. & \nt{line} \to \tk{val} \tk{id} \nt{ret\_type} \tk{=} \nt{expression} \\
-21. & \nt{line} \to \tk{var} \tk{id} \nt{ret\_type} \tk{=} \nt{expression} \\
-22. & \nt{line} \to \tk{return} \nt{return} \\
-23. & \nt{line\_end} \to \tk{;} \nt{line\_semi} \\
-24. & \nt{line\_end} \to \tk{NL} \\
-25. & \nt{line\_semi} \to \nt{stat} \\
-26. & \nt{line\_semi} \to \tk{NL} \\
-27. & \nt{else\_choice} \to \tk{else} \nt{else} \\
-28. & \nt{else\_choice} \to \eps \\
-29. & \nt{else} \to \nt{block} \\
-30. & \nt{else} \to \tk{if} \nt{expression} \tk{then} \nt{block} \nt{else\_choice} \\
-31. & \nt{ret\_type} \to \tk{:} \nt{type} \\
-32. & \nt{ret\_type} \to \eps \\
-33. & \nt{type} \to \tk{Int} \\
-34. & \nt{type} \to \tk{Double} \\
-35. & \nt{type} \to \tk{String} \\
-36. & \nt{type} \to \tk{Unit} \\
-37. & \nt{type} \to \tk{Boolean} \\
-38. & \nt{return} \to \nt{expression} \\
-39. & \nt{return} \to \eps \\
-40. & \nt{param\_list} \to \tk{id} \tk{:} \nt{type} \nt{param\_end} \\
-41. & \nt{param\_list} \to \eps \\
-42. & \nt{param\_end} \to \tk{,} \nt{param\_list} \\
-43. & \nt{param\_end} \to \eps \\
-44. & \nt{lop} \to \tk{(} \nt{param\_list} \tk{)} \nt{lop} \\
-45. & \nt{lop} \to \eps \\
-46. & \nt{loa} \to \tk{(} \nt{arg\_list} \tk{)} \nt{loa} \\
-47. & \nt{loa} \to \eps \\
-48. & \nt{arg\_list} \to \nt{expression} \nt{arg\_end} \\
-49. & \nt{arg\_list} \to \eps \\
-50. & \nt{arg\_end} \to \tk{,} \nt{arg\_list} \\
-51. & \nt{arg\_end} \to \eps \\
-52. & \nt{func} \to \tk{id} \nt{loa} \\
-53. & \nt{assign} \to \tk{id} \tk{=} \nt{expression} \\
-54. & \nt{expression} \to \nt{func} \\
-55. & \nt{expression} \to \nt{assign} \\
-56. & \nt{expression} \to \textit{výraz zpracovaný precedenční analýzou} \\
+4.  & \nt{definition} \to \eps \\
+5.  & \nt{def\_body} \to \nt{block} \\
+6.  & \nt{def\_body} \to \nt{stat} \\
+7.  & \nt{opt\_NL} \to \tk{NL} \\
+8.  & \nt{opt\_NL} \to \eps \\
+9.  & \nt{block} \to \tk{NL} \tk{INDENT} \nt{stat} \nt{st\_list} \tk{DEDENT} \\
+10. & \nt{st\_list} \to \nt{stat} \nt{st\_list} \\
+11. & \nt{st\_list} \to \eps \\
+12. & \nt{stat} \to \nt{line} \nt{line\_end} \\
+13. & \nt{stat} \to \tk{if} \nt{expression} \tk{then} \nt{block} \nt{else\_choice} \\
+14. & \nt{stat} \to \tk{while} \nt{expression} \tk{do} \nt{block} \\
+15. & \nt{line} \to \nt{expression} \\
+16. & \nt{line} \to \nt{assign} \\
+17. & \nt{line} \to \tk{val} \tk{id} \nt{ret\_type} \tk{=} \nt{expression} \\
+18. & \nt{line} \to \tk{var} \tk{id} \nt{ret\_type} \tk{=} \nt{expression} \\
+19. & \nt{line} \to \tk{return} \nt{return} \\
+20. & \nt{line\_end} \to \tk{;} \nt{line\_semi} \\
+21. & \nt{line\_end} \to \tk{NL} \\
+22. & \nt{line\_semi} \to \nt{stat} \\
+23. & \nt{line\_semi} \to \tk{NL} \\
+24. & \nt{else\_choice} \to \tk{else} \nt{else} \\
+25. & \nt{else\_choice} \to \eps \\
+26. & \nt{else} \to \nt{block} \\
+27. & \nt{else} \to \tk{if} \nt{expression} \tk{then} \nt{block} \nt{else\_choice} \\
+28. & \nt{ret\_type} \to \tk{:} \nt{type} \\
+29. & \nt{ret\_type} \to \eps \\
+30. & \nt{type} \to \tk{Int} \\
+31. & \nt{type} \to \tk{Double} \\
+32. & \nt{type} \to \tk{String} \\
+33. & \nt{type} \to \tk{Unit} \\
+34. & \nt{type} \to \tk{Boolean} \\
+35. & \nt{return} \to \nt{expression} \\
+36. & \nt{return} \to \eps \\
+37. & \nt{param\_list} \to \tk{id} \tk{:} \nt{type} \nt{param\_end} \\
+38. & \nt{param\_list} \to \eps \\
+39. & \nt{param\_end} \to \tk{,} \nt{param\_list} \\
+40. & \nt{param\_end} \to \eps \\
+41. & \nt{lop} \to \tk{(} \nt{param\_list} \tk{)} \nt{lop} \\
+42. & \nt{lop} \to \eps \\
+43. & \nt{loa} \to \tk{(} \nt{arg\_list} \tk{)} \nt{loa} \\
+44. & \nt{loa} \to \eps \\
+45. & \nt{arg\_list} \to \nt{expression} \nt{arg\_end} \\
+46. & \nt{arg\_list} \to \eps \\
+47. & \nt{arg\_end} \to \tk{,} \nt{arg\_list} \\
+48. & \nt{arg\_end} \to \eps \\
+49. & \nt{func} \to \tk{id} \nt{loa} \\
+50. & \nt{assign} \to \tk{id} \tk{=} \nt{expression} \\
+51. & \nt{expression} \to \nt{func} \\
+52. & \nt{expression} \to \textit{výraz zpracovaný precedenční analýzou} \\
 \end{longtable}
 \end{small}
  
 \noindent Výrazy zpracovává precedenční syntaktická analýza; parser jí předává řízení
-při prvním tokenu výrazu a po jejím skončení přebírá návratovou hodnotu.
-Prázdný blok \tk{()} je zpracován jako výraz.
+při prvním tokenu výrazu a po jejím skončení přebírá výsledek.
+Prázdný blok \tk{()} je zpracován jako výraz. \\
+Pravidla pro $\langle \text{loa} \rangle$, $\langle \text{arg\_list} \rangle$, $\langle \text{arg\_end} \rangle$ a $\langle \text{expression} \rangle$ jsou řešena přímo v modulu \texttt{precedence.c}. Pomocné funkce pro $\langle \text{loa} \rangle$, $\langle \text{arg\_list} \rangle$ a $\langle \text{arg\_end} \rangle$ se volají pouze interně v rámci precedenční analýzy, a jsou proto definovány jako \texttt{static}.
+ 
+
+\subsection{LL tabulka }
 
 \begin{sidewaystable}[p]
     \centering
@@ -200,6 +204,11 @@ Prázdný blok \tk{()} je zpracován jako výraz.
     \caption{LL tabulka gramatiky IFJ26.}
     \label{tab:ll-mriezka}
 \end{sidewaystable}
+Jak je vidět v tabulce, vyskytují se konflikty v řádcích <line> a <expression>. Tyto konflikty řešíme pomocí lookahead o 1 token. \\
+* Když je následující token =, vyhodnotí se pravidlo 16. V opačném případě pravidlo 15. \\
+** Když je následující token (, jde o volání funkce a vyhodnotí se pravidlo 51. V opačném případě se jedná o pravidlo 52.\\
+
+
 
 \newpage
 \subsection{Precedenční syntaktická analýza}
@@ -256,15 +265,30 @@ Prázdný blok \tk{()} je zpracován jako výraz.
         \textbf{\texttt{\$}} & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & & \kGrn & \\
         \hline
     \end{tabular}
-    \caption{Precedenčná tabuľka pre analýzu výrazov v jazyku IFJ26.}
+    \caption{Precedenční tabulka pro analýzu výrazů v jazyce IFJ26.}
     \label{tab:precedencna}
 \end{table}
 
+\newpage
 \section{Přehled modulů}
+\begin{itemize}
+    \item \texttt{scanner.c / scanner.h}: ...
+    \item \texttt{parser.c / parser.h}: Parser je implementován metodou rekurzivního sestupu a udržuje si stav zpracování včetně následujícího tokenu. Přebírá tokeny ze scanneru, ověřuje očekávané tokeny, zjišťuje, zda patří do množiny Predict. Spouští analýzu celého programu s výstavbou AST.
+    \item \texttt{precedence.c / precedence.h}: Implementuje precedenční syntaktickou analýzu pro výrazy pomocí zásobníku. Převádí vstupní tokeny na precedenční symboly, redukuje pravidla a zpracovává argumenty volání funkcí. Hlavní funkce inicializuje zásobník se zarážkou a v cyklu čte vstup podle precedenční tabulky, přičemž provádí posuny nebo redukce.
+    \item \texttt{ast.c / ast.h}: Implementuje práci s abstraktním syntaktickým stromem (AST), ve kterém si překladač ukládá strukturu zpracovaného programu (výrazy, příkazy, funkce, větvení i cykly). Vytváří jednotlivé uzly a řadí je do spojových seznamů. Rekurzivní uvolňování celé struktury.
+    \item \texttt{symtable.c / symtable.h}: Implementace tabulky symbolů postavená na \texttt{hashtable} a řešená formou zásobníku. Při inicializaci se automaticky vytvoří globální rozsah (\emph{scope}), do kterého se předplní vestavěné funkce. Podporuje základní operace, jako je vložení nového rozsahu na zásobník, vkládání symbolů a vyprázdnění zásobníku.
+    \item \texttt{hashtable.c / hashtable.h}: Obecná implementace hashovací tabulky s řešením kolizí pomocí lineárního sondování (linear probing) a podporou základních operací (vkládání, vyhledávání, mazání, uvolnění paměti); slouží jako datová struktura zejména pro tabulku symbolů
+    \item \texttt{semantic.c / semantic.h}: ...
+    \item \texttt{codegen.c / codegen.h}: Vygeneruje uživatelský program a vestavěné funkce, volání funkcí implementuje s předáváním na zásobníků, který používá také pro vyhodnocování výrazů
+\end{itemize}
 
-
+\newpage
 \section{Využití AI nástrojů}
-...
+Nástroje umělé inteligence jsme využívali především pro code review, generování unit testů a testů hraničních případů u vystavených funkcí. Dále byly využity ke generování skriptu pro spouštění end-to-end testů a k vytváření jednotlivých testovacích případů. Sloužily nám také k ověření a dovysvětlení toho, zda dané problematice správně rozumíme. Samotnou dokumentaci jsme zpracovávali sami; nástroje AI byly využity pouze pro generování a úpravu částí kódu v LaTeXu (například pro sazbu tabulek).
 
+\begin{thebibliography}{9}
+    \bibitem{ifj} Meduna, A., Křivka, Z.: \textit{Formální jazyky a překladače (IFJ)}. FIT VUT v Brně, 2026.
+    \bibitem{ial} \textit{Algoritmy (IAL)}. FIT VUT v Brně, 2026.
+\end{thebibliography}
 
 \end{document}
