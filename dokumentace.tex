@@ -83,24 +83,24 @@ Zvolili jsme styl formátování \texttt{LLVM} v nástroji \texttt{clang-format}
 \section{Lexikální analýza}
 
 \subsection{Odchylky od konečného automatu}
-Hledání v tabulce klíčových slov\\
-\\
-Vstupní šipky, které vybírají počáteční stav před čtením znaku\\
-\\
-Automat využívá pomocné čítače a příznaky:
 \begin{itemize}
-  \item ParenDepth - hloubka zanoření kulatých závorek (potlačuje generování $TOK\_NL$ a aktivuje kontrolu odsazení v $ST\_PAREN\_LINE$)
-  \item commentDepth a commentNL – umožňuje rozpoznat vnořené blokové komentáře
-  \item interpDepth, interpKind[] a interpInExpr[] - zásobník pro vnořené interpolované řetězce (s"...", s"""...""") a rozlišení, zda se automat nachází v textové části ($ST\_INTERP\_TEXT$), nebo uvnitř výrazu \$\{...\}
+\item Hledání v tabulce klíčových slov\\
+\item Vstupní šipky, které vybírají počáteční stav před čtením znaku\\
+\item Automat využívá pomocné čítače a příznaky:
+\begin{itemize}
+  \item \texttt{ParenDepth} - hloubka zanoření kulatých závorek (potlačuje generování \texttt{TOK\_NL} a aktivuje kontrolu odsazení v \texttt{ST\_PAREN\_LINE})
+  \item \texttt{commentDepth} a \texttt{commentNL} – umožňuje rozpoznat vnořené blokové komentáře
+  \item \texttt{interpDepth}, \texttt{interpKind[]} a \texttt{interpInExpr[]} - zásobník pro vnořené interpolované řetězce (s"...", s"""...""") a rozlišení, zda se automat nachází v textové části (\texttt{ST\_INTERP\_TEXT}), nebo uvnitř výrazu \$\{...\}
 \end{itemize}
-Jeden token může mít víc výstupů:
+\item Jeden token může mít víc výstupů:
 \begin{itemize}
-    \item Jedno průchodové čtení může vygenerovat více tokenů najednou. K tomu slouží proměnné queued, hasQueued (pro TOK\_INDENT / TOK\_DEDENT / TOK\_NL před TOK\_EOF), interpQueued, hasInterpQueued, dotAfterNumber a resumeId 
+    \item Jedno průchodové čtení může vygenerovat více tokenů najednou. K tomu slouží proměnné queued, hasQueued (pro \texttt{TOK\_INDENT} / \texttt{TOK\_DEDENT} / \texttt{TOK\_NL} před \texttt{TOK\_EOF}), \texttt{interpQueued}, \texttt{hasInterpQueued}, \texttt{dotAfterNumber} a \texttt{resumeId} 
 \end{itemize}
 
-Dvouvrstvá architektura readToken+getToken:
+\item Dvouvrstvá architektura readToken+getToken:
 \begin{itemize}
     \item stavový automat readToken() neřeší porovnávání úrovní odsazení ani rušení duplicitních středníků, to obstarává nadřazená vrstva getToken() pomocí zásobníku odsazení indentStack
+\end{itemize}
 \end{itemize}
 \subsection{Stavový automat}
 \begin{figure}[htbp]
