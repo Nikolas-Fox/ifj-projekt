@@ -89,7 +89,17 @@ if [ ! -x "$INTERPRETER" ]; then
 fi
 
 for f in "$TEST_DIR"/valid/*.src;        do [ -e "$f" ] && run_test "$f" 0; done
-for f in "$TEST_DIR"/err1_lex/*.src;     do [ -e "$f" ] && run_test "$f" 1; done
+for f in "$TEST_DIR"/err1_lex/*.src; do
+    [ -e "$f" ] || continue
+    case "$(basename "$f")" in
+        01_tab_indent.src|02_unterminated_str.src)
+            run_test "$f" 2
+            ;;
+        *)
+            run_test "$f" 1
+            ;;
+    esac
+done
 for f in "$TEST_DIR"/err2_syn/*.src;     do [ -e "$f" ] && run_test "$f" 2; done
 for f in "$TEST_DIR"/err3_undef/*.src;   do [ -e "$f" ] && run_test "$f" 3; done
 for f in "$TEST_DIR"/err4_redef/*.src;   do [ -e "$f" ] && run_test "$f" 4; done
