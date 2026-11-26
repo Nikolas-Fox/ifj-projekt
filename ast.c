@@ -139,7 +139,7 @@ AstNode *createNodeFunc(char *name, size_t groupCount, AstNode *group,
 /**
  * @brief Inserts statement into a linked list of statements
  * @param head Pointer to the first element of the linked list of statements
- * @param newStat Pointer to node of the statement to be inserted 
+ * @param newStat Pointer to node of the statement to be inserted
  * @return Pointer to the head of the list of statements.
  */
 AstNode *insertStat(AstNode *head, AstNode *newStat) {
@@ -163,7 +163,7 @@ AstNode *insertStat(AstNode *head, AstNode *newStat) {
 /**
  * @brief Inserts function into a linked list of functions
  * @param head Pointer to the first element of the linked list of functions
- * @param newFunc Pointer to node of the function to be inserted 
+ * @param newFunc Pointer to node of the function to be inserted
  * @return Pointer to the head of the list of functions.
  */
 AstNode *insertFunc(AstNode *head, AstNode *newFunc) {

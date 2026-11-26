@@ -85,7 +85,6 @@ static const char precTable[PREC_TABLE_SIZE][PREC_TABLE_SIZE] = {
 
 // clang-format on
 
-
 static void precStackInit(PrecStack *stack);
 static void precStackPush(PrecStack *stack, PrecStackElem *element);
 static PrecStackElem precStackPop(PrecStack *stack);
@@ -253,10 +252,10 @@ static void precStackShiftAfterFirstTerm(PrecStack *stack) {
 /**
  * @brief parse identifiers and categorize them into functions or ID
  * @param p Pointer to the parsed token
- * @return pointer to the created node; AST_ID for variables, values, soft keywords, parameterless functions; AST_CALL if a trailing '(' is found
+ * @return pointer to the created node; AST_ID for variables, values, soft
+ * keywords, parameterless functions; AST_CALL if a trailing '(' is found
  */
-static AstNode *parseId(ParsedToken *p)
-{
+static AstNode *parseId(ParsedToken *p) {
     getTokenAhead(p);
     AstNode *returnNode;
 
@@ -266,45 +265,37 @@ static AstNode *parseId(ParsedToken *p)
         // getNextToken because parseLoa expects '(', not the called function id
         size_t groupCount = 0;
         returnNode->data.call.group = parseLoa(p, &groupCount);
-        if (p->error != 0)
-        {
+        if (p->error != 0) {
             astFree(returnNode);
             return NULL;
         }
         returnNode->data.call.groupCount = groupCount;
-    } 
-    else
-    {
-    returnNode = createNodeID(p->currentToken.str);
-    // soft keywords and functions without parameter lists get classified in semantic analysis
+    } else {
+        returnNode = createNodeID(p->currentToken.str);
+        // soft keywords and functions without parameter lists get classified in
+        // semantic analysis
     }
     return returnNode;
 }
 
-
 /**
- * @brief Building a tree of concatenations (strings, identifiers, and expressions) for the extension INTERPOLATEDS
- *  The identifiers and expressions will be built into a call on toStr
+ * @brief Building a tree of concatenations (strings, identifiers, and
+ * expressions) for the extension INTERPOLATEDS The identifiers and expressions
+ * will be built into a call on toStr
  * @param p Pointer to the parsed token
  * @return Ast node of the tree of concatenations
  */
-static AstNode *parseInterpolated(ParsedToken *p)
-{
+static AstNode *parseInterpolated(ParsedToken *p) {
     getNextToken(p); // consume TOK_INTERP_START
     AstNode *interpolated = NULL;
 
-    while(p->currentToken.type != TOK_INTERP_END)
-    {
+    while (p->currentToken.type != TOK_INTERP_END) {
         AstNode *next = NULL;
-        if(p->currentToken.type == TOK_STRING)
-        {
+        if (p->currentToken.type == TOK_STRING) {
             next = createNodeLiteral(TYPE_STRING, p->currentToken.str);
             getNextToken(p);
-        }
-        else
-        {
-            if(p->currentToken.type == TOK_ID)
-            {
+        } else {
+            if (p->currentToken.type == TOK_ID) {
                 AstNode *id = createNodeID(p->currentToken.str);
 
                 // group with the only parameter expression
@@ -312,40 +303,35 @@ static AstNode *parseInterpolated(ParsedToken *p)
                 next = createNodeCall(copyString("toStr"), 1, argument);
 
                 getNextToken(p);
-            }
-            else
-            {
-                if(p->currentToken.type == TOK_INTERP_EXPR_START)
-                {
+            } else {
+                if (p->currentToken.type == TOK_INTERP_EXPR_START) {
                     getNextToken(p); // consume TOK_INTERP_EXPR_START
                     AstNode *expression = parseExpression(p);
                     checkToken(p, TOK_INTERP_EXPR_END); // this eats the token
 
                     // group with the only parameter expression
-                    AstNode *argument = createNodeGroup(expression, 1); 
+                    AstNode *argument = createNodeGroup(expression, 1);
                     next = createNodeCall(copyString("toStr"), 1, argument);
-                }
-                else
-                {
+                } else {
                     p->error = 2;
-                    return NULL; // expected idenitifier, string literal, expression or end of interpolation expression
+                    return NULL; // expected idenitifier, string literal,
+                                 // expression or end of interpolation
+                                 // expression
                 }
             }
         }
-        if(interpolated == NULL) // the concatenation is empty so far
+        if (interpolated == NULL) // the concatenation is empty so far
         {
             interpolated = next;
-        }
-        else
-        {
-            interpolated = createNodeBinary(TOK_PLUS, interpolated, next); // concatenation
+        } else {
+            interpolated =
+                createNodeBinary(TOK_PLUS, interpolated, next); // concatenation
         }
     }
-        // the input was ' s"" '
-        if(interpolated == NULL)
-        {
-            return createNodeLiteral(TYPE_STRING, copyString(""));
-        }
+    // the input was ' s"" '
+    if (interpolated == NULL) {
+        return createNodeLiteral(TYPE_STRING, copyString(""));
+    }
     return interpolated;
 }
 
@@ -421,13 +407,13 @@ static PrecSymbol tokenToPrec(ParsedToken *p, bool previousWasOperand,
             return PREC_RPAR;
         }
         return PREC_END; //')' is PREC_END when openParCnt == 0, because an
-                         //expression can be inside parentheses: 'if
+                         // expression can be inside parentheses: 'if
                          //(expression)'
-    
+
     case TOK_INTERP_START:
         *node = parseInterpolated(p);
         return PREC_ID;
-        
+
     default:
         return PREC_END; // everything else is an end (the parser will take care
                          // of it if it's not valid)
@@ -564,8 +550,7 @@ static AstNode *parseLoa(ParsedToken *p, size_t *groupCount) {
             getNextToken(p); // if the next token is another '(' we have a new
                              // group that we add to the list of groups
             group->next = parseLoa(p, groupCount);
-            if (p->error != 0)
-            {
+            if (p->error != 0) {
                 return NULL;
             }
         }
@@ -590,8 +575,7 @@ static AstNode *parseArgList(ParsedToken *p, size_t *count) {
         AstNode *arg = parseExpression(p);
         (*count)++;
         arg->next = parseArgEnd(p, count);
-        if (p->error != 0)
-        {
+        if (p->error != 0) {
             return NULL;
         }
         return arg;
@@ -642,8 +626,7 @@ AstNode *parseExpression(ParsedToken *p) {
 
     AstNode *node;
     PrecSymbol input = tokenToPrec(p, previousWasOperand, &stack, &node);
-    if (p->error != 0)
-    {
+    if (p->error != 0) {
         precStackFree(&stack);
         return NULL;
     }
@@ -674,8 +657,7 @@ AstNode *parseExpression(ParsedToken *p) {
 
             getNextToken(p);
             input = tokenToPrec(p, previousWasOperand, &stack, &node);
-            if (p->error != 0)
-            {
+            if (p->error != 0) {
                 precStackFree(&stack);
                 return NULL;
             }
@@ -684,8 +666,7 @@ AstNode *parseExpression(ParsedToken *p) {
 
         case '>':
             precReduce(&stack, p);
-            if (p->error != 0)
-            {
+            if (p->error != 0) {
                 precStackFree(&stack);
                 return NULL;
             }

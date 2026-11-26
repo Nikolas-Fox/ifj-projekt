@@ -979,9 +979,9 @@ static void printBuiltins() {
     printf("PUSHFRAME\n");
     printf("DEFVAR LF@condition\n");
 
-    printf("POPS GF@%%tmp\n"); //original in tmp
+    printf("POPS GF@%%tmp\n"); // original in tmp
     printf("FLOAT2INT GF@%%tmp2 GF@%%tmp\n");
-    printf("INT2FLOAT GF@%%tmp2 GF@%%tmp2\n"); //floored in tmp2
+    printf("INT2FLOAT GF@%%tmp2 GF@%%tmp2\n"); // floored in tmp2
 
     printf("LT LF@condition GF@%%tmp GF@%%tmp2\n"); // original < floored
     printf("JUMPIFEQ floor$end LF@condition bool@false\n");

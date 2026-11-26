@@ -32,15 +32,14 @@ int main() {
     int error = 0;
 
     AstNode *node = parseProgram(sc);
-    if (node == NULL) //error in parser
+    if (node == NULL) // error in parser
     {
         scannerFree(sc);
         return 2;
     }
 
     semanticAnalysis(node, &error);
-    if (error != 0)
-    {
+    if (error != 0) {
         astFree(node);
         scannerFree(sc);
         return error;

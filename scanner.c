@@ -173,16 +173,14 @@ static void printSyntacticError(const char *message) {
     fprintf(stderr, "Syntactic analysis error: %s\n", message);
 }
 
-//author: Nikolas Fox xfoxnik00
-static inline Token lexicalError(Scanner *sc,  const char *message)
-{
+// author: Nikolas Fox xfoxnik00
+static inline Token lexicalError(Scanner *sc, const char *message) {
     sc->error = 1;
     printLexicalError(message);
     return makeToken(sc, TOK_ERROR, NULL);
 }
 
-static inline Token syntacticError(Scanner *sc, const char *message)
-{
+static inline Token syntacticError(Scanner *sc, const char *message) {
     sc->error = 2;
     printSyntacticError(message);
     return makeToken(sc, TOK_ERROR, NULL);
@@ -293,7 +291,7 @@ static Token readToken(Scanner *sc) {
             if (character == '\n') {
                 if (sc->interpDepth > 0 &&
                     sc->interpKind[sc->interpDepth - 1] == 0) {
-                        return lexicalError(sc, "unterminated interpolated string");
+                    return lexicalError(sc, "unterminated interpolated string");
                 }
                 if (sc->parenDepth > 0) {
                     if (sc->comma == 1) {
@@ -312,7 +310,9 @@ static Token readToken(Scanner *sc) {
 
             // check for invalid trailing commas before a closing parenthesis
             if (character == ')' && sc->comma == 1 && sc->commaNL == 0) {
-                return syntacticError(sc, "trailing comma must be followed by a new line before ')'");
+                return syntacticError(
+                    sc,
+                    "trailing comma must be followed by a new line before ')'");
             }
             if (character != '/') {
                 sc->comma = 0;
@@ -445,7 +445,8 @@ static Token readToken(Scanner *sc) {
                 bufAdd(sc, character);
                 state = ST_ID;
             } else {
-                return syntacticError(sc, "a standalone underscore is not an identifier");
+                return syntacticError(
+                    sc, "a standalone underscore is not an identifier");
             }
             break;
 
@@ -500,7 +501,9 @@ static Token readToken(Scanner *sc) {
             if (character == '&') {
                 return makeToken(sc, TOK_AND, NULL);
             }
-            return lexicalError(sc, "a standalone '&' character is not supported (expected '&&')");
+            return lexicalError(
+                sc,
+                "a standalone '&' character is not supported (expected '&&')");
 
         case ST_AT:
             // validate main function annotation (@main)
@@ -511,7 +514,8 @@ static Token readToken(Scanner *sc) {
                 if (strcmp(sc->buf, "main") == 0) {
                     return makeToken(sc, TOK_AT_MAIN, NULL);
                 }
-                return syntacticError(sc, "@ must be immediately followed by main");
+                return syntacticError(sc,
+                                      "@ must be immediately followed by main");
             }
             break;
 
@@ -519,14 +523,16 @@ static Token readToken(Scanner *sc) {
             // error in scala because two operators next to each other, like +-
             // would be joined into one operator
             if (character == '+' || character == '-') {
-                return lexicalError(sc, "'+' and '-' must be separated by a space");
+                return lexicalError(sc,
+                                    "'+' and '-' must be separated by a space");
             }
             ungetc(character, stdin);
             return makeToken(sc, TOK_PLUS, NULL);
 
         case ST_MINUS:
             if (character == '+' || character == '-') {
-                return lexicalError(sc, "'+' and '-' must be separated by a space");
+                return lexicalError(sc,
+                                    "'+' and '-' must be separated by a space");
             }
             ungetc(character, stdin);
             return makeToken(sc, TOK_MINUS, NULL);
@@ -549,7 +555,9 @@ static Token readToken(Scanner *sc) {
             if (character == '|') {
                 return makeToken(sc, TOK_OR, NULL);
             }
-            return lexicalError(sc, "standalone '|' character is not supported (expected '||')");
+            return lexicalError(
+                sc,
+                "standalone '|' character is not supported (expected '||')");
 
         case ST_LINE_COMMENT:
             // consume characters until NL or EOF
@@ -611,7 +619,8 @@ static Token readToken(Scanner *sc) {
                 state = ST_START;
                 break;
             }
-            return lexicalError(sc, "a token cannot follow a multi-line comment");
+            return lexicalError(sc,
+                                "a token cannot follow a multi-line comment");
 
         // cases for numeric literal states
         case ST_START_DOT:
@@ -628,7 +637,8 @@ static Token readToken(Scanner *sc) {
 
         case ST_ZERO:
             if (isdigit(character)) {
-                return lexicalError(sc, "a non-zero literal must not begin with a zero");
+                return lexicalError(
+                    sc, "a non-zero literal must not begin with a zero");
             } else if (character == '.') {
                 bufAdd(sc, character);
                 state = ST_DOT;
@@ -665,7 +675,8 @@ static Token readToken(Scanner *sc) {
                 bufAdd(sc, character);
                 state = ST_INT;
             } else if (character != '_') {
-                return lexicalError(sc, "the underscode must be between figures");
+                return lexicalError(sc,
+                                    "the underscode must be between figures");
             }
             break;
 
@@ -702,7 +713,8 @@ static Token readToken(Scanner *sc) {
                 bufAdd(sc, character);
                 state = ST_DECIMAL;
             } else if (character != '_') {
-                return lexicalError(sc, "the underscode must be between figures");
+                return lexicalError(sc,
+                                    "the underscode must be between figures");
             }
             break;
 
@@ -744,7 +756,8 @@ static Token readToken(Scanner *sc) {
                 bufAdd(sc, character);
                 state = ST_EXP_DIGITS;
             } else if (character != '_') {
-                return lexicalError(sc, "the underscore must be between figures");
+                return lexicalError(sc,
+                                    "the underscore must be between figures");
             }
             break;
 
@@ -869,7 +882,9 @@ static Token readToken(Scanner *sc) {
                 indentCount = 0;
             } else {
                 if (character != EOF && indentCount <= sc->lineIndent) {
-                    return syntacticError(sc, "the code inside the parentheses must be indented further than the start of the command");
+                    return syntacticError(
+                        sc, "the code inside the parentheses must be indented "
+                            "further than the start of the command");
                 }
                 ungetc(character, stdin);
                 state = ST_START;
@@ -1050,8 +1065,7 @@ Token getToken(Scanner *sc) {
         }
 
         Token token = readToken(sc);
-        if (sc->error != 0)
-        {
+        if (sc->error != 0) {
             return token;
         }
 
