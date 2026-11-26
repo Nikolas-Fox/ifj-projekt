@@ -3,7 +3,7 @@
  * Package:		parser
  * File:			parser.c
  * Date:			1.11.2026
- * Last change:	19.11.2026
+ * Last change:	26.11.2026
  * Authors: 		Eliška Holá xholael00, Nikolas Fox xfoxnik00
  *
  * Description: Implementation of parser - recursive descent
@@ -55,7 +55,7 @@ static AstNode *parseId(ParsedToken *p);
 // in parser
 
 AstNode *parseProgram(Scanner *sc) {
-    ParsedToken token;
+    ParsedToken token = {0};
     token.sc = sc;
     token.lookAhead = false;
     getNextToken(&token);
@@ -75,6 +75,12 @@ static void printError(char *message) {
 }
 
 void getNextToken(ParsedToken *p) {
+    if (p->currentToken.str != NULL)
+    {
+        free(p->currentToken.str);
+        p->currentToken.str = NULL;
+    }
+
     if (p->lookAhead) {
         p->currentToken = p->aheadToken;
         p->lookAhead = false;
