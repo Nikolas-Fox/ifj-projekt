@@ -1,14 +1,13 @@
 /******************************************************************************
- * Project:		IFJ
- * Package:		semantic
- * File:			semantic.h
- * Date:			16.11.2026
- * Last change:	26.11.2026
- * Authors: 		Nikolas Fox xfoxnik00
+ * Project:      IFJ
+ * Package:      Semantic
+ * File:         semantic.h
+ * Date:         16. 11. 2026
+ * Last change:  26. 11. 2026
+ * Authors:      Nikolas Fox xfoxnik00
  *
- * Description: Header file for semantic analysis
- *
- *******************************************************************************/
+ * Description:  Header file for semantic analysis
+ *****************************************************************************/
 /**
  * @file semantic.h
  *

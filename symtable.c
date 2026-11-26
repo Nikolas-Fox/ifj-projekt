@@ -2,7 +2,7 @@
  * Project:      IFJ
  * Package:      Symbol table
  * File:         symtable.c
- * Date:         1. 11. 2026
+ * Date:         01. 11. 2026
  * Last change:  26. 11. 2026
  * Authors:      Alexandra Povalová xpovala00
  *
@@ -369,5 +369,4 @@ SymbolData *symtableSearch(Symtable *sTable, char *name) {
     }
     return NULL;
 }
-
 /*** End of file symtable.c ***/

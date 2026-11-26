@@ -1,14 +1,13 @@
 /******************************************************************************
- * Project:		IFJ
- * Package:		codegen
- * File:			codegen.h
- * Date:			15.11.2026
- * Last change:	18.11.2026
- * Authors: 		Eliška Holá xholael00
+ * Project:      IFJ
+ * Package:      Codegen
+ * File:         codegen.h
+ * Date:         15. 11. 2026
+ * Last change:  26. 11. 2026
+ * Authors:      Eliška Holá xholael00
  *
  * Description:  Header file of code generation
- *
- *******************************************************************************/
+ *****************************************************************************/
 /**
  * @file codegen.h
  *

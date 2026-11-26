@@ -1,14 +1,13 @@
 /******************************************************************************
- * Project:		IFJ
- * Package:		precedence
- * File:			precedence.h
- * Date:			5.11.2026
- * Last change:	18.11.2026
- * Authors: 		Nikolas Fox xfoxnik00
+ * Project:      IFJ
+ * Package:      Precedence
+ * File:         precedence.h
+ * Date:         05. 11. 2026
+ * Last change:  26. 11. 2026
+ * Authors:      Nikolas Fox xfoxnik00
  *
- * Description: Header file for precedence syntactic analysis
- *
- *******************************************************************************/
+ * Description:  Header file for precedence syntactic analysis
+ *****************************************************************************/
 /**
  * @file precedence.h
  *
@@ -31,4 +30,4 @@
 AstNode *parseExpression(ParsedToken *p);
 
 #endif // PRECEDENCE_H
-       /*** End of file precedence.h ***/
+/*** End of file precedence.h ***/

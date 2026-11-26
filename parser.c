@@ -1,14 +1,13 @@
 /******************************************************************************
- * Project:		IFJ
- * Package:		parser
- * File:			parser.c
- * Date:			1.11.2026
- * Last change:	26.11.2026
- * Authors: 		Eliška Holá xholael00, Nikolas Fox xfoxnik00
+ * Project:      IFJ
+ * Package:      Parser
+ * File:         parser.c
+ * Date:         01. 11. 2026
+ * Last change:  26. 11. 2026
+ * Authors:      Eliška Holá xholael00, Nikolas Fox xfoxnik00
  *
- * Description: Implementation of parser - recursive descent
- *
- *******************************************************************************/
+ * Description:  Implementation of syntactic analysis logic
+ *****************************************************************************/
 /**
  * @file parser.c
  *

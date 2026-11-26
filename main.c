@@ -1,14 +1,13 @@
 /******************************************************************************
- * Project:		IFJ
- * Package:		main
- * File:			main.c
- * Date:			19.11.2026
- * Last change:	26.11.2026
- * Authors: 		Eliška Holá xholael00
+ * Project:      IFJ
+ * Package:      Main
+ * File:         main.c
+ * Date:         19. 11. 2026
+ * Last change:  26. 11. 2026
+ * Authors:      Eliška Holá xholael00
  *
  * Description:  Entry point of the compiler
- *
- *******************************************************************************/
+ *****************************************************************************/
 /**
  * @file main.c
  *

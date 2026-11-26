@@ -1,14 +1,13 @@
 /******************************************************************************
- * Project:		IFJ
- * Package:		parser
- * File:			parser.h
- * Date:			1.11.2026
- * Last change:	26.11.2026
- * Authors: 		Eliška Holá xholael00
+ * Project:      IFJ
+ * Package:      Parser
+ * File:         parser.h
+ * Date:         01. 11. 2026
+ * Last change:  26. 11. 2026
+ * Authors:      Eliška Holá xholael00
  *
- * Description: Header file of parser logic
- *
- *******************************************************************************/
+ * Description:  Header file for syntactic analysis
+ *****************************************************************************/
 /**
  * @file parser.h
  *

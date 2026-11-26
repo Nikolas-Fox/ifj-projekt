@@ -1,14 +1,13 @@
 /******************************************************************************
- * Project:		IFJ
- * Package:		ast
- * File:			ast.c
- * Date:			12.11.2026
- * Last change:	19.11.2026
- * Authors: 		Nikolas Fox xfoxnik00
+ * Project:      IFJ
+ * Package:      AST
+ * File:         ast.c
+ * Date:         12. 11. 2026
+ * Last change:  26. 11. 2026
+ * Authors:      Nikolas Fox xfoxnik00
  *
- * Description: Implementation of abstract syntactic tree logic
- *
- *******************************************************************************/
+ * Description:  Implementation of abstract syntactic tree logic
+ *****************************************************************************/
 /**
  * @file ast.c
  *

@@ -1,15 +1,14 @@
 /******************************************************************************
- * Project:		IFJ
- * Package:		Lexical analysis
- * File:			scanner.c
- * Date:			18.10.2026
- * Last change:	26.11.2026
- * Author: 		Eliška Opršalová xoprsae00
+ * Project:      IFJ
+ * Package:      Lexical analysis
+ * File:         scanner.c
+ * Date:         18. 10. 2026
+ * Last change:  26. 11. 2026
+ * Authors:      Eliška Opršalová xoprsae00
  *
- * Description: implementation of lexer - implemented as a deterministic finite
- * automat
- *
- *******************************************************************************/
+ * Description:  Implementation of lexer - implemented as a deterministic
+ * finite automat
+ *****************************************************************************/
 /**
  * @file scanner.c
  *
@@ -1163,5 +1162,4 @@ Token getToken(Scanner *sc) {
         return token;
     }
 }
-
 /*** End of file scanner.c ***/
