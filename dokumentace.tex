@@ -102,9 +102,6 @@ Dvouvrstvá architektura readToken+getToken:
 \begin{itemize}
     \item stavový automat readToken() neřeší porovnávání úrovní odsazení ani rušení duplicitních středníků, to obstarává nadřazená vrstva getToken() pomocí zásobníku odsazení indentStack
 \end{itemize}
-\begin{itemize}
-    \item stavový automat readToken() neřeší porovnávání úrovní odsazení ani rušení duplicitních středníků, to obstarává nadřazená vrstva getToken() pomocí zásobníku odsazení indentStack
-\end{itemize}
 \subsection{Stavový automat}
 \begin{figure}[htbp]
   \centering
@@ -119,7 +116,6 @@ Dvouvrstvá architektura readToken+getToken:
   \label{fig:ukazka}
 \end{figure}
 \clearpage
-
 \newpage
 \section{Syntaktická analýza}
 \subsection{LL gramatika}
@@ -312,12 +308,14 @@ Jak je vidět v tabulce, vyskytují se konflikty v řádcích <line> a <expressi
     \label{tab:precedencna}
 \end{table}
 
+*REL zastřešuje >,<,<=,>=
+
 \newpage
 \section{Přehled modulů}
 \begin{itemize}
     \item \texttt{scanner.c / scanner.h}: Implementuje lexikální analyzátor jako rozšířený deterministický automat, který čte znaky ze srtandardního vstupu a pomocí dynamického bufferu sestavuje tokeny. Nadstavbová vrstva vyhodnocuje odsazení tokenů. Model také detekuje lexikánlí chyby a spravuje paměť alokovanou pro instanci skeneru.
-    \item \texttt{parser.c / parser.h}: Parser je implementován metodou rekurzivního sestupu a udržuje si stav zpracování včetně následujícího tokenu. Přebírá tokeny ze scanneru, ověřuje očekávané tokeny, zjišťuje, zda patří do množiny Predict. Spouští analýzu celého programu s výstavbou AST.
-    \item \texttt{precedence.c / precedence.h}: Implementuje precedenční syntaktickou analýzu pro výrazy pomocí zásobníku. Převádí vstupní tokeny na precedenční symboly, redukuje pravidla a zpracovává argumenty volání funkcí. Hlavní funkce inicializuje zásobník se zarážkou a v cyklu čte vstup podle precedenční tabulky, přičemž provádí posuny nebo redukce.
+    \item \texttt{parser.c / parser.h}: Parser je implementován metodou rekurzivního sestupu a udržuje si stav zpracování včetně následujícího tokenu. Přebírá tokeny ze scanneru, ověřuje očekávané tokeny a souběžně staví AST.
+    \item \texttt{precedence.c / precedence.h}: Implementuje precedenční syntaktickou analýzu pro výrazy pomocí zásobníku. Hlavní funkce inicializuje zásobník se zarážkou a v cyklu čte vstup podle precedenční tabulky, přičemž provádí posuny nebo redukce.
     \item \texttt{ast.c / ast.h}: Implementuje práci s abstraktním syntaktickým stromem (AST), ve kterém si překladač ukládá strukturu zpracovaného programu (výrazy, příkazy, funkce, větvení i cykly). Vytváří jednotlivé uzly a řadí je do spojových seznamů. Rekurzivní uvolňování celé struktury.
     \item \texttt{symtable.c / symtable.h}: Implementace tabulky symbolů postavená na \texttt{hashtable} a řešená formou zásobníku. Při inicializaci se automaticky vytvoří globální rozsah (\emph{scope}), do kterého se předplní vestavěné funkce. Podporuje základní operace, jako je vložení nového rozsahu na zásobník, vkládání symbolů a vyprázdnění zásobníku.
     \item \texttt{hashtable.c / hashtable.h}: Obecná implementace hashovací tabulky s řešením kolizí pomocí lineárního sondování (linear probing) a podporou základních operací (vkládání, vyhledávání, mazání, uvolnění paměti); slouží jako datová struktura zejména pro tabulku symbolů
@@ -329,7 +327,6 @@ Jak je vidět v tabulce, vyskytují se konflikty v řádcích <line> a <expressi
 \section{Využití AI nástrojů}
 Nástroje umělé inteligence jsme využívali především pro code review, generování unit testů a testů hraničních případů u vystavených funkcí. Dále byly využity ke generování skriptu pro spouštění end-to-end testů a k vytváření jednotlivých testovacích případů. Sloužily nám také k ověření a dovysvětlení toho, zda dané problematice správně rozumíme. Samotnou dokumentaci jsme zpracovávali sami; nástroje AI byly využity pouze pro generování a úpravu částí kódu v LaTeXu (například pro sazbu tabulek).
 
-
 \begin{thebibliography}{9}
     \bibitem{ifj} Meduna, A., Křivka, Z.: \textit{Formální jazyky a překladače (IFJ) -- přednášky} [online]. FIT VUT v Brně, 2026. Dostupné z: \texttt{https://www.fit.vut.cz/study/course/IFJ/public/materials/}.
     \bibitem{ial} Burgetová, I., Hranický, R.: \textit{Algoritmy (IAL) -- přednášky} [online]. FIT VUT v Brně, 2026. Dostupné z: \texttt{https://moodle.vut.cz/mod/folder/view.php?id=712821}.
@@ -337,6 +334,5 @@ Nástroje umělé inteligence jsme využívali především pro code review, gen
     \bibitem{demo_ifj_2} Ondryáš, O.: \textit{– Demonstrační cvičení k projektu (část 2.)} [online video]. YouTube, 2026. Dostupné z: \texttt{https://www.youtube.com/watch?v=lDos0kcR5CA}.
     \bibitem{djb2} Bernstein, D.: \textit{Hash Functions} [online]. Dostupné z: \texttt{http://www.cse.yorku.ca/\textasciitilde oz/hash.html}.
 \end{thebibliography}
-
 
 \end{document}
