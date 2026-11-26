@@ -3,7 +3,7 @@
  * Package:      Symbol table
  * File:         symtable.c
  * Date:         1. 11. 2026
- * Last change:  16. 11. 2026
+ * Last change:  26. 11. 2026
  * Authors:      Alexandra Povalová xpovala00
  *
  * Description:  Implementation of the symbol table as a stack of hash tables,
@@ -241,9 +241,8 @@ static SymbolData *insertSymbol(Symtable *sTable, char *name, SymbolType sType,
 
     // Redefinition in the same scope (shadowing in outer scopes is allowed)
     if (htSearch(current, name) != NULL) {
-        symtableFree(sTable);
         fprintf(stderr, "Error 4: redefinition of '%s'\n", name);
-        exit(4);
+        return NULL;
     }
 
     SymbolData *newData = malloc(sizeof(SymbolData));

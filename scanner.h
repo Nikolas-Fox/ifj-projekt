@@ -80,7 +80,9 @@ typedef enum {
     TOK_INTERP_START,
     TOK_INTERP_END,
     TOK_INTERP_EXPR_START,
-    TOK_INTERP_EXPR_END
+    TOK_INTERP_EXPR_END,
+
+    TOK_ERROR
 } TokenType;
 
 typedef struct {
@@ -124,6 +126,8 @@ typedef struct Scanner {
     Token queued;       // token waiting behind EOL / INDENT / DEDENT
     int lineHasToken;   // has the current logical line already had a token?
     int afterSemicolon; // 1 = the previous token was ';'
+
+    int error;
 } Scanner;
 
 /**

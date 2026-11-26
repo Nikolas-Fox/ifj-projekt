@@ -3,7 +3,7 @@
  * Package:		Lexical analysis
  * File:			scanner.c
  * Date:			18.10.2026
- * Last change:	12.11.2026
+ * Last change:	26.11.2026
  * Author: 		Eliška Opršalová xoprsae00
  *
  * Description: implementation of lexer - implemented as a deterministic finite
@@ -162,9 +162,12 @@ static Token makeToken(Scanner *sc, TokenType type, char *str) {
     return tok;
 }
 
-static void lexError(Scanner *sc, const char *message) {
-    fprintf(stderr, "Lexical error on line %d: %s\n", sc->line, message);
-    exit(1);
+/**
+ * @brief Prints error message.
+ * @param message Error message to print.
+ */
+static void printError(char *message) {
+    fprintf(stderr, "Lexical analysis error: %s\n", message);
 }
 
 // checks the character after a numeric literal, pushes back the excess
@@ -172,8 +175,9 @@ static void lexError(Scanner *sc, const char *message) {
 static Token endNumber(Scanner *sc, TokenType type, int character) {
     if (isalnum(character) || character == '_') {
         fprintf(stderr,
-                    "invalid character after numeric literal");
-        exit(2);
+                    "Syntactic analysis error: invalid character after numeric literal");
+        sc->error = 2;
+        return makeToken(sc, TOK_ERROR, NULL);
     }
     ungetc(character, stdin);
     return makeToken(sc, type, bufCopy(sc));
@@ -262,7 +266,9 @@ static Token readToken(Scanner *sc) {
 
             if (character == EOF) {
                 if (sc->interpDepth > 0) {
-                    lexError(sc, "unterminated interpolated string");
+                    sc->error = 1;
+                    printError("unterminated interpolated string");
+                    return makeToken(sc, TOK_ERROR, NULL);
                 }
                 return makeToken(sc, TOK_EOF, NULL);
             }
@@ -274,7 +280,9 @@ static Token readToken(Scanner *sc) {
             if (character == '\n') {
                 if (sc->interpDepth > 0 &&
                     sc->interpKind[sc->interpDepth - 1] == 0) {
-                    lexError(sc, "unterminated interpolated string");
+                    sc->error = 1;
+                    printError("unterminated interpolated string");
+                    return makeToken(sc, TOK_ERROR, NULL);
                 }
                 if (sc->parenDepth > 0) {
                     if (sc->comma == 1) {
@@ -295,8 +303,9 @@ static Token readToken(Scanner *sc) {
             if (character == ')' && sc->comma == 1 && sc->commaNL == 0) {
                 fprintf(
                     stderr,
-                    "trailing comma must be followed by a newline before ')'");
-                exit(2);
+                    "Syntactic analysis error: trailing comma must be followed by a newline before ')'");
+                sc->error = 2;
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             if (character != '/') {
                 sc->comma = 0;
@@ -419,9 +428,9 @@ static Token readToken(Scanner *sc) {
                 return makeToken(sc, TOK_MUL, NULL);
             }
 
-            lexError(sc, "lexical error");
-
-            break;
+            sc->error = 1;
+            printError("");
+            return makeToken(sc, TOK_ERROR, NULL);
 
         // cases for general states
         case ST_UNDERSCORE:
@@ -431,8 +440,9 @@ static Token readToken(Scanner *sc) {
                 bufAdd(sc, character);
                 state = ST_ID;
             } else {
-                fprintf(stderr, "A standalone underscore is not an identifier");
-                exit(2);
+                fprintf(stderr, "Syntactic analysis error: a standalone underscore is not an identifier");
+                sc->error = 2;
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             break;
 
@@ -487,10 +497,9 @@ static Token readToken(Scanner *sc) {
             if (character == '&') {
                 return makeToken(sc, TOK_AND, NULL);
             }
-            lexError(
-                sc,
-                "A standalone '&' character is not supported (expected '&&')");
-            break;
+            sc->error = 1;
+            printError("a standalone '&' character is not supported (expected '&&')");
+            return makeToken(sc, TOK_ERROR, NULL);
 
         case ST_AT:
             // validate main function annotation (@main)
@@ -501,8 +510,9 @@ static Token readToken(Scanner *sc) {
                 if (strcmp(sc->buf, "main") == 0) {
                     return makeToken(sc, TOK_AT_MAIN, NULL);
                 }
-                fprintf(stderr, "@ must be immediately followed by main");
-                exit(2);
+                fprintf(stderr, "Syntactic analysis error: @ must be immediately followed by main");
+                sc->error = 2;
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             break;
 
@@ -510,14 +520,18 @@ static Token readToken(Scanner *sc) {
             // error in scala because two operators next to each other, like +-
             // would be joined into one operator
             if (character == '+' || character == '-') {
-                lexError(sc, "'+' and '-' must be separated by a space");
+                sc->error = 1;
+                printError("'+' and '-' must be separated by a space");
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             ungetc(character, stdin);
             return makeToken(sc, TOK_PLUS, NULL);
 
         case ST_MINUS:
             if (character == '+' || character == '-') {
-                lexError(sc, "'+' and '-' must be separated by a space");
+                sc->error = 1;
+                printError("'+' and '-' must be separated by a space");
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             ungetc(character, stdin);
             return makeToken(sc, TOK_MINUS, NULL);
@@ -540,10 +554,9 @@ static Token readToken(Scanner *sc) {
             if (character == '|') {
                 return makeToken(sc, TOK_OR, NULL);
             }
-            lexError(
-                sc,
-                "A standalone '|' character is not supported (expected '||')");
-            break;
+            sc->error = 1;
+            printError("standalone '|' character is not supported (expected '||')");
+            return makeToken(sc, TOK_ERROR, NULL);
 
         case ST_LINE_COMMENT:
             // consume characters until NL or EOF
@@ -557,7 +570,9 @@ static Token readToken(Scanner *sc) {
 
         case ST_BLOCK_COMMENT:
             if (character == EOF) {
-                lexError(sc, "unterminated block comment");
+                sc->error = 1;
+                printError("unterminated block comment");
+                return makeToken(sc, TOK_ERROR, NULL);
             } else if (character == '\n') {
                 sc->line++;
                 commentNL = 1;
@@ -605,8 +620,9 @@ static Token readToken(Scanner *sc) {
                 state = ST_START;
                 break;
             }
-            lexError(sc, "A token cannot follow a multi-line comment.");
-            break;
+            sc->error = 1;
+            printError("a token cannot follow a multi-line comment");
+            return makeToken(sc, TOK_ERROR, NULL);
 
         // cases for numeric literal states
         case ST_START_DOT:
@@ -623,7 +639,9 @@ static Token readToken(Scanner *sc) {
 
         case ST_ZERO:
             if (isdigit(character)) {
-                lexError(sc, "A non-zero literal must not begin with a zero.");
+                sc->error = 1;
+                printError("a non-zero literal must not begin with a zero");
+                return makeToken(sc, TOK_ERROR, NULL);
             } else if (character == '.') {
                 bufAdd(sc, character);
                 state = ST_DOT;
@@ -660,7 +678,9 @@ static Token readToken(Scanner *sc) {
                 bufAdd(sc, character);
                 state = ST_INT;
             } else if (character != '_') {
-                lexError(sc, "the underscore must be between figures");
+                sc->error = 1;
+                printError("the underscode must be between figures");
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             break;
 
@@ -697,7 +717,9 @@ static Token readToken(Scanner *sc) {
                 bufAdd(sc, character);
                 state = ST_DECIMAL;
             } else if (character != '_') {
-                lexError(sc, "the underscore must be between figures");
+                sc->error = 1;
+                printError("the underscode must be between figures");
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             break;
 
@@ -709,7 +731,9 @@ static Token readToken(Scanner *sc) {
                 bufAdd(sc, character);
                 state = ST_EXP_DIGITS;
             } else {
-                lexError(sc, "The exponent must contain a digit");
+                sc->error = 1;
+                printError("the exponent must contain a digit");
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             break;
 
@@ -718,7 +742,9 @@ static Token readToken(Scanner *sc) {
                 bufAdd(sc, character);
                 state = ST_EXP_DIGITS;
             } else {
-                lexError(sc, "The exponent must contain a digit");
+                sc->error = 1;
+                printError("the exponent must contain a digit");
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             break;
 
@@ -739,7 +765,9 @@ static Token readToken(Scanner *sc) {
                 bufAdd(sc, character);
                 state = ST_EXP_DIGITS;
             } else if (character != '_') {
-                lexError(sc, "the underscore must be between figures");
+                sc->error = 1;
+                printError("the underscore must be between figures");
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             break;
 
@@ -762,7 +790,9 @@ static Token readToken(Scanner *sc) {
             } else if (character == '\\') {
                 state = ST_ESCAPE;
             } else if (character == '\n' || character == EOF) {
-                lexError(sc, "unfinished string");
+                sc->error = 1;
+                printError("unfinished string");
+                return makeToken(sc, TOK_ERROR, NULL);
             } else {
                 bufAdd(sc, character);
             }
@@ -780,7 +810,9 @@ static Token readToken(Scanner *sc) {
             } else if (character == '"') {
                 bufAdd(sc, '"');
             } else {
-                lexError(sc, "invalid escape sequence");
+                sc->error = 1;
+                printError("invalid escape sequence");
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             state = ST_STRING;
             break;
@@ -799,7 +831,9 @@ static Token readToken(Scanner *sc) {
             if (character == '"') {
                 state = ST_MUL_LINE_QUOTE1;
             } else if (character == EOF) {
-                lexError(sc, "unterminated multi-row string");
+                sc->error = 1;
+                printError("unterminated multi-row string");
+                return makeToken(sc, TOK_ERROR, NULL);
             } else {
                 if (character == '\n') {
                     sc->line++;
@@ -865,9 +899,10 @@ static Token readToken(Scanner *sc) {
             } else {
                 if (character != EOF && indentCount <= sc->lineIndent) {
                     fprintf(stderr,
-                    "The code inside the parentheses must be indented "
+                    "Syntactic analysis error: the code inside the parentheses must be indented "
                              "further than the start of the command.");
-                    exit(2);        
+                    sc->error = 2;
+                    return makeToken(sc, TOK_ERROR, NULL);  
                 }
                 ungetc(character, stdin);
                 state = ST_START;
@@ -899,7 +934,9 @@ static Token readToken(Scanner *sc) {
             // parse text segments and handle variable interpolations within
             // strings
             if (character == EOF) {
-                lexError(sc, "unterminated interpolated string");
+                sc->error = 1;
+                printError("unterminated interpolated string");
+                return makeToken(sc, TOK_ERROR, NULL);
             } else if (character == '$') {
                 state = ST_INTERP_DOLLAR;
             } else if (sc->interpKind[sc->interpDepth - 1] == 0) {
@@ -909,7 +946,9 @@ static Token readToken(Scanner *sc) {
                 } else if (character == '\\') {
                     state = ST_INTERP_ESCAPE;
                 } else if (character == '\n') {
-                    lexError(sc, "unterminated interpolated string");
+                    sc->error = 1;
+                    printError("unterminated interpolated string");
+                    return makeToken(sc, TOK_ERROR, NULL);
                 } else {
                     bufAdd(sc, character);
                 }
@@ -938,7 +977,9 @@ static Token readToken(Scanner *sc) {
             } else if (character == '"') {
                 bufAdd(sc, '"');
             } else {
-                lexError(sc, "invalid escape sequence");
+                sc->error = 1;
+                printError("invalid escape sequence");
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             state = ST_INTERP_TEXT;
             break;
@@ -965,7 +1006,9 @@ static Token readToken(Scanner *sc) {
                     return makeToken(sc, TOK_STRING, text);
                 }
             } else {
-                lexError(sc, "after $ expected $, { or identifier");
+                sc->error = 1;
+                printError("after $ expected $, { or identifier");
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             break;
 
@@ -1035,6 +1078,7 @@ void scannerFree(Scanner *sc) {
 
 // Returns the next token, including TOK_INDENT and TOK_DEDENT
 Token getToken(Scanner *sc) {
+    sc->error = 0;
     while (1) {
         if (sc->sendDedents > 0) {
             sc->sendDedents--;
@@ -1047,6 +1091,10 @@ Token getToken(Scanner *sc) {
         }
 
         Token token = readToken(sc);
+        if (sc->error != 0)
+        {
+            return token;
+        }
 
         if (token.type == TOK_SEMICOL) {
             if (sc->afterSemicolon == 1) {
@@ -1082,7 +1130,9 @@ Token getToken(Scanner *sc) {
             // first token of a logical line: compare the indentation
             sc->lineHasToken = 1;
             if (sc->lineTab == 1) {
-                lexError(sc, "tab character in indentation");
+                sc->error = 1;
+                printError("tab character in indentation");
+                return makeToken(sc, TOK_ERROR, NULL);
             }
             if (sc->lineIndent > sc->indentStack[sc->indentTop]) {
                 if (sc->indentTop + 1 >= MAX_INDENT) {
@@ -1101,7 +1151,9 @@ Token getToken(Scanner *sc) {
                     sc->sendDedents++;
                 }
                 if (sc->indentStack[sc->indentTop] != sc->lineIndent) {
-                    lexError(sc, "inconsistent indentation");
+                    sc->error = 1;
+                    printError("inconsistent indentation");
+                    return makeToken(sc, TOK_ERROR, NULL);
                 }
                 sc->queued = token;
                 sc->hasQueued = 1;
