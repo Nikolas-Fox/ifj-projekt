@@ -58,10 +58,16 @@ AstNode *parseProgram(Scanner *sc) {
     ParsedToken token = {0};
     token.sc = sc;
     token.lookAhead = false;
+    token.error = 0;
     getNextToken(&token);
 
     AstNode *whole = createNode(AST_WHOLE);
     whole->data.whole.func = parseProg(&token);
+    if (token.error != 0)
+    {
+        astFree(whole);
+        return NULL;
+    }
     return whole;
 }
 
@@ -71,7 +77,6 @@ AstNode *parseProgram(Scanner *sc) {
  */
 static void printError(char *message) {
     fprintf(stderr, "Syntactic analysis error: %s\n", message);
-    exit(2);
 }
 
 void getNextToken(ParsedToken *p) {
@@ -99,6 +104,8 @@ void getTokenAhead(ParsedToken *p) {
 void checkToken(ParsedToken *p, TokenType expected) {
     if (p->currentToken.type != expected) {
         printError("Unexpected token");
+        p->error = 2;
+        return;
     } else {
         getNextToken(p);
     }
@@ -115,6 +122,8 @@ static void checkStrToken(ParsedToken *p, TokenType expected, char *name) {
     if (p->currentToken.type != expected || p->currentToken.str == NULL ||
         strcmp(p->currentToken.str, name) != 0) {
         printError("Unexpected token");
+        p->error = 2;
+        return;
     }
     getNextToken(p);
 }
@@ -184,10 +193,22 @@ static AstNode *parseProg(ParsedToken *p) {
     // 1: ⟨prog⟩ → import⟨opt_NL⟩ifj26⟨opt_NL⟩.⟨opt_NL⟩ ∗ NL⟨definition⟩EOF
     checkToken(p, TOK_KW_IMPORT);
     parseOptNL(p);
+    if (p->error != 0)
+    {
+        return NULL;
+    }
     checkStrToken(p, TOK_ID, "ifj26");
     parseOptNL(p);
+    if (p->error != 0)
+    {
+        return NULL;
+    }
     checkToken(p, TOK_DOT);
     parseOptNL(p);
+    if (p->error != 0)
+    {
+        return NULL;
+    }
     checkToken(p, TOK_MUL);
     checkToken(p, TOK_NL);
     functions = parseDefinition(p);
@@ -202,12 +223,24 @@ static AstNode *parseFunction(ParsedToken *p) {
     checkToken(p, TOK_ID);
     size_t groupCount = 0;
     function->data.func.group = parseLop(p, &groupCount);
+    if (p->error != 0)
+    {
+        return NULL;
+    }
     function->data.func.groupCount = groupCount;
 
     function->type = parseRetType(p);
+    if (p->error != 0)
+    {
+        return NULL;
+    }
 
     checkToken(p, TOK_ASSIGN);
     function->data.func.body = parseDefBody(p);
+    if (p->error != 0)
+    {
+        return NULL;
+    }
     return function;
 }
 
@@ -218,11 +251,19 @@ static AstNode *parseDefinition(ParsedToken *p) {
     {
         checkToken(p, TOK_AT_MAIN);
         parseOptNL(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         checkToken(p, TOK_KW_DEF);
 
         AstNode *function = parseFunction(p);
         function->data.func.isMain = true;
         insertFunc(function, parseDefinition(p));
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         return function;
     }
 
@@ -232,6 +273,10 @@ static AstNode *parseDefinition(ParsedToken *p) {
         checkToken(p, TOK_KW_DEF);
         AstNode *function = parseFunction(p);
         insertFunc(function, parseDefinition(p));
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         return function;
     }
 
@@ -244,9 +289,17 @@ static AstNode *parseDefinition(ParsedToken *p) {
         checkToken(p, TOK_ID);
         checkToken(p, TOK_COLON);
         parseType(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         checkToken(p, TOK_RPAR);
         parseDefBlock(p);
         parseDefinition(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         return NULL;
     }
 
@@ -254,6 +307,7 @@ static AstNode *parseDefinition(ParsedToken *p) {
         return NULL;
     default:
         printError("Unexpected token, expected @main/def/extension/EOF.");
+        p->error = 2;
         return NULL;
     }
 }
@@ -268,6 +322,7 @@ static AstNode *parseDefBody(ParsedToken *p) {
         return parseStat(p);
     } else {
         printError("Unexpected token");
+        p->error = 2;
         return NULL;
     }
 }
@@ -277,6 +332,10 @@ static void parseDefBlock(ParsedToken *p) {
     checkToken(p, TOK_NL);
     checkToken(p, TOK_INDENT);
     parseExtensionDef(p);
+    if (p->error != 0)
+    {
+        return;
+    }
     checkToken(p, TOK_DEDENT);
 }
 
@@ -289,10 +348,26 @@ static void parseExtensionDef(ParsedToken *p) {
         checkToken(p, TOK_KW_DEF);
         checkToken(p, TOK_ID);
         parseLop(p, 0); // when doing this I should use &groupCount
+        if (p->error != 0)
+        {
+            return;
+        }
         parseRetType(p);
+        if (p->error != 0)
+        {
+            return;
+        }
         checkToken(p, TOK_ASSIGN);
         parseDefBody(p);
+        if (p->error != 0)
+        {
+            return;
+        }
         parseExtensionDef(p);
+        if (p->error != 0)
+        {
+            return;
+        }
         break;
     }
 
@@ -300,7 +375,8 @@ static void parseExtensionDef(ParsedToken *p) {
         return;
     default:
         printError("Unexpected token");
-        break;
+        p->error = 2;
+        return;
     }
 }
 
@@ -318,6 +394,7 @@ static void parseOptNL(ParsedToken *p) {
         return;
     } else {
         printError("Unexpected token");
+        p->error = 2;
         return;
     }
 }
@@ -327,8 +404,16 @@ static AstNode *parseBlock(ParsedToken *p) {
     checkToken(p, TOK_NL);
     checkToken(p, TOK_INDENT);
     AstNode *stat = parseStat(p);
+    if (p->error != 0)
+    {
+        return NULL;
+    }
     AstNode *statNext = parseStList(p); // not done using stat->next because
                                         // stat can also be a list of statements
+    if (p->error != 0)
+    {
+        return NULL;
+    }
     checkToken(p, TOK_DEDENT);
     return insertStat(stat, statNext);
 }
@@ -337,7 +422,15 @@ static AstNode *parseStList(ParsedToken *p) {
     // 14: ⟨st_list⟩ → ⟨stat⟩⟨st_list⟩
     if (startsStat(p->currentToken.type)) {
         AstNode *stat = parseStat(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         AstNode *statNext = parseStList(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         return insertStat(stat, statNext);
     }
     // 15: ⟨st_list⟩ → epsilon
@@ -345,6 +438,7 @@ static AstNode *parseStList(ParsedToken *p) {
         return NULL;
     } else {
         printError("Unexpected token");
+        p->error = 2;
         return NULL;
     }
 }
@@ -353,7 +447,15 @@ static AstNode *parseStat(ParsedToken *p) {
     // 16: ⟨stat⟩ → ⟨line⟩⟨line_end⟩
     if (startsLine(p->currentToken.type)) {
         AstNode *line = parseLine(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         AstNode *lineNext = parseLineEnd(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         return insertStat(line, lineNext);
     } else {
         switch (p->currentToken.type) {
@@ -365,6 +467,10 @@ static AstNode *parseStat(ParsedToken *p) {
             checkToken(p, TOK_KW_THEN);
             AstNode *thenBody = parseBlock(p);
             AstNode *elseBody = parseElseChoice(p);
+            if (p->error != 0)
+            {
+                return NULL;
+            }
             return createNodeIf(condition, thenBody, elseBody);
         }
 
@@ -379,6 +485,7 @@ static AstNode *parseStat(ParsedToken *p) {
 
         default:
             printError("Unexpected token");
+            p->error = 2;
             return NULL;
         }
     }
@@ -401,6 +508,10 @@ static AstNode *parseLine(ParsedToken *p) {
             p->currentToken.str, false, 0, NULL); // isVar is false (value)
         checkToken(p, TOK_ID);
         declaration->type = parseRetType(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         checkToken(p, TOK_ASSIGN);
         declaration->data.declaration.expression = parseExpression(p);
         return declaration;
@@ -412,6 +523,10 @@ static AstNode *parseLine(ParsedToken *p) {
             p->currentToken.str, true, 0, NULL); // isVar is true (variable)
         checkToken(p, TOK_ID);
         declaration->type = parseRetType(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         checkToken(p, TOK_ASSIGN);
         declaration->data.declaration.expression = parseExpression(p);
         return declaration;
@@ -422,6 +537,7 @@ static AstNode *parseLine(ParsedToken *p) {
         return createNodeReturn(parseReturn(p));
     } else {
         printError("Unexpected token");
+        p->error = 2;
         return NULL;
     }
 }
@@ -437,6 +553,7 @@ static AstNode *parseLineEnd(ParsedToken *p) {
         return NULL;
     default:
         printError("Unexpected token");
+        p->error = 2;
         return NULL;
     }
 }
@@ -453,6 +570,7 @@ static AstNode *parseLineSemi(ParsedToken *p) {
     } else {
         printError("Unexpected token after if block, expected 'else' or end of "
                    "statement.");
+        p->error = 2;
         return NULL;
     }
 }
@@ -474,6 +592,7 @@ static AstNode *parseElseChoice(ParsedToken *p) {
     } else {
         printError("Unexpected token after if block, expected 'else' or end of "
                    "statement.");
+        p->error = 2;
         return NULL;
     }
 }
@@ -494,11 +613,16 @@ static AstNode *parseElse(ParsedToken *p) {
         checkToken(p, TOK_KW_THEN);
         AstNode *thenBody = parseBlock(p);
         AstNode *elseBody = parseElseChoice(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         return createNodeIf(condition, thenBody, elseBody);
     }
 
     default:
         printError("Unexpected token");
+        p->error = 2;
         return NULL;
     }
 }
@@ -514,6 +638,7 @@ static DataType parseRetType(ParsedToken *p) {
 
     default:
         printError("Unexpected token");
+        p->error = 2;
         return TYPE_NONE;
     }
 }
@@ -537,6 +662,7 @@ static DataType parseType(ParsedToken *p) {
         return TYPE_BOOL;
     default:
         printError("Unexpected token");
+        p->error = 2;
         return TYPE_NONE;
     }
 }
@@ -552,6 +678,7 @@ static AstNode *parseReturn(ParsedToken *p) {
         return NULL;
     } else {
         printError("Unexpected token");
+        p->error = 2;
         return NULL;
     }
 }
@@ -565,7 +692,15 @@ static AstNode *parseParamList(ParsedToken *p, size_t *count) {
         checkToken(p, TOK_ID);
         checkToken(p, TOK_COLON);
         param->type = parseType(p);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         param->next = parseParamEnd(p, count);
+        if (p->error != 0)
+        {
+            return NULL;
+        }
         return param;
     }
 
@@ -573,6 +708,7 @@ static AstNode *parseParamList(ParsedToken *p, size_t *count) {
         return NULL;
     default:
         printError("Unexpected token");
+        p->error = 2;
         return NULL;
     }
 }
@@ -583,10 +719,11 @@ static AstNode *parseParamEnd(ParsedToken *p, size_t *count) {
         checkToken(p, TOK_COMMA);
         return parseParamList(p, count);
     case TOK_RPAR: // 43: ⟨param_end⟩ → epsilon
-        return NULL;
+        return TYPE_NONE;
     default:
         printError("Unexpected token");
-        return NULL;
+        p->error = 2;
+        return TYPE_NONE;
     }
 }
 
@@ -597,20 +734,29 @@ static AstNode *parseLop(ParsedToken *p, size_t *groupCount) {
         checkToken(p, TOK_LPAR);
         size_t count = 0;
         AstNode *params = parseParamList(p, &count);
+        if (p->error != 0)
+        {
+            return TYPE_NONE;
+        }
         checkToken(p, TOK_RPAR);
 
         AstNode *group = createNodeGroup(params, count);
         (*groupCount)++;
 
         group->next = parseLop(p, groupCount);
+        if (p->error != 0)
+        {
+            return TYPE_NONE;
+        }
         return group;
     }
     case TOK_COLON: // 45: ⟨lop⟩ → epsilon
     case TOK_ASSIGN:
-        return NULL;
+        return TYPE_NONE;
     default:
         printError("Unexpected token");
-        return NULL;
+        p->error = 2;
+        return TYPE_NONE;
     }
 }
 

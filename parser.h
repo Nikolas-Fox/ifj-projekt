@@ -3,7 +3,7 @@
  * Package:		parser
  * File:			parser.h
  * Date:			1.11.2026
- * Last change:	19.11.2026
+ * Last change:	26.11.2026
  * Authors: 		Eliška Holá xholael00
  *
  * Description: Header file of parser logic
@@ -29,6 +29,7 @@ typedef struct {
     Token currentToken;
     Token aheadToken;
     bool lookAhead; // true if aheadToken holds a token from the lexer
+    int error;
 } ParsedToken;
 
 /**
