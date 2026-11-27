@@ -321,7 +321,7 @@ Jak je vidět v tabulce, vyskytují se konflikty v řádcích <line> a <expressi
 \newpage
 \section{Přehled modulů}
 \begin{itemize}
-    \item \texttt{scanner.c / scanner.h}: Implementuje lexikální analyzátor jako rozšířený deterministický automat, který čte znaky ze srtandardního vstupu a pomocí dynamického bufferu sestavuje tokeny. Nadstavbová vrstva vyhodnocuje odsazení tokenů. Model také detekuje lexikánlí chyby a spravuje paměť alokovanou pro instanci skeneru.
+    \item \texttt{scanner.c / scanner.h}: Implementuje lexikální analyzátor jako rozšířený deterministický automat, který čte znaky ze srtandardního vstupu a pomocí dynamického bufferu sestavuje tokeny. Nadstavbová vrstva vyhodnocuje odsazení tokenů. Model také detekuje lexikální chyby a spravuje paměť alokovanou pro instanci skeneru.
     \item \texttt{parser.c / parser.h}: Parser je implementován metodou rekurzivního sestupu a udržuje si stav zpracování včetně následujícího tokenu. Přebírá tokeny ze scanneru, ověřuje očekávané tokeny a souběžně staví AST.
     \item \texttt{precedence.c / precedence.h}: Implementuje precedenční syntaktickou analýzu pro výrazy pomocí zásobníku. Hlavní funkce inicializuje zásobník se zarážkou a v cyklu čte vstup podle precedenční tabulky, přičemž provádí posuny nebo redukce.
     \item \texttt{ast.c / ast.h}: Implementuje práci s abstraktním syntaktickým stromem (AST), ve kterém si překladač ukládá strukturu zpracovaného programu (výrazy, příkazy, funkce, větvení i cykly). Vytváří jednotlivé uzly a řadí je do spojových seznamů. Rekurzivní uvolňování celé struktury.
@@ -333,7 +333,7 @@ Jak je vidět v tabulce, vyskytují se konflikty v řádcích <line> a <expressi
 
 \newpage
 \section{Využití AI nástrojů}
-Nástroje umělé inteligence jsme využívali především pro code review, generování unit testů a testů hraničních případů u vystavených funkcí. Dále byly využity ke generování skriptu pro spouštění end-to-end testů a k vytváření jednotlivých testovacích případů. Sloužily nám také k ověření a dovysvětlení toho, zda dané problematice správně rozumíme. Samotnou dokumentaci jsme zpracovávali sami; nástroje AI byly využity pouze pro generování a úpravu částí kódu v LaTeXu (například pro sazbu tabulek).
+Nástroje umělé inteligence jsme využívali především pro code review, generování unit testů a testů hraničních případů u vestavěných funkcí. Dále byly využity ke generování skriptu pro spouštění end-to-end testů a k vytváření jednotlivých testovacích případů. Sloužily nám také k ověření a dovysvětlení toho, zda dané problematice správně rozumíme. Samotnou dokumentaci jsme zpracovávali sami; nástroje AI byly využity pouze pro generování a úpravu částí kódu v LaTeXu (například pro sazbu tabulek).
 
 \begin{thebibliography}{9}
     \bibitem{ifj} Meduna, A., Křivka, Z.: \textit{Formální jazyky a překladače (IFJ) -- přednášky} [online]. FIT VUT v Brně, 2026. Dostupné z: \texttt{https://www.fit.vut.cz/study/course/IFJ/public/materials/}.
