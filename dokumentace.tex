@@ -52,8 +52,8 @@
         \toprule
         \textbf{Člen týmu} & \textbf{Podíl na projektu} \\
         \midrule
-        Nikolas Fox & Abstraktní syntaktický strom (AST), syntaktická analýza (\texttt{parser} - uvolňování řetězců tokenů), LL gramatika, precedenční analýza, sémantická analýza. \\
-        Eliška Holá & Generování cílového kódu, \texttt{main}, syntaktická analýza (\texttt{parser} -- rekurzivní sestup, práce s tokeny), LL gramatika. \\
+        Nikolas Fox & Abstraktní syntaktický strom (AST), syntaktická analýza (\texttt{parser} - uvolňování řetězců tokenů), LL gramatika, precedenční analýza, sémantická analýza \\
+        Eliška Holá & Generování cílového kódu, \texttt{main}, syntaktická analýza (\texttt{parser} -- rekurzivní sestup, práce s tokeny), LL gramatika \\
         Eliška Opršalová & Lexikální analyzátor (\texttt{scanner}), konečný automat, dokumentace \\
         Alexandra Povalová & Tabulka symbolů, \texttt{Makefile}, generování testů, dokumentace \\
         \bottomrule
@@ -308,7 +308,10 @@ Jak je vidět v tabulce, vyskytují se konflikty v řádcích <line> a <expressi
     \label{tab:precedencna}
 \end{table}
 
-*REL zastřešuje >,<,<=,>=
+*REL zastřešuje >,<,<=,>= \\
+*EQ NE zastřešuje ==, !=\\
++$-$P značí unární operátor, + $-$ značí binární operátory \\
+operátory se stejnou prioritou jsou seskupeny do jednoho řádku a sloupce
 
 \newpage
 \section{Přehled modulů}
