@@ -108,7 +108,7 @@ Zvolili jsme styl formátování \texttt{LLVM} v nástroji \texttt{clang-format}
 \subsection{Stavový automat}
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=1\textwidth]{indent_automat.pdf}
+  \includegraphics[width=0.9\textwidth]{indent_automat.pdf}
   \caption{Automat odsazení}
   \label{fig:ukazka}
 \end{figure}
@@ -308,14 +308,14 @@ Jak je vidět v tabulce, vyskytují se konflikty v řádcích <line> a <expressi
         \textbf{\texttt{\$}} & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & & \kGrn & \\
         \hline
     \end{tabular}
-    \caption{Precedenční tabulka pro analýzu výrazů v jazyce IFJ26.}
+    \caption{Precedenční tabulka pro analýzu výrazů v jazyce IFJ26}
     \label{tab:precedencna}
 \end{table}
 
 *REL zastřešuje >,<,<=,>= \\
 *EQ NE zastřešuje ==, !=\\
 +$-$P značí unární operátor, + $-$ značí binární operátory \\
-operátory se stejnou prioritou jsou seskupeny do jednoho řádku a sloupce
+operátory se stejnou prioritou a asociativitou jsou seskupeny do jednoho řádku a sloupce
 
 \newpage
 \section{Přehled modulů}
@@ -325,9 +325,9 @@ operátory se stejnou prioritou jsou seskupeny do jednoho řádku a sloupce
     \item \texttt{precedence.c / precedence.h}: Implementuje precedenční syntaktickou analýzu pro výrazy pomocí zásobníku. Hlavní funkce inicializuje zásobník se zarážkou a v cyklu čte vstup podle precedenční tabulky, přičemž provádí posuny nebo redukce.
     \item \texttt{ast.c / ast.h}: Implementuje práci s abstraktním syntaktickým stromem (AST), ve kterém si překladač ukládá strukturu zpracovaného programu (výrazy, příkazy, funkce, větvení i cykly). Vytváří jednotlivé uzly a řadí je do spojových seznamů. Rekurzivní uvolňování celé struktury.
     \item \texttt{symtable.c / symtable.h}: Implementace tabulky symbolů postavená na \texttt{hashtable} a řešená formou zásobníku. Při inicializaci se automaticky vytvoří globální rozsah (\emph{scope}), do kterého se předplní vestavěné funkce. Podporuje základní operace, jako je vložení nového rozsahu na zásobník, vkládání symbolů a vyprázdnění zásobníku.
-    \item \texttt{hashtable.c / hashtable.h}: Obecná implementace hashovací tabulky s řešením kolizí pomocí lineárního sondování (linear probing) a podporou základních operací (vkládání, vyhledávání, mazání, uvolnění paměti); slouží jako datová struktura zejména pro tabulku symbolů
+    \item \texttt{hashtable.c / hashtable.h}: Obecná implementace hashovací tabulky s řešením kolizí pomocí lineárního sondování (linear probing) a podporou základních operací (vkládání, vyhledávání, mazání, uvolnění paměti); slouží jako datová struktura zejména pro tabulku symbolů.
     \item \texttt{semantic.c / semantic.h}: Sémantická analýza, implementovaná tak, aby kontrolovala funkce, rozsahy platnosti, příkazy a výrazy.
-    \item \texttt{codegen.c / codegen.h}: Vygeneruje uživatelský program a vestavěné funkce, volání funkcí implementuje s předáváním na zásobníků, který používá také pro vyhodnocování výrazů
+    \item \texttt{codegen.c / codegen.h}: Vygeneruje uživatelský program a vestavěné funkce, volání funkcí implementuje s předáváním na zásobníků, který používá také pro vyhodnocování výrazů.
 \end{itemize}
 
 \newpage
