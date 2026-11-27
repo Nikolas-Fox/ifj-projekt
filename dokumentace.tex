@@ -1,0 +1,346 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[czech]{babel}
+\usepackage[margin=2cm]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{rotating}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{hyperref}
+\usepackage{longtable}
+\usepackage[table]{xcolor}
+\newcommand{\nt}[1]{\ensuremath{\langle\mathit{#1}\rangle}}
+\newcommand{\tk}[1]{\texttt{#1}}
+\newcommand{\eps}{\ensuremath{\varepsilon}}
+\renewcommand{\to}{\ensuremath{\rightarrow}}
+
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+\begin{document}
+
+\vspace*{\fill}
+\begin{center}
+    {\LARGE \textbf{Dokumentace k projektu z předmětů IFJ a IAL}}\\[6pt]
+    {\large Implementace překladače jazyka IFJ26}\\[12pt]
+
+    \textbf{Řešitelský tým:}\\
+    \textbf{Nikolas Fox (vedoucí), \texttt{xfoxnik00}, ID: 282697}\\
+    Eliška Holá, \texttt{xholael00}, ID: 281691\\
+    Eliška Opršalová, \texttt{xoprsae00}, ID: 280417\\
+    Alexandra Povalová, \texttt{xpovala00}, ID: 282712\\[8pt]
+
+    \textbf{Varianta:} \texttt{TRP-izp}\\[4pt]
+    \textbf{Rozdělení bodů:} \texttt{xfoxnik00}: 25\,\%, \texttt{xholael00}: 25\,\%, \texttt{xoprsae00}: 25\,\%, \texttt{xpovala00}: 25\,\%\\[4pt]
+    \textbf{Implementovaná rozšíření: FUNEXP, BOOLTHEN, VALMEM, INTERPOLATEDS, PARAMLISTS} \\[4pt]
+    \textbf{Git repozitář:} \url{https://github.com/Nikolas-Fox/ifj-projekt}\\[10pt]
+    \hrule
+\end{center}
+\vspace*{\fill}
+\newpage
+
+
+\section{Rozdělení práce, spolupráce a testování}
+\begin{table}[htbp]
+    \centering
+    \small
+    \begin{tabularx}{\textwidth}{@{} l X @{}}
+        \toprule
+        \textbf{Člen týmu} & \textbf{Podíl na projektu} \\
+        \midrule
+        Nikolas Fox & Abstraktní syntaktický strom (AST), syntaktická analýza (\texttt{parser} - uvolňování řetězců tokenů), LL gramatika, precedenční analýza, sémantická analýza \\
+        Eliška Holá & Generování cílového kódu, \texttt{main}, syntaktická analýza (\texttt{parser} -- rekurzivní sestup, práce s tokeny), LL gramatika \\
+        Eliška Opršalová & Lexikální analyzátor (\texttt{scanner}), konečný automat, dokumentace \\
+        Alexandra Povalová & Tabulka symbolů, \texttt{Makefile}, generování testů, dokumentace \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Rozdělení práce mezi členy řešitelského týmu}
+    \label{tab:rozdeleni}
+\end{table}
+
+Na začátku jsme si dohodli základní pravidla naší spolupráce. Jako formu komunikace jsme zvolili Discord, kde jsme si založili skupinu, a protože Discord neukazuje, zda si někdo přečetl zprávu, dohodli jsme se, že si budeme reagovat na jednotlivé zprávy. 
+Pro sledování deadlinů a věcí, které je ještě třeba udělat, jsme používali Notion, kde jsme si také stanovili pravidla pro verzování kódu na Gitu. 
+Psali jsme více menších commitů a u každého jsme měli určený typ pro lepší orientaci.
+Měli jsme několik osobních schůzek. 
+Vždy, když někdo dokončil nějakou práci a poslal pull request, dohodli jsme se, kdo to zkontroluje, psali jsme si případné komentáře k opravě a až potom provedli merge jednotlivé větve.
+
+Každý si své části projektu nejprve testoval samostatně a následně Alexandra Povalová vygenerovala skript na spouštění testů, který spouštěl jednotlivé programy a kontroloval výstup (testovací programy i očekávané výstupy byly rovněž vygenerovány).
+
+Zvolili jsme styl formátování \texttt{LLVM} v nástroji \texttt{clang-format} (konfigurace v \texttt{.clang-format}).
+
+\newpage
+\section{Architektura překladače}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.37\textwidth]{blokove_schema.png}
+  \caption{Blokové schéma}
+  \label{fig:ukazka}
+\end{figure}
+\clearpage
+
+\newpage
+\section{Lexikální analýza}
+
+\subsection{Odchylky od konečného automatu}
+\begin{itemize}
+\item Hledání v tabulce klíčových slov\\
+\item Vstupní šipky, které vybírají počáteční stav před čtením znaku\\
+\item Automat využívá pomocné čítače a příznaky:
+\begin{itemize}
+  \item \texttt{ParenDepth} - hloubka zanoření kulatých závorek (potlačuje generování \texttt{TOK\_NL} a aktivuje kontrolu odsazení v \texttt{ST\_PAREN\_LINE})
+  \item \texttt{commentDepth} a \texttt{commentNL} – umožňuje rozpoznat vnořené blokové komentáře
+  \item \texttt{interpDepth}, \texttt{interpKind[]} a \texttt{interpInExpr[]} - zásobník pro vnořené interpolované řetězce (s"...", s"""...""") a rozlišení, zda se automat nachází v textové části (\texttt{ST\_INTERP\_TEXT}), nebo uvnitř výrazu \$\{...\}
+\end{itemize}
+\item Jeden token může mít víc výstupů:
+\begin{itemize}
+    \item Jedno průchodové čtení může vygenerovat více tokenů najednou. K tomu slouží proměnné \texttt{queued}, \texttt{hasQueued} (pro \texttt{TOK\_INDENT} / \texttt{TOK\_DEDENT} / \texttt{TOK\_NL} před \texttt{TOK\_EOF}), \texttt{interpQueued}, \texttt{hasInterpQueued}, \texttt{dotAfterNumber} a \texttt{resumeId} 
+\end{itemize}
+
+\item Dvouvrstvá architektura \texttt{readToken()}+\texttt{getToken()}:
+\begin{itemize}
+    \item stavový automat \texttt{readToken()} neřeší porovnávání úrovní odsazení ani rušení duplicitních středníků, to obstarává nadřazená vrstva \texttt{getToken()} pomocí zásobníku odsazení \texttt{indentStack}
+\end{itemize}
+\end{itemize}
+\subsection{Stavový automat}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\textwidth]{indent_automat.pdf}
+  \caption{Automat odsazení}
+  \label{fig:ukazka}
+\end{figure}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[angle=90, width=1.06\textwidth]{state_automat.pdf}
+  \caption{Stavový automat}
+  \label{fig:ukazka}
+\end{figure}
+\clearpage
+\newpage
+\section{Syntaktická analýza}
+\subsection{LL gramatika}
+ 
+\begin{small}
+\begin{longtable}{@{}r@{\hspace{1em}}p{0.88\textwidth}@{}}
+1.  & \nt{prog} \to \tk{import} \nt{opt\_NL} \tk{ifj26} \nt{opt\_NL} \tk{.} \nt{opt\_NL} \tk{*} \tk{NL} \nt{definition} \tk{EOF} \\
+2.  & \nt{definition} \to \tk{@main} \nt{opt\_NL} \tk{def} \tk{id} \nt{lop} \nt{ret\_type} \tk{=} \nt{def\_body} \nt{definition} \\
+3.  & \nt{definition} \to \tk{def} \tk{id} \nt{lop} \nt{ret\_type} \tk{=} \nt{def\_body} \nt{definition} \\
+4.  & \nt{definition} \to \eps \\
+5.  & \nt{def\_body} \to \nt{block} \\
+6.  & \nt{def\_body} \to \nt{stat} \\
+7.  & \nt{opt\_NL} \to \tk{NL} \\
+8.  & \nt{opt\_NL} \to \eps \\
+9.  & \nt{block} \to \tk{NL} \tk{INDENT} \nt{stat} \nt{st\_list} \tk{DEDENT} \\
+10. & \nt{st\_list} \to \nt{stat} \nt{st\_list} \\
+11. & \nt{st\_list} \to \eps \\
+12. & \nt{stat} \to \nt{line} \nt{line\_end} \\
+13. & \nt{stat} \to \tk{if} \nt{expression} \tk{then} \nt{block} \nt{else\_choice} \\
+14. & \nt{stat} \to \tk{while} \nt{expression} \tk{do} \nt{block} \\
+15. & \nt{line} \to \nt{expression} \\
+16. & \nt{line} \to \nt{assign} \\
+17. & \nt{line} \to \tk{val} \tk{id} \nt{ret\_type} \tk{=} \nt{expression} \\
+18. & \nt{line} \to \tk{var} \tk{id} \nt{ret\_type} \tk{=} \nt{expression} \\
+19. & \nt{line} \to \tk{return} \nt{return} \\
+20. & \nt{line\_end} \to \tk{;} \nt{line\_semi} \\
+21. & \nt{line\_end} \to \tk{NL} \\
+22. & \nt{line\_semi} \to \nt{stat} \\
+23. & \nt{line\_semi} \to \tk{NL} \\
+24. & \nt{else\_choice} \to \tk{else} \nt{else} \\
+25. & \nt{else\_choice} \to \eps \\
+26. & \nt{else} \to \nt{block} \\
+27. & \nt{else} \to \tk{if} \nt{expression} \tk{then} \nt{block} \nt{else\_choice} \\
+28. & \nt{ret\_type} \to \tk{:} \nt{type} \\
+29. & \nt{ret\_type} \to \eps \\
+30. & \nt{type} \to \tk{Int} \\
+31. & \nt{type} \to \tk{Double} \\
+32. & \nt{type} \to \tk{String} \\
+33. & \nt{type} \to \tk{Unit} \\
+34. & \nt{type} \to \tk{Boolean} \\
+35. & \nt{return} \to \nt{expression} \\
+36. & \nt{return} \to \eps \\
+37. & \nt{param\_list} \to \tk{id} \tk{:} \nt{type} \nt{param\_end} \\
+38. & \nt{param\_list} \to \eps \\
+39. & \nt{param\_end} \to \tk{,} \nt{param\_list} \\
+40. & \nt{param\_end} \to \eps \\
+41. & \nt{lop} \to \tk{(} \nt{param\_list} \tk{)} \nt{lop} \\
+42. & \nt{lop} \to \eps \\
+43. & \nt{loa} \to \tk{(} \nt{arg\_list} \tk{)} \nt{loa} \\
+44. & \nt{loa} \to \eps \\
+45. & \nt{arg\_list} \to \nt{expression} \nt{arg\_end} \\
+46. & \nt{arg\_list} \to \eps \\
+47. & \nt{arg\_end} \to \tk{,} \nt{arg\_list} \\
+48. & \nt{arg\_end} \to \eps \\
+49. & \nt{func} \to \tk{id} \nt{loa} \\
+50. & \nt{assign} \to \tk{id} \tk{=} \nt{expression} \\
+51. & \nt{expression} \to \nt{func} \\
+52. & \nt{expression} \to \textit{výraz zpracovaný precedenční analýzou} \\
+\caption{LL gramatika}
+\end{longtable}
+\end{small}
+ \newpage
+\noindent Výrazy zpracovává precedenční syntaktická analýza; parser jí předává řízení
+při prvním tokenu výrazu a po jejím skončení přebírá výsledek.
+Prázdný blok \tk{()} je zpracován jako výraz. \\
+Pravidla pro $\langle \text{loa} \rangle$, $\langle \text{arg\_list} \rangle$, $\langle \text{arg\_end} \rangle$ a $\langle \text{expression} \rangle$ jsou řešena přímo v modulu \texttt{precedence.c}. Pomocné funkce pro $\langle \text{loa} \rangle$, $\langle \text{arg\_list} \rangle$ a $\langle \text{arg\_end} \rangle$ se volají pouze interně v rámci precedenční analýzy, a jsou proto definovány jako \texttt{static}.
+ 
+
+\subsection{LL tabulka }
+
+\begin{sidewaystable}[p]
+    \centering
+    \resizebox{\textwidth}{!}{%
+        \setlength{\tabcolsep}{3pt}
+        \renewcommand{\arraystretch}{1.2}
+        \begin{tabular}{|l|*{36}{c|}}
+            \hline
+            \textbf{Neterminál} & \texttt{import} & \texttt{ifj26} & \texttt{@main} & \texttt{def} & \texttt{if} & \texttt{then} & \texttt{else} & \texttt{while} & \texttt{do} & \texttt{val} & \texttt{var} & \texttt{ret.} & \texttt{Int} & \texttt{Dbl.} & \texttt{Str.} & \texttt{Unit} & \texttt{Bool.} & \texttt{EOF} & \texttt{id} & \texttt{int} & \texttt{dbl} & \texttt{str} & \texttt{interp.} & \texttt{+} & \texttt{-} & \texttt{!} & \texttt{(} & \texttt{)} & \texttt{,} & \texttt{;} & \texttt{:} & \texttt{=} & \texttt{.} & \texttt{*} & \texttt{NL} & \texttt{DED.} \\
+            \hline
+            $\langle \text{prog} \rangle$ & 1 & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & \\
+            \hline
+            $\langle \text{definition} \rangle$ & & & 2 & 3 & & & & & & & & & & & & & & 4 & & & & & & & & & & & & & & & & & & \\
+            \hline
+            $\langle \text{def\_body} \rangle$ & & & & & 6 & & & 6 & & 6 & 6 & 6 & & & & & & & 6 & 6 & 6 & 6 & 6 & 6 & 6 & 6 & 6 & & & & & & & & 5 & \\
+            \hline
+            $\langle \text{opt\_NL} \rangle$ & & 8 & & 8 & & & & & & & & & & & & & & & & & & & & & & & & & & & & & 8 & 8 & 7 & \\
+            \hline
+            $\langle \text{block} \rangle$ & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & 9 & \\
+            \hline
+            $\langle \text{st\_list} \rangle$ & & & & & 10 & & & 10 & & 10 & 10 & 10 & & & & & & & 10 & 10 & 10 & 10 & 10 & 10 & 10 & 10 & 10 & & & & & & & & & 11 \\
+            \hline
+            $\langle \text{stat} \rangle$ & & & & & 13 & & & 14 & & 12 & 12 & 12 & & & & & & & 12 & 12 & 12 & 12 & 12 & 12 & 12 & 12 & 12 & & & & & & & & & \\
+            \hline
+            $\langle \text{line} \rangle$ & & & & & & & & & & 17 & 18 & 19 & & & & & & & 15,16* & 15 & 15 & 15 & 15 & 15 & 15 & 15 & 15 & & & & & & & & & \\
+            \hline
+            $\langle \text{line\_end} \rangle$ & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & 20 & & & & & 21 & \\
+            \hline
+            $\langle \text{line\_semi} \rangle$ & & & & & 22 & & & 22 & & 22 & 22 & 22 & & & & & & & 22 & 22 & 22 & 22 & 22 & 22 & 22 & 22 & 22 & & & & & & & & 23 & \\
+            \hline
+            $\langle \text{else\_choice} \rangle$ & & & 25 & 25 & 25 & & 24 & 25 & & 25 & 25 & 25 & & & & & & 25 & 25 & 25 & 25 & 25 & 25 & 25 & 25 & 25 & 25 & & & & & & & & & 25 \\
+            \hline
+            $\langle \text{else} \rangle$ & & & & & 27 & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & 26 & \\
+            \hline
+            $\langle \text{ret\_type} \rangle$ & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & & 28 & 29 & & & & \\
+            \hline
+            $\langle \text{type} \rangle$ & & & & & & & & & & & & & 30 & 31 & 32 & 33 & 34 & & & & & & & & & & & & & & & & & & & \\
+            \hline
+            $\langle \text{return} \rangle$ & & & & & & & & & & & & & & & & & & & 35 & 35 & 35 & 35 & 35 & 35 & 35 & 35 & 35 & & & 36 & & & & & 36 & \\
+            \hline
+            $\langle \text{param\_list} \rangle$ & & & & & & & & & & & & & & & & & & & 37 & & & & & & & & & 38 & & & & & & & & \\
+            \hline
+            $\langle \text{param\_end} \rangle$ & & & & & & & & & & & & & & & & & & & & & & & & & & & & 40 & 39 & & & & & & & \\
+            \hline
+            $\langle \text{lop} \rangle$ & & & & & & & & & & & & & & & & & & & & & & & & & & & 41 & & & & 42 & 42 & & & & \\
+            \hline
+            $\langle \text{loa} \rangle$ & & & & & & 44 & & & 44 & & & & & & & & & & & & & & & & & & 43 & 44 & 44 & 44 & & & & & 44 & \\
+            \hline
+            $\langle \text{arg\_list} \rangle$ & & & & & & & & & & & & & & & & & & & 45 & 45 & 45 & 45 & 45 & 45 & 45 & 45 & 45 & 46 & & & & & & & & \\
+            \hline
+            $\langle \text{arg\_end} \rangle$ & & & & & & & & & & & & & & & & & & & & & & & & & & & & 48 & 47 & & & & & & & \\
+            \hline
+            $\langle \text{func} \rangle$ & & & & & & & & & & & & & & & & & & & 49 & & & & & & & & & & & & & & & & & \\
+            \hline
+            $\langle \text{assign} \rangle$ & & & & & & & & & & & & & & & & & & & 50 & & & & & & & & & & & & & & & & & \\
+            \hline
+            $\langle \text{expression} \rangle$ & & & & & & & & & & & & & & & & & & & 51,52 **& 52 & 52 & 52 & 52 & 52 & 52 & 52 & 52 & & & & & & & & & \\
+            \hline
+        \end{tabular}%
+    }
+    \caption{LL tabulka gramatiky IFJ26}
+    \label{tab:ll-mriezka}
+\end{sidewaystable}
+Jak je vidět v tabulce, vyskytují se konflikty v řádcích <line> a <expression>. Tyto konflikty řešíme pomocí lookahead o 1 token. \\
+* Když je následující token =, vyhodnotí se pravidlo 16. V opačném případě pravidlo 15. \\
+** Když je následující token (, jde o volání funkce a vyhodnotí se pravidlo 51. V opačném případě se jedná o pravidlo 52.\\
+
+
+
+\newpage
+\subsection{Precedenční syntaktická analýza}
+\begin{table}[htbp]
+    \centering
+    \scriptsize
+    \setlength{\tabcolsep}{3.5pt}
+    \renewcommand{\arraystretch}{1.25}
+    \definecolor{headerblue}{HTML}{AEEEEE}
+
+    \newcommand{\kRed}{$<$}%
+    \newcommand{\vRed}{$>$}%
+    \newcommand{\kOra}{$<$}%
+    \newcommand{\vOra}{$>$}%
+    \newcommand{\kGrn}{$<$}%
+    \newcommand{\vGrn}{$>$}%
+    \newcommand{\eGrn}{$=$}%
+    \newcommand{\kBlk}{$<$}%
+    \newcommand{\vBlk}{$>$}%
+
+    \begin{tabular}{|>{\columncolor{headerblue}}c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+        \hline
+        \rowcolor{headerblue}
+        & \textbf{\texttt{E.E}} & \textbf{\texttt{+-P}} & \textbf{\texttt{!}} & \textbf{\texttt{* /}} & \textbf{\texttt{+ -}} & \textbf{\texttt{REL}} & \textbf{\texttt{EQ NE}} & \textbf{\texttt{\&\&}} & \textbf{\texttt{||}} & \textbf{\texttt{(}} & \textbf{\texttt{)}} & \textbf{\texttt{i}} & \textbf{\texttt{\$}} \\
+        \hline
+        \textbf{\texttt{E.E}} & \vRed & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{+-P}} & \kBlk & \kRed & \kBlk & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{!}} & \kBlk & \kBlk & \kRed & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{* /}} & \kBlk & \kBlk & \kBlk & \vRed & \vBlk & \vBlk & \vBlk & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{+ -}} & \kBlk & \kBlk & \kBlk & \kBlk & \vRed & \vBlk & \vBlk & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{REL}} & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & & \vBlk & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{EQ NE}} & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{\&\&}} & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \vBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{||}} & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \vBlk & \kOra & \vOra & \kGrn & \vBlk \\
+        \hline
+        \textbf{\texttt{(}} & \kOra & \kOra & \kOra & \kOra & \kOra & \kOra & \kOra & \kOra & \kOra & \kOra & \eGrn & \kGrn & \\
+        \hline
+        \textbf{\texttt{)}} & \vOra & & & \vOra & \vOra & \vOra & \vOra & \vOra & \vOra & & \vOra & & \vBlk \\
+        \hline
+        \textbf{\texttt{i}} & \vGrn & & & \vGrn & \vGrn & \vGrn & \vGrn & \vGrn & \vGrn & & \vGrn & & \vGrn \\
+        \hline
+        \textbf{\texttt{\$}} & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & \kBlk & & \kGrn & \\
+        \hline
+    \end{tabular}
+    \caption{Precedenční tabulka pro analýzu výrazů v jazyce IFJ26}
+    \label{tab:precedencna}
+\end{table}
+\begin{itemize}
+\item *REL zastřešuje >,<,<=,>= \\
+\item *EQ NE zastřešuje ==, !=\\
+\item +$-$P značí unární operátor, + $-$ značí binární operátory \\
+\item operátory se stejnou prioritou a asociativitou jsou seskupeny do jednoho řádku a sloupce
+\end{itemize}
+
+\newpage
+\section{Přehled modulů}
+\begin{itemize}
+    \item \texttt{scanner.c / scanner.h}: Implementuje lexikální analyzátor jako rozšířený deterministický automat, který čte znaky ze srtandardního vstupu a pomocí dynamického bufferu sestavuje tokeny. Nadstavbová vrstva vyhodnocuje odsazení tokenů. Model také detekuje lexikální chyby a spravuje paměť alokovanou pro instanci skeneru.
+    \item \texttt{parser.c / parser.h}: Parser je implementován metodou rekurzivního sestupu a udržuje si stav zpracování včetně následujícího tokenu. Přebírá tokeny ze scanneru, ověřuje očekávané tokeny a souběžně staví AST.
+    \item \texttt{precedence.c / precedence.h}: Implementuje precedenční syntaktickou analýzu pro výrazy pomocí zásobníku. Hlavní funkce inicializuje zásobník se zarážkou a v cyklu čte vstup podle precedenční tabulky, přičemž provádí posuny nebo redukce.
+    \item \texttt{ast.c / ast.h}: Implementuje práci s abstraktním syntaktickým stromem (AST), ve kterém si překladač ukládá strukturu zpracovaného programu (výrazy, příkazy, funkce, větvení i cykly). Vytváří jednotlivé uzly a řadí je do spojových seznamů. Rekurzivní uvolňování celé struktury.
+    \item \texttt{symtable.c / symtable.h}: Implementace tabulky symbolů postavená na \texttt{hashtable} a řešená formou zásobníku. Při inicializaci se automaticky vytvoří globální rozsah (\emph{scope}), do kterého se předplní vestavěné funkce. Podporuje základní operace, jako je vložení nového rozsahu na zásobník, vkládání symbolů a vyprázdnění zásobníku.
+    \item \texttt{hashtable.c / hashtable.h}: Obecná implementace hashovací tabulky s řešením kolizí pomocí lineárního sondování (linear probing) a podporou základních operací (vkládání, vyhledávání, mazání, uvolnění paměti); slouží jako datová struktura zejména pro tabulku symbolů.
+    \item \texttt{semantic.c / semantic.h}: Sémantická analýza, implementovaná tak, aby kontrolovala funkce, rozsahy platnosti, příkazy a výrazy.
+    \item \texttt{codegen.c / codegen.h}: Vygeneruje uživatelský program a vestavěné funkce, volání funkcí implementuje s předáváním na zásobníků, který používá také pro vyhodnocování výrazů.
+\end{itemize}
+
+\newpage
+\section{Využití AI nástrojů}
+Nástroje umělé inteligence jsme využívali především pro code review, generování unit testů a testů hraničních případů u vestavěných funkcí. Dále byly využity ke generování skriptu pro spouštění end-to-end testů a k vytváření jednotlivých testovacích případů. Sloužily nám také k ověření a dovysvětlení toho, zda dané problematice správně rozumíme. Samotnou dokumentaci jsme zpracovávali sami; nástroje AI byly využity pouze pro generování a úpravu částí kódu v LaTeXu (například pro sazbu tabulek).
+
+\begin{thebibliography}{9}
+    \bibitem{ifj} Meduna, A., Křivka, Z.: \textit{Formální jazyky a překladače (IFJ) -- přednášky} [online]. FIT VUT v Brně, 2026. Dostupné z: \texttt{https://www.fit.vut.cz/study/course/IFJ/public/materials/}.
+    \bibitem{ial} Burgetová, I., Hranický, R.: \textit{Algoritmy (IAL) -- přednášky} [online]. FIT VUT v Brně, 2026. Dostupné z: \texttt{https://moodle.vut.cz/mod/folder/view.php?id=712821}.
+    \bibitem{demo_ifj_1} Ondryáš, O.: \textit{– Demonstrační cvičení k projektu (část 1.)} [online video]. YouTube, 2026. Dostupné z: \texttt{https://www.youtube.com/watch?v=Fw6y4UPBCjs}.
+    \bibitem{demo_ifj_2} Ondryáš, O.: \textit{– Demonstrační cvičení k projektu (část 2.)} [online video]. YouTube, 2026. Dostupné z: \texttt{https://www.youtube.com/watch?v=lDos0kcR5CA}.
+    \bibitem{djb2} Bernstein, D.: \textit{Hash Functions} [online]. Dostupné z: \texttt{http://www.cse.yorku.ca/\textasciitilde oz/hash.html}.
+\end{thebibliography}
+
+\end{document}
