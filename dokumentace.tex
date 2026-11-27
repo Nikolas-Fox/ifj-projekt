@@ -36,7 +36,7 @@
 
     \textbf{Varianta:} \texttt{TRP-izp}\\[4pt]
     \textbf{Rozdělení bodů:} \texttt{xfoxnik00}: 25\,\%, \texttt{xholael00}: 25\,\%, \texttt{xoprsae00}: 25\,\%, \texttt{xpovala00}: 25\,\%\\[4pt]
-    \textbf{Implementovaná rozšíření: FUNEXP, BOOLTHEN, VALMEM, INTERPOLATEDS, PARAMLISTS} \texttt{...}\\[4pt]
+    \textbf{Implementovaná rozšíření: FUNEXP, BOOLTHEN, VALMEM, INTERPOLATEDS, PARAMLISTS} \\[4pt]
     \textbf{Git repozitář:} \url{https://github.com/Nikolas-Fox/ifj-projekt}\\[10pt]
     \hrule
 \end{center}
@@ -58,11 +58,14 @@
         Alexandra Povalová & Tabulka symbolů, \texttt{Makefile}, generování testů, dokumentace \\
         \bottomrule
     \end{tabularx}
-    \caption{Rozdělení práce mezi členy řešitelského týmu.}
+    \caption{Rozdělení práce mezi členy řešitelského týmu}
     \label{tab:rozdeleni}
 \end{table}
 
-Na začátku jsme si dohodli základní pravidla naší spolupráce. Jako formu komunikace jsme zvolili Discord, kde jsme si založili skupinu, a protože Discord neukazuje, zda si někdo přečetl zprávu, dohodli jsme se, že si budeme reagovat na jednotlivé zprávy. Pro sledování deadlinů a věcí, které je ještě třeba udělat, jsme používali Notion. Měli jsme několik osobních schůzek. 
+Na začátku jsme si dohodli základní pravidla naší spolupráce. Jako formu komunikace jsme zvolili Discord, kde jsme si založili skupinu, a protože Discord neukazuje, zda si někdo přečetl zprávu, dohodli jsme se, že si budeme reagovat na jednotlivé zprávy. 
+Pro sledování deadlinů a věcí, které je ještě třeba udělat, jsme používali Notion, kde jsme si také stanovili pravidla pro verzování kódu na Gitu. 
+Psali jsme více menších commitů a u každého jsme měli určený typ pro lepší orientaci.
+Měli jsme několik osobních schůzek. 
 Vždy, když někdo dokončil nějakou práci a poslal pull request, dohodli jsme se, kdo to zkontroluje, psali jsme si případné komentáře k opravě a až potom provedli merge jednotlivé větve.
 
 Každý si své části projektu nejprve testoval samostatně a následně Alexandra Povalová vygenerovala skript na spouštění testů, který spouštěl jednotlivé programy a kontroloval výstup (testovací programy i očekávané výstupy byly rovněž vygenerovány).
@@ -94,25 +97,25 @@ Zvolili jsme styl formátování \texttt{LLVM} v nástroji \texttt{clang-format}
 \end{itemize}
 \item Jeden token může mít víc výstupů:
 \begin{itemize}
-    \item Jedno průchodové čtení může vygenerovat více tokenů najednou. K tomu slouží proměnné queued, hasQueued (pro \texttt{TOK\_INDENT} / \texttt{TOK\_DEDENT} / \texttt{TOK\_NL} před \texttt{TOK\_EOF}), \texttt{interpQueued}, \texttt{hasInterpQueued}, \texttt{dotAfterNumber} a \texttt{resumeId} 
+    \item Jedno průchodové čtení může vygenerovat více tokenů najednou. K tomu slouží proměnné \texttt{queued}, \texttt{hasQueued} (pro \texttt{TOK\_INDENT} / \texttt{TOK\_DEDENT} / \texttt{TOK\_NL} před \texttt{TOK\_EOF}), \texttt{interpQueued}, \texttt{hasInterpQueued}, \texttt{dotAfterNumber} a \texttt{resumeId} 
 \end{itemize}
 
-\item Dvouvrstvá architektura readToken+getToken:
+\item Dvouvrstvá architektura \texttt{readToken()}+\texttt{getToken()}:
 \begin{itemize}
-    \item stavový automat readToken() neřeší porovnávání úrovní odsazení ani rušení duplicitních středníků, to obstarává nadřazená vrstva getToken() pomocí zásobníku odsazení indentStack
+    \item stavový automat \texttt{readToken()} neřeší porovnávání úrovní odsazení ani rušení duplicitních středníků, to obstarává nadřazená vrstva \texttt{getToken()} pomocí zásobníku odsazení \texttt{indentStack}
 \end{itemize}
 \end{itemize}
 \subsection{Stavový automat}
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=1\textwidth]{indent_automat.pdf}
-  \caption{automat odsazení}
+  \caption{Automat odsazení}
   \label{fig:ukazka}
 \end{figure}
 \begin{figure}[htbp]
   \centering
   \includegraphics[angle=90, width=1.06\textwidth]{state_automat.pdf}
-  \caption{stavový automat}
+  \caption{Stavový automat}
   \label{fig:ukazka}
 \end{figure}
 \clearpage
@@ -174,9 +177,10 @@ Zvolili jsme styl formátování \texttt{LLVM} v nástroji \texttt{clang-format}
 50. & \nt{assign} \to \tk{id} \tk{=} \nt{expression} \\
 51. & \nt{expression} \to \nt{func} \\
 52. & \nt{expression} \to \textit{výraz zpracovaný precedenční analýzou} \\
+\caption{LL gramatika}
 \end{longtable}
 \end{small}
- 
+ \newpage
 \noindent Výrazy zpracovává precedenční syntaktická analýza; parser jí předává řízení
 při prvním tokenu výrazu a po jejím skončení přebírá výsledek.
 Prázdný blok \tk{()} je zpracován jako výraz. \\
@@ -244,7 +248,7 @@ Pravidla pro $\langle \text{loa} \rangle$, $\langle \text{arg\_list} \rangle$, $
             \hline
         \end{tabular}%
     }
-    \caption{LL tabulka gramatiky IFJ26.}
+    \caption{LL tabulka gramatiky IFJ26}
     \label{tab:ll-mriezka}
 \end{sidewaystable}
 Jak je vidět v tabulce, vyskytují se konflikty v řádcích <line> a <expression>. Tyto konflikty řešíme pomocí lookahead o 1 token. \\
